@@ -1,0 +1,647 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { mockDB } from '../services/firebase';
+import {
+  Library,
+  Plus,
+  BookOpen,
+  CheckSquare,
+  Search,
+  Trash2,
+  RefreshCw,
+  Edit,
+  ArrowRight,
+  TrendingUp,
+  Activity,
+  History
+} from 'lucide-react';
+
+export const LibrarianPortal = ({ subPage }) => {
+  const { user } = useAuth();
+  
+  if (subPage === 'circulation') return <LibrarianCirculation librarian={user} />;
+  return <LibrarianInventory librarian={user} />;
+};
+
+// 1. LIBRARY INVENTORY PANEL
+const LibrarianInventory = () => {
+  const [books, setBooks] = useState([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const { showToast } = useAuth();
+
+  // Create/Edit form states
+  const [title, setTitle] = useState('');
+  const [author, setAuthor] = useState('');
+  const [isbn, setIsbn] = useState('');
+  const [category, setCategory] = useState('CSE');
+  const [totalCopies, setTotalCopies] = useState(5);
+  const [editingBookId, setEditingBookId] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
+  const loadBooks = async () => {
+    try {
+      setLoading(true);
+      const data = await mockDB.getBooks();
+      setBooks(data);
+    } catch (_) {}
+    finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadBooks();
+  }, []);
+
+  const handleCreateOrUpdate = async (e) => {
+    e.preventDefault();
+    if (!title || !author || !isbn) return;
+
+    try {
+      setSubmitting(true);
+      if (editingBookId) {
+        await mockDB.updateBook(editingBookId, { title, author, isbn, category, totalCopies: Number(totalCopies) });
+        showToast('Textbook information updated successfully!', 'success');
+      } else {
+        await mockDB.addBook(title, author, isbn, category, totalCopies);
+        showToast('New textbook added to catalog!', 'success');
+      }
+      
+      // Reset form
+      setTitle('');
+      setAuthor('');
+      setIsbn('');
+      setCategory('CSE');
+      setTotalCopies(5);
+      setEditingBookId(null);
+      loadBooks();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleEdit = (book) => {
+    setEditingBookId(book.bookId);
+    setTitle(book.title);
+    setAuthor(book.author);
+    setIsbn(book.isbn);
+    setCategory(book.category);
+    setTotalCopies(book.totalCopies);
+  };
+
+  const handleDelete = (bookId) => {
+    setConfirmDeleteId(bookId);
+  };
+
+  const executeDelete = async (bookId) => {
+    try {
+      await mockDB.deleteBook(bookId);
+      showToast('Textbook deleted successfully.', 'info');
+      loadBooks();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setConfirmDeleteId(null);
+    }
+  };
+
+  const filteredBooks = books.filter(b => 
+    b.title.toLowerCase().includes(search.toLowerCase()) || 
+    b.author.toLowerCase().includes(search.toLowerCase()) ||
+    b.isbn.includes(search)
+  );
+
+  return (
+    <div className="space-y-6">
+      
+      {/* Title Banner */}
+      <div className="p-6 rounded-3xl bg-gradient-to-r from-teal-600 to-indigo-650 text-white shadow-xl flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-extrabold font-display">Library Inventory & Asset Management</h2>
+          <p className="text-sm text-teal-100 mt-1">Librarian: Madam Pince • KBN Central Catalog</p>
+        </div>
+        <div className="p-3.5 bg-white/10 rounded-2xl border border-white/10">
+          <Library size={24} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 text-xs font-semibold">
+        
+        {/* Book Catalog Form */}
+        <div className="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl self-start">
+          <h3 className="text-sm font-extrabold text-slate-850 dark:text-white uppercase tracking-wider mb-5">
+            {editingBookId ? 'Edit Textbook Record' : 'Register New Textbook'}
+          </h3>
+          <form onSubmit={handleCreateOrUpdate} className="space-y-4 text-xs">
+            <div>
+              <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Book Title</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g., Fundamentals of Computer Networks"
+                required
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Author name(s)</label>
+              <input
+                type="text"
+                value={author}
+                onChange={(e) => setAuthor(e.target.value)}
+                placeholder="e.g., Andrew S. Tanenbaum"
+                required
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-medium"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">ISBN Number</label>
+                <input
+                  type="text"
+                  value={isbn}
+                  onChange={(e) => setIsbn(e.target.value)}
+                  placeholder="e.g., 978-01321"
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-medium"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Subject Category</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-bold"
+                >
+                  <option value="CSE">CSE</option>
+                  <option value="CSE (AI & ML)">CSE (AI & ML)</option>
+                  <option value="CSE (Data Science)">CSE (Data Science)</option>
+                  <option value="ECE">ECE</option>
+                  <option value="EEE">EEE</option>
+                  <option value="Mechanical">Mechanical</option>
+                  <option value="Civil">Civil</option>
+                  <option value="BCA">BCA</option>
+                  <option value="BBA">BBA</option>
+                  <option value="MBA">MBA</option>
+                  <option value="MCA">MCA</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Total Copies Count</label>
+              <input
+                type="number"
+                min="1"
+                value={totalCopies}
+                onChange={(e) => setTotalCopies(e.target.value)}
+                required
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-medium"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex-1 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold transition-all shadow-md shadow-teal-500/10 flex items-center justify-center gap-2"
+              >
+                <Plus size={14} />
+                <span>{editingBookId ? 'Save Edits' : 'Register Book'}</span>
+              </button>
+              {editingBookId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingBookId(null);
+                    setTitle('');
+                    setAuthor('');
+                    setIsbn('');
+                    setCategory('CSE');
+                    setTotalCopies(5);
+                  }}
+                  className="px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-400 rounded-xl font-bold"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
+
+        {/* Textbook Table List */}
+        <div className="lg:col-span-3 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-4">
+              <span className="text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Catalog Inventory</span>
+              <button onClick={loadBooks} className="p-1.5 bg-slate-50 dark:bg-slate-800 text-slate-500 rounded-lg"><RefreshCw size={12} /></button>
+            </div>
+
+            <div className="relative">
+              <Search size={14} className="absolute left-3.5 top-3 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search catalog by title, author, isbn..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white"
+              />
+            </div>
+
+            {loading ? (
+              <div className="py-20 text-center animate-pulse text-slate-450">Loading books list...</div>
+            ) : filteredBooks.length === 0 ? (
+              <div className="py-20 text-center text-slate-450 dark:text-slate-500">No books found matching search filters.</div>
+            ) : (
+              <div className="border border-slate-100 dark:border-slate-850 rounded-2xl overflow-hidden overflow-x-auto">
+                <table className="w-full text-left border-collapse text-[11px]">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800/80 text-slate-400 font-bold uppercase tracking-wider">
+                      <th className="px-4 py-3">Book Info</th>
+                      <th className="px-4 py-3">Category</th>
+                      <th className="px-4 py-3 text-center">Circulation</th>
+                      <th className="px-4 py-3 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-800 dark:text-slate-250 font-bold">
+                    {filteredBooks.map(book => (
+                      <tr key={book.bookId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
+                        <td className="px-4 py-3">
+                          <h4 className="font-extrabold text-slate-850 dark:text-slate-100 text-xs">{book.title}</h4>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">{book.author} • ISBN: {book.isbn}</p>
+                        </td>
+                        <td className="px-4 py-3">{book.category}</td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={`px-2 py-0.5 rounded text-[9.5px] font-black ${
+                            book.availableCopies === 0 ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'
+                          }`}>
+                            {book.availableCopies} / {book.totalCopies} available
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <div className="flex justify-center gap-2">
+                            <button onClick={() => handleEdit(book)} className="p-1.5 bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 rounded-lg"><Edit size={12} /></button>
+                            <button onClick={() => handleDelete(book.bookId)} className="p-1.5 bg-rose-50 dark:bg-slate-800 text-rose-600 dark:text-rose-400 rounded-lg"><Trash2 size={12} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+
+      </div>
+
+      {/* Custom Confirmation Modal */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-sm p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl space-y-6">
+            <h4 className="text-xs font-black text-rose-500 uppercase tracking-wider">Delete Textbook</h4>
+            <p className="text-xs text-slate-550 dark:text-slate-400 font-bold">
+              Are you sure you want to remove this textbook from catalog?
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => executeDelete(confirmDeleteId)}
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold transition-all"
+              >
+                Confirm
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteId(null)}
+                className="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-400 rounded-xl font-bold"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
+
+// 2. LIBRARY CIRCULATION MANAGEMENT
+const LibrarianCirculation = () => {
+  const [issues, setIssues] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [checkouts, setCheckouts] = useState([]);
+  const [history, setHistory] = useState([]);
+  
+  // Search state
+  const [circSearch, setCircSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const { showToast } = useAuth();
+
+  // Direct checkout states
+  const [rollNumber, setRollNumber] = useState('');
+  const [bookIsbn, setBookIsbn] = useState('');
+  const [borrowerType, setBorrowerType] = useState('student');
+  const [issuing, setIssuing] = useState(false);
+
+  const loadCirculationData = async () => {
+    try {
+      setLoading(true);
+      const allIssues = await mockDB.getAllIssuedBooks();
+      setIssues(allIssues);
+      setRequests(allIssues.filter(i => i.status === 'requested'));
+      setCheckouts(allIssues.filter(i => i.status === 'issued'));
+      setHistory(allIssues.filter(i => i.status === 'returned'));
+    } catch (_) {}
+    finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCirculationData();
+  }, []);
+
+  const handleApprove = async (tid) => {
+    try {
+      await mockDB.approveBookRequest(tid);
+      showToast('Book issue request approved!', 'success');
+      loadCirculationData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  const handleReturn = async (tid) => {
+    try {
+      const returned = await mockDB.returnBook(tid);
+      if (returned.fine > 0) {
+        showToast(`Book returned! Collected fine of ₹${returned.fine} for overdue delay.`, 'warning');
+      } else {
+        showToast('Book return processed successfully.', 'success');
+      }
+      loadCirculationData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  const handleDirectIssue = async (e) => {
+    e.preventDefault();
+    if (!rollNumber || !bookIsbn) return;
+
+    try {
+      setIssuing(true);
+      const users = await mockDB.getAllUsers();
+      const borrower = users.find(u => 
+        u.rollNumber?.toLowerCase() === rollNumber.toLowerCase() || 
+        u.uid?.toLowerCase() === rollNumber.toLowerCase()
+      );
+
+      if (!borrower) {
+        showToast('Borrower Roll Number or UID not found in KBN database.', 'error');
+        return;
+      }
+
+      await mockDB.issueBookDirectly(
+        borrower.uid,
+        borrower.fullName,
+        borrower.rollNumber || borrower.uid,
+        borrowerType,
+        bookIsbn
+      );
+
+      showToast(`Book issued directly to ${borrower.fullName}!`, 'success');
+      setRollNumber('');
+      setBookIsbn('');
+      loadCirculationData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setIssuing(false);
+    }
+  };
+
+  // Filter lists based on search string
+  const filteredRequests = requests.filter(r => 
+    r.studentName.toLowerCase().includes(circSearch.toLowerCase()) ||
+    r.bookTitle.toLowerCase().includes(circSearch.toLowerCase()) ||
+    r.rollNumber.toLowerCase().includes(circSearch.toLowerCase())
+  );
+
+  const filteredCheckouts = checkouts.filter(c => 
+    c.studentName.toLowerCase().includes(circSearch.toLowerCase()) ||
+    c.bookTitle.toLowerCase().includes(circSearch.toLowerCase()) ||
+    c.rollNumber.toLowerCase().includes(circSearch.toLowerCase())
+  );
+
+  const filteredHistory = history.filter(h => 
+    h.studentName.toLowerCase().includes(circSearch.toLowerCase()) ||
+    h.bookTitle.toLowerCase().includes(circSearch.toLowerCase()) ||
+    h.rollNumber.toLowerCase().includes(circSearch.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-6 text-xs font-semibold">
+      
+      {/* Title Banner */}
+      <div className="p-6 rounded-3xl bg-gradient-to-r from-indigo-650 to-blue-700 text-white shadow-xl flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-extrabold font-display">Circulation Board & Checkout logs</h2>
+          <p className="text-sm text-indigo-100 mt-1">Approve checkout requests, record returns and audit library ledger</p>
+        </div>
+        <div className="p-3.5 bg-white/10 rounded-2xl border border-white/10">
+          <CheckSquare size={24} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        
+        {/* Direct Issue Form */}
+        <div className="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl self-start">
+          <h3 className="text-sm font-extrabold text-slate-850 dark:text-white uppercase tracking-wider mb-5">Direct Book Issue</h3>
+          <form onSubmit={handleDirectIssue} className="space-y-4">
+            <div>
+              <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Borrower Roll No. / Employee ID</label>
+              <input
+                type="text"
+                value={rollNumber}
+                onChange={(e) => setRollNumber(e.target.value)}
+                placeholder="e.g., CSE-2023-001"
+                required
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Book ISBN Number</label>
+              <input
+                type="text"
+                value={bookIsbn}
+                onChange={(e) => setBookIsbn(e.target.value)}
+                placeholder="e.g., 978-0262033848"
+                required
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Borrower Role Class</label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-1.5 cursor-pointer text-slate-800 dark:text-slate-350">
+                  <input
+                    type="radio"
+                    name="borrowerType"
+                    checked={borrowerType === 'student'}
+                    onChange={() => setBorrowerType('student')}
+                  />
+                  <span>Student (Fine Applicable)</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer text-slate-800 dark:text-slate-350">
+                  <input
+                    type="radio"
+                    name="borrowerType"
+                    checked={borrowerType === 'faculty'}
+                    onChange={() => setBorrowerType('faculty')}
+                  />
+                  <span>Faculty (Exempted)</span>
+                </label>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={issuing}
+              className="w-full py-3 bg-blue-650 hover:bg-blue-755 text-white rounded-xl font-bold transition-all shadow-md shadow-blue-500/10 flex items-center justify-center gap-2"
+            >
+              <span>{issuing ? 'Processing...' : 'Complete Direct Issue'}</span>
+              <ArrowRight size={14} />
+            </button>
+          </form>
+        </div>
+
+        {/* Circulation Logs & Table lists */}
+        <div className="lg:col-span-3 space-y-6">
+          
+          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl">
+            
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-4 mb-4">
+              <span className="text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Audit & Filter Records</span>
+              <button onClick={loadCirculationData} className="p-1.5 bg-slate-50 dark:bg-slate-800 text-slate-500 rounded-lg"><RefreshCw size={12} /></button>
+            </div>
+
+            <div className="relative mb-5">
+              <Search size={14} className="absolute left-3.5 top-3 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search transactions by borrower name, roll no, or title..."
+                value={circSearch}
+                onChange={(e) => setCircSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white"
+              />
+            </div>
+
+            {/* Subsections */}
+            <div className="space-y-6">
+              
+              {/* Requests */}
+              <div className="space-y-3">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Pending Borrow Requests ({filteredRequests.length})</span>
+                {filteredRequests.length === 0 ? (
+                  <div className="p-4 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-slate-450">No pending student checkout requests.</div>
+                ) : (
+                  <div className="space-y-2">
+                    {filteredRequests.map(req => (
+                      <div key={req.transactionId} className="p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-850 rounded-xl flex items-center justify-between">
+                        <div>
+                          <h4 className="font-extrabold text-slate-850 dark:text-white text-xs">{req.bookTitle}</h4>
+                          <p className="text-[10px] text-slate-455 mt-0.5">Borrower: {req.studentName} ({req.rollNumber})</p>
+                        </div>
+                        <button
+                          onClick={() => handleApprove(req.transactionId)}
+                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black"
+                        >
+                          Approve Request
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Active checkouts */}
+              <div className="space-y-3">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Active Borrow Checkouts ({filteredCheckouts.length})</span>
+                {filteredCheckouts.length === 0 ? (
+                  <div className="p-4 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-slate-450">No books currently checked out.</div>
+                ) : (
+                  <div className="space-y-2">
+                    {filteredCheckouts.map(item => (
+                      <div key={item.transactionId} className="p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-850 rounded-xl flex items-center justify-between">
+                        <div>
+                          <h4 className="font-extrabold text-slate-850 dark:text-white text-xs">{item.bookTitle}</h4>
+                          <p className="text-[10px] text-slate-455 mt-0.5">Checked out to: {item.studentName} ({item.rollNumber})</p>
+                          <div className="flex gap-2 items-center mt-1 text-[9.5px] font-bold text-slate-400">
+                            <span>Issued: {item.issueDate}</span>
+                            <span>●</span>
+                            <span>Due: {item.dueDate}</span>
+                            {item.fine > 0 && (
+                              <>
+                                <span>●</span>
+                                <span className="text-rose-500 font-extrabold">Fine: ₹{item.fine}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleReturn(item.transactionId)}
+                          className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-black"
+                        >
+                          Record Return
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Return History */}
+              <div className="space-y-3">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Recent Return Logs ({filteredHistory.length})</span>
+                {filteredHistory.length === 0 ? (
+                  <div className="p-4 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-slate-450">No returned transaction records found.</div>
+                ) : (
+                  <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                    {filteredHistory.map(hist => (
+                      <div key={hist.transactionId} className="p-3 bg-slate-50 dark:bg-slate-800/10 border border-slate-100 dark:border-slate-850 rounded-xl flex items-center justify-between">
+                        <div>
+                          <h4 className="font-extrabold text-slate-700 dark:text-slate-300 text-xs">{hist.bookTitle}</h4>
+                          <p className="text-[9.5px] text-slate-400 mt-0.5">Borrower: {hist.studentName} ({hist.rollNumber})</p>
+                          <p className="text-[9px] text-slate-400 font-semibold mt-0.5">Returned on: {hist.returnDate} {hist.fine > 0 && `(Fine paid: ₹${hist.fine})`}</p>
+                        </div>
+                        <span className="text-[9.5px] px-2 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-500 rounded font-black uppercase">Returned</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  );
+};
