@@ -444,6 +444,9 @@ const StudentDashboard = ({ student, isParent }) => {
 
       </div>
 
+      {/* Principal, Ward Counsellor & Department Faculty Directory */}
+      <StudentAcademicContacts student={student} />
+
     </div>
   );
 };
@@ -1525,6 +1528,178 @@ const StudentLibrary = ({ student, isParent }) => {
   );
 };
 
+// ACADEMIC CONTACTS (PRINCIPAL, MY WARD COUNSELLOR & MY FACULTY)
+const StudentAcademicContacts = ({ student }) => {
+  const [principal, setPrincipal] = useState(null);
+  const [wardCounsellor, setWardCounsellor] = useState(null);
+  const [facultyList, setFacultyList] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAcademicContacts = async () => {
+      try {
+        setLoading(true);
+        const users = JSON.parse(localStorage.getItem('acad_users') || '[]');
+
+        // 1. Resolve Principal Profile
+        const principalUser = users.find(u => u.role === 'principal');
+        setPrincipal({
+          fullName: principalUser?.fullName || principalUser?.name || 'Dr. Arthur Pendelton',
+          designation: 'Principal',
+          email: principalUser?.email || 'principal@kbn.edu',
+          collegeName: 'KBN College',
+          profilePhotoUrl: principalUser?.profilePhotoUrl || null
+        });
+
+        // 2. Resolve Active Branch Ward Counsellor assigned by HOD
+        const dept = student?.department || 'B.Sc. Computer Science (CS)';
+        const activeCounsellor = await mockDB.getActiveBranchWardCounsellor(dept);
+        
+        if (activeCounsellor) {
+          const counsellorUser = users.find(u => u.uid === activeCounsellor.facultyId || u.email === activeCounsellor.facultyEmail);
+          setWardCounsellor({
+            ...activeCounsellor,
+            profilePhotoUrl: counsellorUser?.profilePhotoUrl || activeCounsellor.profilePhotoUrl || null
+          });
+        } else {
+          setWardCounsellor(null);
+        }
+
+        // 3. Resolve Faculty for student's department
+        const deptFaculty = users.filter(u => u.role === 'faculty' && (!student?.department || u.department === student.department));
+        setFacultyList(deptFaculty.length > 0 ? deptFaculty : [
+          { uid: 'fac-1', fullName: 'Prof. Charles Xavier', designation: 'Professor', department: student?.department || 'CSE', subject: 'Machine Learning', email: 'xavier@kbn.edu', profilePhotoUrl: null },
+          { uid: 'fac-2', fullName: 'Prof. Ravi Kumar', designation: 'Associate Professor', department: student?.department || 'CSE', subject: 'Python Programming', email: 'ravi@kbn.edu', profilePhotoUrl: null },
+          { uid: 'fac-3', fullName: 'Prof. Priya Sharma', designation: 'Assistant Professor', department: student?.department || 'CSE', subject: 'Database Management Systems', email: 'priya@kbn.edu', profilePhotoUrl: null }
+        ]);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAcademicContacts();
+  }, [student]);
+
+  if (loading) return <div className="p-4 text-center text-slate-400 text-xs">Loading academic contacts...</div>;
+
+  return (
+    <div className="space-y-6 text-xs font-semibold">
+      
+      {/* 1. PRINCIPAL & 2. MY WARD COUNSELLOR CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* 1. PRINCIPAL DETAILS */}
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md flex items-start gap-4">
+          {principal?.profilePhotoUrl ? (
+            <img src={principal.profilePhotoUrl} alt={principal.fullName} className="w-16 h-16 rounded-2xl object-cover border-2 border-amber-400/50 shadow-lg shrink-0" />
+          ) : (
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-600 text-slate-950 font-black text-xl flex items-center justify-center shadow-lg border-2 border-amber-400/50 shrink-0">
+              {principal?.fullName ? principal.fullName.split(' ').map(n => n[0]).join('') : 'DA'}
+            </div>
+          )}
+          <div className="space-y-1 overflow-hidden">
+            <span className="px-2.5 py-0.5 bg-amber-400/10 text-amber-600 dark:text-amber-400 text-[9.5px] font-black uppercase rounded-full border border-amber-400/20">
+              College Leadership
+            </span>
+            <h3 className="text-base font-black text-slate-900 dark:text-white truncate mt-1">{principal?.fullName}</h3>
+            <p className="text-xs font-bold text-purple-600 dark:text-purple-400">{principal?.designation} • {principal?.collegeName}</p>
+            <a href={`mailto:${principal?.email}`} className="text-[11px] text-slate-500 hover:text-purple-600 block truncate font-medium">
+              ✉ {principal?.email}
+            </a>
+          </div>
+        </div>
+
+        {/* 2. MY WARD COUNSELLOR */}
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md flex items-start gap-4">
+          {wardCounsellor ? (
+            <>
+              {wardCounsellor.profilePhotoUrl ? (
+                <img src={wardCounsellor.profilePhotoUrl} alt={wardCounsellor.facultyName} className="w-16 h-16 rounded-2xl object-cover border-2 border-emerald-500/40 shadow-lg shrink-0" />
+              ) : (
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white font-black text-xl flex items-center justify-center shadow-lg shrink-0">
+                  {wardCounsellor.facultyName?.substring(0, 2).toUpperCase() || 'WC'}
+                </div>
+              )}
+              <div className="space-y-1 overflow-hidden">
+                <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-600 text-[9.5px] font-black uppercase rounded-full border border-emerald-500/20">
+                  My Ward Counsellor
+                </span>
+                <h3 className="text-base font-black text-slate-900 dark:text-white truncate mt-1">{wardCounsellor.facultyName}</h3>
+                <p className="text-xs font-bold text-emerald-600">{wardCounsellor.department}</p>
+                <a href={`mailto:${wardCounsellor.facultyEmail}`} className="text-[11px] text-slate-500 hover:text-emerald-600 block truncate font-medium">
+                  ✉ {wardCounsellor.facultyEmail}
+                </a>
+                {wardCounsellor.facultyId && <span className="text-[10px] text-slate-400 block">Faculty ID: {wardCounsellor.facultyId}</span>}
+              </div>
+            </>
+          ) : (
+            <div className="w-full text-center p-4">
+              <span className="px-3 py-1 bg-amber-500/10 text-amber-600 text-[10px] font-black uppercase rounded-full border border-amber-500/20">
+                My Ward Counsellor
+              </span>
+              <p className="text-sm font-black text-amber-600 dark:text-amber-400 mt-2">🟡 Ward Counsellor Not Assigned Yet</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">Awaiting HOD assignment for your department</p>
+            </div>
+          )}
+        </div>
+
+      </div>
+
+      {/* 3. MY FACULTY DIRECTORY */}
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div>
+            <h3 className="text-base font-black text-slate-900 dark:text-white">My Department Faculty</h3>
+            <p className="text-xs text-slate-400">Teaching faculty members assigned to {student?.department || 'your department'}</p>
+          </div>
+          <span className="px-2.5 py-0.5 bg-purple-500/10 text-purple-600 text-[10px] font-bold rounded-full">
+            Department Directory
+          </span>
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800">
+          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+              <tr>
+                <th className="p-3">Photo</th>
+                <th className="p-3">Faculty Name</th>
+                <th className="p-3">Designation</th>
+                <th className="p-3">Department</th>
+                <th className="p-3">Subject / Course</th>
+                <th className="p-3">Email Contact</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {facultyList.map((fac) => (
+                <tr key={fac.uid || fac.email} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                  <td className="p-3">
+                    {fac.profilePhotoUrl ? (
+                      <img src={fac.profilePhotoUrl} alt={fac.fullName} className="w-9 h-9 rounded-xl object-cover border border-purple-500/30 shadow-sm" />
+                    ) : (
+                      <div className="w-9 h-9 rounded-xl bg-purple-600/10 text-purple-600 font-bold text-xs flex items-center justify-center border border-purple-500/20">
+                        {fac.fullName ? fac.fullName.substring(0, 2).toUpperCase() : 'FC'}
+                      </div>
+                    )}
+                  </td>
+                  <td className="p-3 font-extrabold text-slate-900 dark:text-white">{fac.fullName}</td>
+                  <td className="p-3 text-slate-500 font-bold">{fac.designation || 'Faculty Member'}</td>
+                  <td className="p-3 text-purple-600 font-bold">{fac.department || student?.department}</td>
+                  <td className="p-3 font-bold text-slate-700 dark:text-slate-300">{fac.subject || fac.assignedSubject || 'Computer Science'}</td>
+                  <td className="p-3">
+                    <a href={`mailto:${fac.email}`} className="text-purple-600 font-medium hover:underline">{fac.email}</a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  );
+};
+
 // 9. STUDENT COUNSELLING VIEW ASSIGNED MENTOR
 const StudentCounselling = ({ student, isParent }) => {
   const [logs, setLogs] = useState([]);
@@ -1589,6 +1764,9 @@ const StudentCounselling = ({ student, isParent }) => {
 
   return (
     <div className="space-y-6 text-xs font-semibold">
+      
+      {/* Principal, Ward Counsellor & Department Faculty Directory */}
+      <StudentAcademicContacts student={student} />
       
       {/* Banner Assigned Counsellor or Unassigned State */}
       {!counsellor ? (
