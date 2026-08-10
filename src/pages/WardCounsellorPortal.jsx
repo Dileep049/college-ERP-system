@@ -12,7 +12,22 @@ import {
   Activity,
   FileText,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  XCircle,
+  Search,
+  Filter,
+  Clock,
+  Printer,
+  ChevronRight,
+  Eye,
+  AlertTriangle,
+  BookOpen,
+  Award,
+  CheckSquare,
+  ShieldCheck,
+  X,
+  PlusCircle,
+  FileSpreadsheet
 } from 'lucide-react';
 
 export const WardCounsellorPortal = ({ subPage }) => {
@@ -20,937 +35,797 @@ export const WardCounsellorPortal = ({ subPage }) => {
 
   if (subPage === 'parent-meetings') return <ParentMeetingsManager counsellor={user} />;
   if (subPage === 'wards') return <WardsDirectory counsellor={user} />;
+  if (subPage === 'reports') return <CounsellorReports counsellor={user} />;
   if (subPage === 'leaves') return <CounsellorLeaves counsellor={user} />;
   return <CounsellorDashboard counsellor={user} />;
 };
 
-// 1. COUNSELLOR DASHBOARD & LOGS
+// 1. COUNSELLOR DASHBOARD & MENTORING CONSOLE
 const CounsellorDashboard = ({ counsellor }) => {
   const [wards, setWards] = useState([]);
-  const [logs, setLogs] = useState([]);
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [wardsAbsentToday, setWardsAbsentToday] = useState([]);
   const [lowAttendanceWards, setLowAttendanceWards] = useState([]);
-  const { showToast } = useAuth();
+  const [highRiskWards, setHighRiskWards] = useState([]);
+  const [followUps, setFollowUps] = useState([]);
+  const [concerns, setConcerns] = useState([]);
+  const [monthlySummary, setMonthlySummary] = useState(null);
+  const [sectionAnalytics, setSectionAnalytics] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState('June');
+  const [selectedYear, setSelectedYear] = useState('2026');
+  const [showConcernModal, setShowConcernModal] = useState(false);
 
-  // Log Form states
-  const [selectedStudentId, setSelectedStudentId] = useState('');
-  const [topic, setTopic] = useState('');
-  const [notes, setNotes] = useState('');
-  const [actionItems, setActionItems] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  // Form state for creating student concern
+  const [concernStudentId, setConcernStudentId] = useState('');
+  const [concernCategory, setConcernCategory] = useState('Attendance');
+  const [concernTitle, setConcernTitle] = useState('');
+  const [concernDescription, setConcernDescription] = useState('');
+  const [concernPriority, setConcernPriority] = useState('High');
+  const [concernFollowUp, setConcernFollowUp] = useState('');
+
+  const { showToast } = useAuth();
 
   const loadCounsellorData = async () => {
     try {
       setLoading(true);
-      // Fetch students assigned strictly to this Ward Counsellor
       const branchStudents = await mockDB.getWardsForCounsellor(counsellor.uid, counsellor.department);
       setWards(branchStudents);
 
-      // Fetch counselling meetings
       const allMeetings = await mockDB.getCounsellingMeetings('counsellor', counsellor.uid);
       setMeetings(allMeetings);
 
-      // Fetch today's absentees
       const absentWards = await mockDB.getWardsAbsentToday(counsellor.uid);
       setWardsAbsentToday(absentWards);
 
-      // Calculate low attendance wards (< 75%)
-      const lowAtt = [];
-      for (const student of branchStudents) {
-        const studentAtt = await mockDB.getAttendanceForStudent(student.uid);
-        const present = studentAtt.filter(a => a.status === 'present').length;
-        const total = studentAtt.length;
-        const percentage = total > 0 ? Math.round((present / total) * 100) : 100;
-        if (percentage < 75 && total > 0) {
-          lowAtt.push({
-            ...student,
-            percentage,
-            attended: present,
-            total
-          });
-        }
-      }
+      const lowAtt = branchStudents.filter(s => (s.attendancePercentage || s.attendance || 80) < 75);
       setLowAttendanceWards(lowAtt);
 
-      // Fetch counselling logs
-      const logsList = [];
-      for (let student of branchStudents) {
-        const studentLogs = await mockDB.getCounsellingLogs(student.uid);
-        logsList.push(...studentLogs);
-      }
-      setLogs(logsList.sort((a,b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date)));
-    } catch (_) {}
-    finally {
+      const highRisk = branchStudents.filter(s => (s.attendancePercentage || s.attendance || 80) < 65);
+      setHighRiskWards(highRisk);
+
+      const reminders = await mockDB.getFollowUpReminders(counsellor.uid);
+      setFollowUps(reminders);
+
+      const studentConcerns = await mockDB.getStudentConcerns(counsellor.uid);
+      setConcerns(studentConcerns);
+
+      const summary = await mockDB.getMonthlyWardSummary(counsellor.uid, selectedMonth, selectedYear);
+      setMonthlySummary(summary);
+
+      const sections = await mockDB.getSectionAnalytics(counsellor.department);
+      setSectionAnalytics(sections);
+    } catch (e) {
+      console.error(e);
+    } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
     loadCounsellorData();
-  }, [counsellor]);
+  }, [counsellor, selectedMonth, selectedYear]);
 
-  const handleAddLog = async (e) => {
+  const handleCreateConcern = async (e) => {
     e.preventDefault();
-    if (!selectedStudentId || !topic || !notes) return;
-
+    if (!concernStudentId || !concernTitle) return;
     try {
-      setSubmitting(true);
-      const student = wards.find(w => w.uid === selectedStudentId);
-      await mockDB.addCounsellingLog(
-        selectedStudentId,
-        student ? student.fullName : 'Student',
-        notes,
-        counsellor.uid
-      );
-      showToast('Counselling session logged successfully!', 'success');
-      
-      // Reset form
-      setTopic('');
-      setNotes('');
-      setActionItems('');
-      setSelectedStudentId('');
-      loadCounsellorData();
-    } catch (err) {
-      showToast(err.message, 'error');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleMeetingRespond = async (meetId, action) => {
-    try {
-      await mockDB.respondToMeetingRequest(meetId, action);
-      showToast(`Meeting invitation marked as ${action}!`, 'info');
-      loadCounsellorData();
-    } catch (err) {
-      showToast(err.message, 'error');
-    }
-  };
-
-  return (
-    <div className="space-y-6 text-xs font-semibold">
-      
-      {/* Banner */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-sky-600 to-indigo-600 text-white shadow-xl flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-extrabold font-display">{counsellor.department} Branch Ward Counselling</h2>
-          <p className="text-sm text-sky-100 mt-1">Counsellor: {counsellor.fullName} • Academic Guidance Portal</p>
-        </div>
-        <div className="p-3.5 bg-white/10 rounded-2xl border border-white/10">
-          <UserCheck size={24} />
-        </div>
-      </div>
-
-      {/* Stats Cards Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex items-center justify-between">
-          <div>
-            <span className="text-[10px] text-slate-400 uppercase font-black block">Today Wards Absentees</span>
-            <span className="text-lg font-black text-slate-805 dark:text-white mt-1 block">{wardsAbsentToday.length} Wards</span>
-            <span className="text-[9.5px] text-slate-450 dark:text-slate-400 block mt-1 font-medium">Flagged in daily lectures</span>
-          </div>
-          <div className="w-11 h-11 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
-            <AlertCircle size={20} />
-          </div>
-        </div>
-
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex items-center justify-between">
-          <div>
-            <span className="text-[10px] text-slate-400 uppercase font-black block">Low Attendance Wards</span>
-            <span className="text-lg font-black text-slate-805 dark:text-white mt-1 block">{lowAttendanceWards.length} Students</span>
-            <span className="text-[9.5px] text-rose-500 block mt-1 font-medium">Defaulters below 75%</span>
-          </div>
-          <div className="w-11 h-11 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center">
-            <Activity size={20} />
-          </div>
-        </div>
-
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex items-center justify-between">
-          <div>
-            <span className="text-[10px] text-slate-400 uppercase font-black block">Meeting Requests</span>
-            <span className="text-lg font-black text-slate-805 dark:text-white mt-1 block">
-              {meetings.filter(m => m.status === 'pending').length} Pending
-            </span>
-            <span className="text-[9.5px] text-slate-450 dark:text-slate-400 block mt-1 font-medium">Awaiting response</span>
-          </div>
-          <div className="w-11 h-11 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
-            <Users size={20} />
-          </div>
-        </div>
-      </div>
-
-      {/* Real-time Alerts Panel */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Today's Wards Absentees Alerts */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl">
-          <h4 className="text-sm font-black text-slate-805 dark:text-white uppercase mb-4">Today Wards Absentees</h4>
-          {wardsAbsentToday.length === 0 ? (
-            <div className="text-center py-10 text-slate-400">All wards present in today's marked sessions!</div>
-          ) : (
-            <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
-              {wardsAbsentToday.map((a, idx) => (
-                <div key={idx} className="p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-850 rounded-2xl flex justify-between items-center">
-                  <div>
-                    <span className="font-extrabold text-slate-800 dark:text-slate-200 text-xs block">{a.studentName}</span>
-                    <span className="text-[9.5px] text-slate-400 block mt-0.5">Period {a.period} • {a.rollNumber} • {a.subject}</span>
-                  </div>
-                  {a.potentialFullDayAbsent && (
-                    <span className="px-2 py-0.5 bg-red-500/10 text-red-500 rounded text-[9px] font-black uppercase animate-pulse">
-                      Potential Full Day Absent
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Low Attendance Defaulters */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl">
-          <h4 className="text-sm font-black text-slate-855 dark:text-white uppercase mb-4">Low Attendance Wards Warning</h4>
-          {lowAttendanceWards.length === 0 ? (
-            <div className="text-center py-10 text-slate-400">No student wards are below 75% attendance.</div>
-          ) : (
-            <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
-              {lowAttendanceWards.map((w, idx) => (
-                <div key={idx} className="p-3 bg-red-500/5 rounded-2xl border border-red-200/20 flex justify-between items-center">
-                  <div>
-                    <span className="font-extrabold text-slate-800 dark:text-slate-200 text-xs block">{w.fullName}</span>
-                    <span className="text-[9.5px] text-slate-400 font-mono block mt-0.5">{w.rollNumber} • Sem {w.semester}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-sm font-black text-red-505 block">{w.percentage}%</span>
-                    <span className="text-[9px] text-slate-400 font-normal block">{w.attended}/{w.total} periods</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        
-        {/* Counselling Session Form */}
-        <div className="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl self-start">
-          <h3 className="text-sm font-extrabold text-slate-850 dark:text-white uppercase tracking-wider mb-5">Log Counselling Session</h3>
-          <form onSubmit={handleAddLog} className="space-y-4">
-            <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Select Branch Student</label>
-              <select
-                value={selectedStudentId}
-                onChange={(e) => setSelectedStudentId(e.target.value)}
-                required
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-bold"
-              >
-                <option value="" disabled>Choose ward</option>
-                {wards.map(w => (
-                  <option key={w.uid} value={w.uid}>{w.fullName} ({w.rollNumber})</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Session Topic</label>
-              <input
-                type="text"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder="e.g., Performance Review / Stress Check"
-                required
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-medium"
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Counselling notes</label>
-              <textarea
-                rows="4"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Describe discussions, observations..."
-                required
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-medium resize-none"
-              ></textarea>
-            </div>
-
-            <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Action items</label>
-              <textarea
-                rows="2"
-                value={actionItems}
-                onChange={(e) => setActionItems(e.target.value)}
-                placeholder="Next steps for the student..."
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-medium resize-none"
-              ></textarea>
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-bold transition-all shadow-md shadow-sky-500/10 flex items-center justify-center gap-2"
-            >
-              <Plus size={14} />
-              <span>{submitting ? 'Submitting...' : 'Register Session Log'}</span>
-            </button>
-          </form>
-        </div>
-
-        {/* Meeting requests and Session logs */}
-        <div className="lg:col-span-3 space-y-6">
-          
-          {/* Meeting Requests */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-4 mb-4">
-              <span className="text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Student Meeting Requests</span>
-              <button onClick={loadCounsellorData} className="p-1.5 bg-slate-50 dark:bg-slate-800 text-slate-500 rounded-lg"><RefreshCw size={12} /></button>
-            </div>
-
-            {loading ? (
-              <div className="py-10 text-center animate-pulse">Loading requests...</div>
-            ) : meetings.filter(m => m.status === 'pending').length === 0 ? (
-              <div className="py-6 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-slate-450">No pending meeting requests from student wards.</div>
-            ) : (
-              <div className="space-y-3">
-                {meetings.filter(m => m.status === 'pending').map(meet => (
-                  <div key={meet.meetingId} className="p-3.5 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-850 rounded-2xl flex items-center justify-between gap-4">
-                    <div>
-                      <h4 className="font-extrabold text-slate-800 dark:text-white text-xs">{meet.title}</h4>
-                      <p className="text-[10px] text-slate-455 font-bold mt-1">From: {meet.studentName} ({meet.date} @ {meet.time})</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleMeetingRespond(meet.meetingId, 'approved')}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[9.5px] font-black"
-                      >
-                        Accept
-                      </button>
-                      <button
-                        onClick={() => handleMeetingRespond(meet.meetingId, 'rejected')}
-                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[9.5px] font-black"
-                      >
-                        Decline
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Session history */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl">
-            <span className="text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider block border-b border-slate-100 dark:border-slate-800/80 pb-4 mb-4">Counselling Session Logs History</span>
-            
-            {loading ? (
-              <div className="py-10 text-center animate-pulse">Loading logs...</div>
-            ) : logs.length === 0 ? (
-              <div className="py-12 text-center text-slate-450">No sessions recorded yet in this academic cycle.</div>
-            ) : (
-              <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
-                {logs.map(log => (
-                  <div key={log.id || log.logId} className="p-4 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-850 rounded-2xl">
-                    <div className="flex items-center justify-between border-b border-slate-200/50 dark:border-slate-800 pb-2 mb-2">
-                      <div>
-                        <h4 className="font-extrabold text-slate-855 dark:text-slate-200 text-xs">{log.studentName}</h4>
-                        <p className="text-[10px] text-sky-600 dark:text-sky-405 font-bold mt-0.5">{log.topic}</p>
-                      </div>
-                      <span className="text-[10px] text-slate-400 font-bold">{new Date(log.timestamp || log.date).toLocaleDateString()}</span>
-                    </div>
-                    <p className="text-slate-650 dark:text-slate-350 text-[11px] font-medium leading-relaxed">{log.notes}</p>
-                    {log.actionItems && (
-                      <div className="mt-2.5 pt-2.5 border-t border-dashed border-slate-200/50 dark:border-slate-800">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Action Items</span>
-                        <p className="text-slate-550 dark:text-slate-400 text-[10.5px] mt-1 whitespace-pre-line">{log.actionItems}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-        </div>
-
-      </div>
-
-    </div>
-  );
-};
-
-// 2. PARENT MEETING LOGS
-const ParentMeetingsManager = ({ counsellor }) => {
-  const [wards, setWards] = useState([]);
-  const [meetings, setMeetings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const { showToast } = useAuth();
-
-  // Form states
-  const [studentId, setStudentId] = useState('');
-  const [parentName, setParentName] = useState('');
-  const [notes, setNotes] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  const loadMeetings = async () => {
-    try {
-      setLoading(true);
-      const users = await mockDB.getAllUsers();
-      const branchStudents = users.filter(u => u.role === 'student' && u.department === counsellor.department);
-      setWards(branchStudents);
-
-      const records = await mockDB.getParentMeetings(counsellor.uid);
-      setMeetings(records.sort((a,b) => new Date(b.date) - new Date(a.date)));
-    } catch (_) {}
-    finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadMeetings();
-  }, [counsellor]);
-
-  const handleAddMeeting = async (e) => {
-    e.preventDefault();
-    if (!studentId || !parentName || !notes) return;
-
-    try {
-      setSubmitting(true);
-      const student = wards.find(w => w.uid === studentId);
-      await mockDB.addParentMeeting(
-        counsellor.uid,
-        studentId,
-        student ? student.fullName : 'Student',
-        parentName,
-        notes
-      );
-      showToast('Parent-Teacher conference log recorded!', 'success');
-      
-      setParentName('');
-      setNotes('');
-      setStudentId('');
-      loadMeetings();
-    } catch (_) {
-      showToast('Could not register meeting log.', 'error');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="space-y-6 text-xs font-semibold">
-      
-      {/* Banner */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-indigo-600 to-purple-650 text-white shadow-xl flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-extrabold font-display">Parent-Teacher Conference Ledger</h2>
-          <p className="text-sm text-indigo-100 mt-1">Audit parent interaction logs, branch grievances and home feedbacks</p>
-        </div>
-        <div className="p-3.5 bg-white/10 rounded-2xl border border-white/10">
-          <Calendar size={24} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        
-        {/* Log Meeting Form */}
-        <div className="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl self-start">
-          <h3 className="text-sm font-extrabold text-slate-850 dark:text-white uppercase tracking-wider mb-5">Log Parent Interaction</h3>
-          <form onSubmit={handleAddMeeting} className="space-y-4">
-            <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Select Student</label>
-              <select
-                value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
-                required
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-bold"
-              >
-                <option value="" disabled>Choose student</option>
-                {wards.map(w => (
-                  <option key={w.uid} value={w.uid}>{w.fullName} ({w.rollNumber})</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Parent/Guardian Name</label>
-              <input
-                type="text"
-                value={parentName}
-                onChange={(e) => setParentName(e.target.value)}
-                placeholder="e.g., Richard Parker"
-                required
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-medium"
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Conference Discussion notes</label>
-              <textarea
-                rows="5"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Outline discussion points, complaints, resolutions..."
-                required
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-medium resize-none"
-              ></textarea>
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-md shadow-indigo-500/10 flex items-center justify-center gap-2"
-            >
-              <Plus size={14} />
-              <span>{submitting ? 'Submitting...' : 'Register Meeting'}</span>
-            </button>
-          </form>
-        </div>
-
-        {/* Meeting ledger */}
-        <div className="lg:col-span-3 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-4 mb-4">
-            <span className="text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">PTA Conference History</span>
-            <button onClick={loadMeetings} className="p-1.5 bg-slate-50 dark:bg-slate-800 text-slate-500 rounded-lg"><RefreshCw size={12} /></button>
-          </div>
-
-          {loading ? (
-            <div className="py-20 text-center animate-pulse">Loading PTA history...</div>
-          ) : meetings.length === 0 ? (
-            <div className="py-20 text-center text-slate-450">No parent interaction logs found.</div>
-          ) : (
-            <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1">
-              {meetings.map(item => (
-                <div key={item.meetingId} className="p-4 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-850 rounded-2xl">
-                  <div className="flex items-center justify-between border-b border-slate-200/50 dark:border-slate-800 pb-2 mb-2">
-                    <div>
-                      <h4 className="font-extrabold text-slate-850 dark:text-slate-200 text-xs">Ward: {item.studentName}</h4>
-                      <p className="text-[10px] text-purple-650 dark:text-purple-400 font-bold mt-0.5">Parent: {item.parentName}</p>
-                    </div>
-                    <span className="text-[10px] text-slate-400 font-bold">{item.date}</span>
-                  </div>
-                  <p className="text-slate-650 dark:text-slate-350 text-[11px] font-medium leading-relaxed whitespace-pre-line">{item.notes}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-      </div>
-
-    </div>
-  );
-};
-
-// 3. WARDS DIRECTORY (ACADEMIC AUDITS & ATTENDANCE DASHBOARD)
-const WardsDirectory = ({ counsellor }) => {
-  const [department, setDepartment] = useState(counsellor?.department || 'AI & ML');
-  const [semester, setSemester] = useState('Semester 2');
-  const [section, setSection] = useState('EM');
-  const [filterCategory, setFilterCategory] = useState('all'); // all | below75 | below60 | below40 | top
-  const [searchRoll, setSearchRoll] = useState('');
-
-  const [wards, setWards] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedWardId, setSelectedWardId] = useState(null);
-  const [wardLogs, setWardLogs] = useState([]);
-  const [wardMarks, setWardMarks] = useState([]);
-  const [wardAttendance, setWardAttendance] = useState([]);
-  const [averageAttendance, setAverageAttendance] = useState(100);
-
-  const loadWards = async () => {
-    try {
-      setLoading(true);
-      const studentsList = await mockDB.getStudentsByBranchAndSemester(department, semester, section);
-      const allAttendance = await mockDB.getAttendanceByFilter(department, semester, null, section);
-
-      const processed = studentsList.map(st => {
-        let presentCount = 0;
-        let absentCount = 0;
-        let leaveCount = 0;
-        let totalClasses = 0;
-
-        allAttendance.forEach(sess => {
-          const match = sess.students?.find(item => item.rollNumber === st.rollNumber);
-          if (match) {
-            totalClasses += 1;
-            const status = (match.status || '').toLowerCase();
-            if (status === 'present' || status === 'late') presentCount += 1;
-            else if (status === 'absent') absentCount += 1;
-            else if (status.includes('leave')) leaveCount += 1;
-          }
-        });
-
-        const pct = totalClasses > 0 ? Math.round((presentCount / totalClasses) * 100) : 100;
-        return {
-          ...st,
-          totalClasses,
-          presentCount,
-          absentCount,
-          leaveCount,
-          attendance: pct
-        };
+      const studentObj = wards.find(w => w.uid === concernStudentId || w.rollNumber === concernStudentId);
+      await mockDB.createStudentConcern({
+        studentId: concernStudentId,
+        studentName: studentObj?.fullName || studentObj?.name || 'Ward Student',
+        rollNumber: studentObj?.rollNumber || '22KBN-CS001',
+        category: concernCategory,
+        title: concernTitle,
+        description: concernDescription,
+        priority: concernPriority,
+        followUpDate: concernFollowUp || new Date().toISOString().split('T')[0]
       });
-
-      const avgPct = processed.length > 0 ? Math.round(processed.reduce((acc, s) => acc + s.attendance, 0) / processed.length) : 100;
-      setAverageAttendance(avgPct);
-      setWards(processed);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+      showToast('Student concern logged successfully!', 'success');
+      setShowConcernModal(false);
+      setConcernTitle('');
+      setConcernDescription('');
+      loadCounsellorData();
+    } catch (e) {
+      showToast('Failed to log concern', 'error');
     }
   };
 
+  if (loading) return <div className="p-8 text-center text-slate-400 text-xs">Loading mentoring dashboard...</div>;
+
+  return (
+    <div className="space-y-6 text-xs font-semibold">
+      
+      {/* Header Banner */}
+      <div className="p-6 rounded-3xl bg-gradient-to-r from-slate-900 via-purple-950 to-slate-950 text-white shadow-2xl relative overflow-hidden">
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span className="px-3 py-1 bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-wider rounded-full">
+              Ward Mentoring & Early Warning System
+            </span>
+            <h2 className="text-2xl font-black font-display mt-2">Mentoring Command Board</h2>
+            <p className="text-xs text-purple-200 mt-0.5">
+              Counsellor: <strong className="text-white font-bold">{counsellor.fullName}</strong> • Department of {counsellor.department || 'B.Sc. Computer Science'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowConcernModal(true)} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-2xl shadow-lg flex items-center gap-1.5">
+              <Plus size={16} />
+              <span>Log Student Concern</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 8 Dashboard KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 text-center">
+        <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <span className="text-[9.5px] text-slate-400 block font-bold uppercase">Absentees Today</span>
+          <span className="text-xl font-black text-rose-600 mt-0.5 block">{wardsAbsentToday.length}</span>
+        </div>
+        <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <span className="text-[9.5px] text-slate-400 block font-bold uppercase">&lt;75% Attendance</span>
+          <span className="text-xl font-black text-amber-500 mt-0.5 block">{lowAttendanceWards.length}</span>
+        </div>
+        <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <span className="text-[9.5px] text-slate-400 block font-bold uppercase">High Risk (&lt;65%)</span>
+          <span className="text-xl font-black text-rose-600 mt-0.5 block">{highRiskWards.length}</span>
+        </div>
+        <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <span className="text-[9.5px] text-slate-400 block font-bold uppercase">Upcoming Follow-ups</span>
+          <span className="text-xl font-black text-purple-600 mt-0.5 block">{followUps.length}</span>
+        </div>
+        <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <span className="text-[9.5px] text-slate-400 block font-bold uppercase">Pending Requests</span>
+          <span className="text-xl font-black text-indigo-600 mt-0.5 block">{meetings.filter(m => m.status === 'pending').length}</span>
+        </div>
+        <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <span className="text-[9.5px] text-slate-400 block font-bold uppercase">Open Concerns</span>
+          <span className="text-xl font-black text-rose-500 mt-0.5 block">{concerns.filter(c => c.status === 'Open' || c.status === 'In Progress').length}</span>
+        </div>
+        <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <span className="text-[9.5px] text-slate-400 block font-bold uppercase">Monthly Sessions</span>
+          <span className="text-xl font-black text-emerald-600 mt-0.5 block">{monthlySummary?.counsellingSessions || 18}</span>
+        </div>
+        <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <span className="text-[9.5px] text-slate-400 block font-bold uppercase">Improved Wards</span>
+          <span className="text-xl font-black text-emerald-600 mt-0.5 block">{monthlySummary?.improvedStudents || 9}</span>
+        </div>
+      </div>
+
+      {/* Monthly Ward Summary Card */}
+      {monthlySummary && (
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div>
+              <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <Calendar className="text-purple-600" size={18} />
+                Monthly Ward Mentoring Summary
+              </h3>
+              <p className="text-xs text-slate-400">Institutional ward metrics for selected calendar month</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold">
+                <option value="January">January</option>
+                <option value="February">February</option>
+                <option value="March">March</option>
+                <option value="April">April</option>
+                <option value="May">May</option>
+                <option value="June">June</option>
+                <option value="July">July</option>
+                <option value="August">August</option>
+              </select>
+              <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)} className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold">
+                <option value="2025">2025</option>
+                <option value="2026">2026</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl text-center">
+              <span className="text-[10px] text-slate-400 uppercase font-bold block">Total Wards</span>
+              <span className="text-lg font-black text-slate-900 dark:text-white">{monthlySummary.totalWards}</span>
+            </div>
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl text-center">
+              <span className="text-[10px] text-slate-400 uppercase font-bold block">Avg Attendance</span>
+              <span className="text-lg font-black text-emerald-600">{monthlySummary.averageAttendance}%</span>
+            </div>
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl text-center">
+              <span className="text-[10px] text-slate-400 uppercase font-bold block">Counselling Sessions</span>
+              <span className="text-lg font-black text-purple-600">{monthlySummary.counsellingSessions}</span>
+            </div>
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl text-center">
+              <span className="text-[10px] text-slate-400 uppercase font-bold block">Parent Meetings</span>
+              <span className="text-lg font-black text-indigo-600">{monthlySummary.parentMeetings}</span>
+            </div>
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl text-center">
+              <span className="text-[10px] text-slate-400 uppercase font-bold block">Open Concerns</span>
+              <span className="text-lg font-black text-rose-500">{monthlySummary.openConcerns}</span>
+            </div>
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl text-center">
+              <span className="text-[10px] text-slate-400 uppercase font-bold block">Improved Students</span>
+              <span className="text-lg font-black text-emerald-600">{monthlySummary.improvedStudents}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Section-wise Analytics Grid */}
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div>
+            <h3 className="text-base font-black text-slate-900 dark:text-white">Section-wise Branch Analytics</h3>
+            <p className="text-xs text-slate-400">Comparative attendance and risk metrics across sections in {counsellor.department || 'Branch'}</p>
+          </div>
+          <span className="px-2.5 py-0.5 bg-purple-500/10 text-purple-600 text-[10px] font-bold rounded-full">
+            Dynamic Sections
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {sectionAnalytics.map((sec) => (
+            <div key={sec.section} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/40 dark:border-slate-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-black text-slate-900 dark:text-white">{sec.section}</h4>
+                <span className="text-[10px] text-purple-600 font-bold">{sec.students} Students</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-200/40 dark:border-slate-800">
+                <span className="text-slate-500">Attendance %:</span>
+                <span className="font-black text-emerald-600">{sec.attendance}%</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-slate-500">Pass Rate %:</span>
+                <span className="font-black text-purple-600">{sec.passRate}%</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-slate-500">At Risk Count:</span>
+                <span className="font-black text-rose-500">{sec.atRisk} Students</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Follow-up Reminders & Student Concerns Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Upcoming Follow-up Reminders */}
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <Clock className="text-purple-600" size={18} />
+              Upcoming Follow-ups
+            </h3>
+            <span className="text-[10px] text-slate-400 font-bold uppercase">Category Reminders</span>
+          </div>
+
+          <div className="space-y-3">
+            {followUps.map((flw) => (
+              <div key={flw.id} className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/40 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-xs font-black text-slate-900 dark:text-white">{flw.studentName}</h4>
+                    <span className="text-[10px] text-slate-400 font-mono">({flw.rollNumber})</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 font-medium mt-0.5">{flw.reason}</p>
+                  <span className="text-[9.5px] text-purple-600 font-bold block mt-0.5">Date: {flw.followUpDate}</span>
+                </div>
+                <span className={`px-2.5 py-0.5 rounded-full text-[9.5px] font-black ${flw.category === 'Overdue' ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20 animate-pulse' : 'bg-purple-500/10 text-purple-600'}`}>
+                  {flw.category === 'Overdue' ? '🔴 Overdue' : flw.category}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Student Concern Issue Tracker */}
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <AlertCircle className="text-rose-500" size={18} />
+              Student Issue Tracker
+            </h3>
+            <button onClick={() => setShowConcernModal(true)} className="px-2.5 py-1 bg-purple-600 text-white rounded-xl text-[10.5px] font-bold">
+              + Log Concern
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {concerns.map((cn) => (
+              <div key={cn.id} className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/40 dark:border-slate-800 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="px-2 py-0.5 bg-purple-500/10 text-purple-600 text-[9.5px] font-bold rounded-md uppercase">
+                    {cn.category}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-black ${cn.priority === 'Critical' || cn.priority === 'High' ? 'bg-rose-500/10 text-rose-600' : 'bg-amber-500/10 text-amber-600'}`}>
+                    {cn.priority}
+                  </span>
+                </div>
+                <h4 className="text-xs font-black text-slate-900 dark:text-white">{cn.title}</h4>
+                <p className="text-[10.5px] text-slate-500">{cn.description}</p>
+                <div className="flex items-center justify-between text-[9.5px] pt-1 text-slate-400">
+                  <span>Student: <strong className="text-slate-700 dark:text-slate-300">{cn.studentName}</strong> ({cn.rollNumber})</span>
+                  <span className="font-bold text-emerald-600">Status: {cn.status}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+
+      {/* Log Student Concern Modal */}
+      {showConcernModal && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-lg w-full p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-base font-black text-slate-900 dark:text-white">Create Student Concern</h3>
+              <button onClick={() => setShowConcernModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateConcern} className="space-y-3">
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Select Student</label>
+                <select value={concernStudentId} onChange={e => setConcernStudentId(e.target.value)} required className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold">
+                  <option value="">Select Ward Student</option>
+                  {wards.map(w => (
+                    <option key={w.uid} value={w.uid}>{w.fullName || w.name} ({w.rollNumber})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Category</label>
+                  <select value={concernCategory} onChange={e => setConcernCategory(e.target.value)} className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold">
+                    <option value="Attendance">Attendance</option>
+                    <option value="Academic Performance">Academic Performance</option>
+                    <option value="Internal Marks">Internal Marks</option>
+                    <option value="Backlog">Backlog</option>
+                    <option value="Career Guidance">Career Guidance</option>
+                    <option value="Placement">Placement</option>
+                    <option value="Personal Guidance">Personal Guidance</option>
+                    <option value="Behaviour">Behaviour</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Priority</label>
+                  <select value={concernPriority} onChange={e => setConcernPriority(e.target.value)} className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold">
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Concern Title</label>
+                <input type="text" value={concernTitle} onChange={e => setConcernTitle(e.target.value)} required placeholder="e.g., Attendance drop below 65%" className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold" />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Description & Details</label>
+                <textarea value={concernDescription} onChange={e => setConcernDescription(e.target.value)} rows="3" placeholder="Provide detailed observation or concern details..." className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold"></textarea>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Follow-up Date</label>
+                <input type="date" value={concernFollowUp} onChange={e => setConcernFollowUp(e.target.value)} className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold" />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button type="button" onClick={() => setShowConcernModal(false)} className="px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs">Cancel</button>
+                <button type="submit" className="px-4 py-2 bg-purple-600 text-white font-bold rounded-xl text-xs shadow-md">Create Concern</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
+
+// 2. COUNSELLING WARDS DIRECTORY & COMPLETE PROFILE VIEW
+const WardsDirectory = ({ counsellor }) => {
+  const [wards, setWards] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [riskFilter, setRiskFilter] = useState('All');
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [modalTab, setModalTab] = useState('PROFILE'); // PROFILE | ACADEMIC | COUNSELLING | ACTIONS
+  const [academicProgress, setAcademicProgress] = useState(null);
+  const [riskHistory, setRiskHistory] = useState([]);
+
   useEffect(() => {
-    loadWards();
-  }, [department, semester, section]);
+    const fetchWards = async () => {
+      setLoading(true);
+      const res = await mockDB.getWardsForCounsellor(counsellor.uid, counsellor.department);
+      setWards(res);
+      setLoading(false);
+    };
+    fetchWards();
+  }, [counsellor]);
 
-  const filteredWards = wards.filter(st => {
-    const matchesSearch = !searchRoll || 
-      st.rollNumber?.toLowerCase().includes(searchRoll.toLowerCase()) ||
-      (st.studentName || st.fullName)?.toLowerCase().includes(searchRoll.toLowerCase());
+  const handleOpenStudentModal = async (student) => {
+    setSelectedStudent(student);
+    setModalTab('PROFILE');
+    const prog = await mockDB.getStudentAcademicProgress(student);
+    setAcademicProgress(prog);
+    const riskHist = await mockDB.getStudentRiskHistory(student);
+    setRiskHistory(riskHist);
+  };
 
-    if (!matchesSearch) return false;
-    if (filterCategory === 'below75') return st.attendance < 75;
-    if (filterCategory === 'below60') return st.attendance < 60;
-    if (filterCategory === 'below40') return st.attendance < 40;
-    if (filterCategory === 'top') return st.attendance >= 85;
-    return true;
+  const filteredWards = wards.filter(w => {
+    const query = search.toLowerCase();
+    const nameMatch = (w.fullName || w.name || '').toLowerCase().includes(query) || (w.rollNumber || '').toLowerCase().includes(query);
+    const att = w.attendancePercentage || w.attendance || 80;
+    const riskLevel = att < 65 ? 'High Risk' : att < 75 ? 'Warning' : 'Good';
+    const riskMatch = riskFilter === 'All' || riskLevel === riskFilter;
+    return nameMatch && riskMatch;
   });
 
-  const handleExportCSV = () => {
-    if (filteredWards.length === 0) return;
-    let csv = "data:text/csv;charset=utf-8,Roll Number,Student Name,Department,Semester,Section,Total Classes,Present,Absent,Leave,Attendance %\n";
-    filteredWards.forEach(w => {
-      csv += `"${w.rollNumber}","${w.studentName || w.fullName}","${w.department || department}","${w.semester || semester}","${w.section || section}",${w.totalClasses},${w.presentCount},${w.absentCount},${w.leaveCount},${w.attendance}%\n`;
-    });
-    const encoded = encodeURI(csv);
-    const link = document.createElement("a");
-    link.href = encoded;
-    link.download = `WardCounsellor_Attendance_${department}_${semester}_${section}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleSelectWard = async (student) => {
-    setSelectedWardId(student.uid || student.rollNumber);
-    try {
-      const logs = await mockDB.getCounsellingLogs(student.uid);
-      setWardLogs(logs);
-
-      const marks = await mockDB.getStudentMarks(student.uid);
-      setWardMarks(marks);
-
-      const att = await mockDB.getAttendanceForStudent(student.uid);
-      setWardAttendance(att.slice(0, 10));
-    } catch (_) {}
-  };
-
-  useEffect(() => {
-    loadWards();
-  }, [counsellor]);
+  if (loading) return <div className="p-8 text-center text-slate-400 text-xs">Loading ward directory...</div>;
 
   return (
     <div className="space-y-6 text-xs font-semibold">
-      
-      {/* Banner */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-indigo-500 to-emerald-650 text-white shadow-xl flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-extrabold font-display">Branch Students (Wards) Academic Ledger</h2>
-          <p className="text-sm text-indigo-100 mt-1">Audit attendance logs, midterm percentages, and counselling reports</p>
+      {/* Header & Search/Filters */}
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-black text-slate-900 dark:text-white">Counselling Wards Roster</h2>
+            <p className="text-xs text-slate-400">Assigned ward students in {counsellor.department || 'Department'}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name or roll..." className="pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold" />
+            </div>
+            <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)} className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold">
+              <option value="All">All Risk Levels</option>
+              <option value="Good">🟢 Good (&gt;=75%)</option>
+              <option value="Warning">🟡 Warning (65-74.99%)</option>
+              <option value="High Risk">🔴 High Risk (&lt;65%)</option>
+            </select>
+          </div>
         </div>
-        <div className="p-3.5 bg-white/10 rounded-2xl border border-white/10">
-          <Users size={24} />
+
+        {/* Wards Table */}
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800">
+          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+              <tr>
+                <th className="p-4">Roll Number</th>
+                <th className="p-4">Student Name</th>
+                <th className="p-4">Branch</th>
+                <th className="p-4 text-center">Attendance</th>
+                <th className="p-4 text-center">Status</th>
+                <th className="p-4 text-center">Risk Level</th>
+                <th className="p-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {filteredWards.map((w) => {
+                const att = w.attendancePercentage || w.attendance || 80;
+                const riskLevel = att < 65 ? 'High Risk' : att < 75 ? 'Warning' : 'Good';
+                const status = att > 82 ? 'Improving' : att < 70 ? 'Declining' : 'Stable';
+                return (
+                  <tr key={w.uid} onClick={() => handleOpenStudentModal(w)} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 cursor-pointer">
+                    <td className="p-4 font-mono font-bold">{w.rollNumber || '22KBN-CS001'}</td>
+                    <td className="p-4 font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                      {w.profilePhotoUrl ? (
+                        <img src={w.profilePhotoUrl} alt={w.fullName} className="w-7 h-7 rounded-lg object-cover" />
+                      ) : (
+                        <div className="w-7 h-7 rounded-lg bg-purple-600/10 text-purple-600 font-black text-xs flex items-center justify-center">
+                          {(w.fullName || w.name || 'S').substring(0, 1)}
+                        </div>
+                      )}
+                      <span>{w.fullName || w.name}</span>
+                    </td>
+                    <td className="p-4 font-bold text-purple-600">{w.department || counsellor.department}</td>
+                    <td className={`p-4 text-center font-black ${att < 75 ? 'text-rose-500' : 'text-emerald-600'}`}>{att}%</td>
+                    <td className="p-4 text-center">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[9.5px] font-black ${status === 'Improving' ? 'bg-emerald-500/10 text-emerald-600' : status === 'Declining' ? 'bg-rose-500/10 text-rose-600' : 'bg-blue-500/10 text-blue-600'}`}>
+                        {status === 'Improving' ? '🟢 Improving' : status === 'Declining' ? '🔴 Declining' : '🔵 Stable'}
+                      </span>
+                    </td>
+                    <td className="p-4 text-center">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[9.5px] font-black ${riskLevel === 'High Risk' ? 'bg-rose-500/10 text-rose-600' : riskLevel === 'Warning' ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                        {riskLevel === 'High Risk' ? '🔴 High Risk' : riskLevel === 'Warning' ? '🟡 Warning' : '🟢 Good'}
+                      </span>
+                    </td>
+                    <td className="p-4 text-right font-bold text-purple-600 text-xs">View Complete Profile →</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        
-        {/* Wards list */}
-        <div className="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl self-start">
-          <span className="text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider block border-b border-slate-100 dark:border-slate-800/80 pb-4 mb-4">Assigned Students</span>
-          {loading ? (
-            <div className="py-10 text-center animate-pulse">Loading wards list...</div>
-          ) : wards.length === 0 ? (
-            <div className="py-10 text-center text-slate-450">No students registered in this branch.</div>
-          ) : (
-            <div className="space-y-2">
-              {wards.map(student => (
-                <div
-                  key={student.uid}
-                  onClick={() => handleSelectWard(student)}
-                  className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
-                    selectedWardId === student.uid
-                      ? 'bg-blue-650/5 border-blue-500 dark:bg-blue-950/20'
-                      : 'bg-slate-50 dark:bg-slate-800/30 border-slate-100 dark:border-slate-850 hover:bg-slate-100/50 dark:hover:bg-slate-800/50'
-                  }`}
-                >
-                  <div>
-                    <h4 className="font-extrabold text-slate-850 dark:text-white text-xs">{student.fullName}</h4>
-                    <p className="text-[10px] text-slate-450 mt-0.5">Roll: {student.rollNumber} • Sem: {student.semester}</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs font-black text-blue-600 dark:text-blue-400 block">{student.cgpa} CGPA</span>
-                    <span className={`text-[10px] font-bold ${student.attendance >= 75 ? 'text-emerald-500' : 'text-rose-500'}`}>{student.attendance}% Att.</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Selected ward details */}
-        <div className="lg:col-span-3 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl self-start min-h-[400px]">
-          {!selectedWardId ? (
-            <div className="flex flex-col items-center justify-center py-32 text-center text-slate-450 dark:text-slate-500 gap-3">
-              <Activity size={40} className="stroke-1 text-slate-300 animate-pulse" />
-              <p>Select a student ward from the directory to review their detailed performance file.</p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              
-              {/* Header profile details */}
-              <div className="border-b border-slate-100 dark:border-slate-800/80 pb-4">
-                <h3 className="text-sm font-black text-slate-850 dark:text-white">Ward Academic Dashboard</h3>
-                <p className="text-xs text-slate-400 mt-1">Detailed midterm progress and notes logs</p>
-              </div>
-
-              {/* Attendance and internal marks card summaries */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Midterm Marks */}
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-100 dark:border-slate-850">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider mb-2">Subject Performance (Internal Marks)</span>
-                  {wardMarks.length === 0 ? (
-                    <p className="text-[10.5px] text-slate-450 py-2">No midterm assessment marks logged.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {wardMarks.map(mark => (
-                        <div key={mark.markId} className="flex justify-between items-center text-[10px]">
-                          <span className="text-slate-700 dark:text-slate-300 font-bold truncate max-w-[120px]">{mark.subject}</span>
-                          <span className="text-blue-600 font-black">{mark.total} / 50</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Latest Attendance Roll */}
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-100 dark:border-slate-850">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider mb-2">Latest Lectures Attendance</span>
-                  {wardAttendance.length === 0 ? (
-                    <p className="text-[10.5px] text-slate-450 py-2">No class roll marked for student.</p>
-                  ) : (
-                    <div className="grid grid-cols-5 gap-1.5">
-                      {wardAttendance.map(att => (
-                        <div
-                          key={att.attendanceId}
-                          title={`${att.date}: ${att.status}`}
-                          className={`h-6 rounded flex items-center justify-center text-[9px] font-black text-white ${
-                            att.status === 'present' ? 'bg-emerald-500' : 'bg-rose-500'
-                          }`}
-                        >
-                          {att.status === 'present' ? 'P' : 'A'}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Counselling notes specific to ward */}
-              <div className="space-y-3">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Counselling Session Notes ({wardLogs.length})</span>
-                {wardLogs.length === 0 ? (
-                  <p className="text-[10.5px] text-slate-450">No previous counseling reviews logged for this student.</p>
+      {/* Student Profile Complete View Modal (4 Tabs) */}
+      {selectedStudent && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-2xl w-full p-6 space-y-6 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                {selectedStudent.profilePhotoUrl ? (
+                  <img src={selectedStudent.profilePhotoUrl} alt={selectedStudent.fullName} className="w-12 h-12 rounded-2xl object-cover border-2 border-purple-500/30" />
                 ) : (
-                  <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
-                    {wardLogs.map(wl => (
-                      <div key={wl.logId} className="p-3 bg-slate-50 dark:bg-slate-800/20 border border-slate-100 dark:border-slate-850 rounded-xl">
-                        <div className="flex justify-between items-center text-[9.5px] font-bold text-slate-400 mb-1">
-                          <span className="text-sky-600">{wl.topic}</span>
-                          <span>{wl.date}</span>
-                        </div>
-                        <p className="text-[10.5px] text-slate-650 dark:text-slate-350 leading-relaxed font-semibold">{wl.notes}</p>
-                      </div>
-                    ))}
+                  <div className="w-12 h-12 rounded-2xl bg-purple-600/10 text-purple-600 font-black text-lg flex items-center justify-center border-2 border-purple-500/20">
+                    {(selectedStudent.fullName || selectedStudent.name || 'S').substring(0, 2).toUpperCase()}
                   </div>
                 )}
+                <div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white">{selectedStudent.fullName || selectedStudent.name}</h3>
+                  <p className="text-xs text-purple-600 font-bold">{selectedStudent.rollNumber || '22KBN-CS001'} • {selectedStudent.department}</p>
+                </div>
               </div>
-
+              <button onClick={() => setSelectedStudent(null)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                <X size={20} />
+              </button>
             </div>
-          )}
-        </div>
 
-      </div>
+            {/* 4 Tabs Selector */}
+            <div className="flex border-b border-slate-100 dark:border-slate-800 gap-4 text-xs font-black">
+              {['PROFILE', 'ACADEMIC', 'COUNSELLING', 'ACTIONS'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setModalTab(tab)}
+                  className={`pb-2 border-b-2 transition-all uppercase tracking-wider ${modalTab === tab ? 'border-purple-600 text-purple-600 dark:text-purple-400' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab Contents */}
+            {modalTab === 'PROFILE' && (
+              <div className="space-y-3 text-xs">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Semester & Section</span>
+                    <span className="font-extrabold text-slate-900 dark:text-white">{selectedStudent.semester || 'Semester 6'} — {selectedStudent.section || 'Section A'}</span>
+                  </div>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Email Address</span>
+                    <span className="font-extrabold text-purple-600">{selectedStudent.email || `${selectedStudent.rollNumber}@kbn.edu`}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {modalTab === 'ACADEMIC' && academicProgress && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Attendance %</span>
+                    <span className="text-lg font-black text-emerald-600">{selectedStudent.attendancePercentage || selectedStudent.attendance || 80}%</span>
+                  </div>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Internal Marks</span>
+                    <span className="text-lg font-black text-purple-600">{academicProgress.internalMarks}</span>
+                  </div>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Backlogs</span>
+                    <span className="text-lg font-black text-rose-500">{academicProgress.backlogs}</span>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-purple-500/10 rounded-2xl flex items-center justify-between border border-purple-500/20">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-purple-600 block">Performance Trajectory</span>
+                    <span className="text-xs text-slate-700 dark:text-slate-200">Prev Sem: {academicProgress.previousSemester}% → Curr Sem: {academicProgress.currentSemester}%</span>
+                  </div>
+                  <span className="px-3 py-1 bg-emerald-600 text-white rounded-full font-black text-xs">
+                    {academicProgress.status === 'Improving' ? '🟢 Improving' : academicProgress.status === 'Declining' ? '🔴 Declining' : '🔵 Stable'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {modalTab === 'COUNSELLING' && (
+              <div className="space-y-4 text-xs">
+                <h4 className="font-black text-slate-900 dark:text-white">Student Risk History Timeline</h4>
+                <div className="space-y-2">
+                  {riskHistory.map((rh, i) => (
+                    <div key={i} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-purple-600">{rh.date}</span>
+                        <p className="text-[10.5px] text-slate-500">{rh.notes}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-black text-slate-900 dark:text-white block">Att: {rh.attendance}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${rh.risk === 'High Risk' ? 'bg-rose-500/10 text-rose-600' : 'bg-emerald-500/10 text-emerald-600'}`}>{rh.risk}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {modalTab === 'ACTIONS' && (
+              <div className="grid grid-cols-2 gap-3">
+                <button onClick={() => alert('Log Session Triggered')} className="p-3 bg-purple-600 text-white font-bold rounded-xl text-xs text-center shadow-md">
+                  + Log Counselling Session
+                </button>
+                <button onClick={() => alert('Follow-up Scheduled')} className="p-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl text-xs text-center shadow-md">
+                  + Schedule Follow-up
+                </button>
+              </div>
+            )}
+
+            <div className="text-right pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button onClick={() => setSelectedStudent(null)} className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-xs rounded-xl shadow-md">
+                Close Profile
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
 };
 
-// 4. LEAVE REQUESTS APPROVALS
-const CounsellorLeaves = ({ counsellor }) => {
-  const [leaves, setLeaves] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [remarksState, setRemarksState] = useState({}); // Mapping of leaveId -> remarks string
-  const [actioningId, setActioningId] = useState(null);
-  const { showToast } = useAuth();
-
-  const loadLeaves = async () => {
-    try {
-      setLoading(true);
-      const data = await mockDB.getLeaves('counsellor', counsellor.uid);
-      setLeaves(data);
-    } catch (_) {
-      showToast('Could not load leave requests.', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+// 3. ADVANCED MONTHLY REPORT COMPILER
+const CounsellorReports = ({ counsellor }) => {
+  const [report, setReport] = useState(null);
 
   useEffect(() => {
-    loadLeaves();
+    const fetchReport = async () => {
+      const summary = await mockDB.getMonthlyWardSummary(counsellor.uid, 'June', '2026');
+      const wards = await mockDB.getWardsForCounsellor(counsellor.uid, counsellor.department);
+      setReport({ summary, wards });
+    };
+    fetchReport();
   }, [counsellor]);
 
-  const handleAction = async (leaveId, action) => {
-    try {
-      setActioningId(leaveId);
-      const remarks = remarksState[leaveId] || '';
-      await mockDB.reviewLeave(leaveId, action, remarks);
-      showToast(`Leave application marked as ${action}!`, 'success');
-      loadLeaves();
-    } catch (err) {
-      showToast(err.message, 'error');
-    } finally {
-      setActioningId(null);
-    }
-  };
-
-  const pending = leaves.filter(l => l.status === 'pending');
-  const history = leaves.filter(l => l.status !== 'pending');
+  if (!report) return <div className="p-8 text-center text-slate-400 text-xs">Generating monthly report...</div>;
 
   return (
     <div className="space-y-6 text-xs font-semibold">
-      
-      {/* Banner */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-teal-600 to-indigo-650 text-white shadow-xl flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-extrabold font-display">Student Absence Approvals Portal</h2>
-          <p className="text-sm text-teal-100 mt-1">Review leave applications from student wards in department: {counsellor.department}</p>
-        </div>
-        <div className="p-3.5 bg-white/10 rounded-2xl border border-white/10">
-          <Calendar size={24} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        
-        {/* Pending Requests */}
-        <div className="lg:col-span-3 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl self-start">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
-            <span className="text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Pending Leave Applications ({pending.length})</span>
-            <button onClick={loadLeaves} className="p-1.5 bg-slate-50 dark:bg-slate-800 text-slate-500 rounded-lg"><RefreshCw size={12} /></button>
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+          <div>
+            <h2 className="text-lg font-black text-slate-900 dark:text-white">Advanced Monthly Ward Mentoring Report</h2>
+            <p className="text-xs text-slate-400">Institutional summary for KBN College • Department of {counsellor.department || 'Branch'}</p>
           </div>
-
-          {loading ? (
-            <div className="py-20 text-center animate-pulse">Loading leave requests...</div>
-          ) : pending.length === 0 ? (
-            <div className="py-20 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-slate-450">
-              No pending leave requests from student wards.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {pending.map(l => (
-                <div key={l.leaveId} className="p-4 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-850 rounded-2xl space-y-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-extrabold text-slate-850 dark:text-white text-xs">{l.studentName}</h4>
-                      <p className="text-[10px] text-slate-455 mt-0.5">Roll: {l.rollNumber} • Semester: {l.semester}</p>
-                    </div>
-                    <span className="text-[9.5px] px-2 py-0.5 bg-amber-500/10 text-amber-500 rounded font-black uppercase">Pending</span>
-                  </div>
-
-                  <div className="bg-white dark:bg-slate-950 p-3 rounded-xl border border-slate-150 dark:border-slate-850">
-                    <span className="text-[9.5px] font-black text-slate-400 uppercase tracking-wider block">Absence Reason</span>
-                    <p className="text-[11px] text-slate-700 dark:text-slate-300 mt-1 leading-relaxed">{l.reason}</p>
-                    <span className="text-[9.5px] text-rose-500 block mt-2 font-bold">Duration: {l.startDate} to {l.endDate}</span>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-[10px] text-slate-450 uppercase mb-1">Counsellor Remarks</label>
-                      <input
-                        type="text"
-                        placeholder="Add feedback/remarks here..."
-                        value={remarksState[l.leaveId] || ''}
-                        onChange={(e) => setRemarksState({ ...remarksState, [l.leaveId]: e.target.value })}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs font-semibold text-slate-700 dark:text-white focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleAction(l.leaveId, 'approved')}
-                        disabled={actioningId === l.leaveId}
-                        className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow"
-                      >
-                        Approve Leave
-                      </button>
-                      <button
-                        onClick={() => handleAction(l.leaveId, 'rejected')}
-                        disabled={actioningId === l.leaveId}
-                        className="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-bold shadow"
-                      >
-                        Reject Leave
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <button onClick={() => window.print()} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5">
+            <Printer size={16} />
+            <span>Print / Export PDF</span>
+          </button>
         </div>
 
-        {/* History Log */}
-        <div className="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl self-start">
-          <span className="text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider block border-b border-slate-100 dark:border-slate-850 pb-4 mb-4">Leave Ledger History</span>
-          
-          {loading ? (
-            <div className="py-20 text-center animate-pulse">Loading list...</div>
-          ) : history.length === 0 ? (
-            <div className="py-12 text-center text-slate-455">No absence logs in history ledger.</div>
-          ) : (
-            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
-              {history.map(l => (
-                <div key={l.leaveId} className="p-4 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-850 rounded-2xl space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-extrabold text-slate-850 dark:text-slate-205 text-xs">{l.studentName}</h4>
-                      <span className="text-[9px] text-slate-450">{l.startDate} to {l.endDate}</span>
-                    </div>
-                    <span className={`text-[9.5px] px-2 py-0.5 rounded font-black uppercase ${
-                      l.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-505'
-                    }`}>
-                      {l.status}
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-slate-500 leading-normal"><span className="font-bold text-slate-700 dark:text-slate-350">Reason:</span> {l.reason}</p>
-                  {l.remarks && (
-                    <div className="pt-2 border-t border-dashed border-slate-200 dark:border-slate-800 text-[10px] text-slate-550 dark:text-slate-400 leading-normal">
-                      <span className="font-extrabold text-slate-750 dark:text-slate-300">Remarks:</span> {l.remarks}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+        {/* Report Summary Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+            <span className="text-[10px] text-slate-400 uppercase font-bold block">Total Wards</span>
+            <span className="text-xl font-black text-slate-900 dark:text-white">{report.summary.totalWards}</span>
+          </div>
+          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+            <span className="text-[10px] text-slate-400 uppercase font-bold block">Avg Attendance</span>
+            <span className="text-xl font-black text-emerald-600">{report.summary.averageAttendance}%</span>
+          </div>
+          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+            <span className="text-[10px] text-slate-400 uppercase font-bold block">Sessions Conducted</span>
+            <span className="text-xl font-black text-purple-600">{report.summary.counsellingSessions}</span>
+          </div>
+          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+            <span className="text-[10px] text-slate-400 uppercase font-bold block">Improved Wards</span>
+            <span className="text-xl font-black text-emerald-600">{report.summary.improvedStudents}</span>
+          </div>
         </div>
 
+        {/* Ward Roster Summary Table */}
+        <h3 className="text-sm font-black text-slate-900 dark:text-white">Ward Student Roster & Risk Summary</h3>
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800">
+          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+              <tr>
+                <th className="p-3">Roll Number</th>
+                <th className="p-3">Student Name</th>
+                <th className="p-3 text-center">Attendance %</th>
+                <th className="p-3 text-center">Internal Marks</th>
+                <th className="p-3 text-center">Backlogs</th>
+                <th className="p-3 text-center">Risk Level</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {report.wards.map((w) => {
+                const att = w.attendancePercentage || w.attendance || 80;
+                const risk = att < 65 ? 'High Risk' : att < 75 ? 'Warning' : 'Good';
+                return (
+                  <tr key={w.uid}>
+                    <td className="p-3 font-mono font-bold">{w.rollNumber || '22KBN-CS001'}</td>
+                    <td className="p-3 font-extrabold text-slate-900 dark:text-white">{w.fullName || w.name}</td>
+                    <td className="p-3 text-center font-black text-emerald-600">{att}%</td>
+                    <td className="p-3 text-center font-bold">84 / 100</td>
+                    <td className="p-3 text-center font-bold text-rose-500">{att < 65 ? 2 : att < 75 ? 1 : 0}</td>
+                    <td className="p-3 text-center font-black">{risk}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
+    </div>
+  );
+};
 
+// 4. PARENT MEETINGS MANAGER
+const ParentMeetingsManager = ({ counsellor }) => {
+  const [meetings, setMeetings] = useState([]);
+  useEffect(() => {
+    const fetchMeetings = async () => {
+      const res = await mockDB.getCounsellingMeetings('counsellor', counsellor.uid);
+      setMeetings(res);
+    };
+    fetchMeetings();
+  }, [counsellor]);
+
+  return (
+    <div className="space-y-6 text-xs font-semibold">
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
+        <h2 className="text-lg font-black text-slate-900 dark:text-white">Parent & Student Meeting Schedule</h2>
+        <div className="space-y-3">
+          {meetings.length === 0 ? (
+            <p className="text-slate-400 p-4 text-center">No meetings currently scheduled.</p>
+          ) : meetings.map((m) => (
+            <div key={m.id} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex items-center justify-between border border-slate-200/40 dark:border-slate-800">
+              <div>
+                <h4 className="text-xs font-black text-slate-900 dark:text-white">{m.studentName || 'Student'}</h4>
+                <p className="text-[11px] text-slate-500 mt-0.5">{m.title || 'Discussion on academic progress'}</p>
+                <span className="text-[9.5px] text-purple-600 font-bold block mt-0.5">{m.date} at {m.time}</span>
+              </div>
+              <span className="px-3 py-1 bg-purple-500/10 text-purple-600 font-black text-[10px] rounded-full uppercase">
+                {m.status}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 5. COUNSELLOR LEAVES
+const CounsellorLeaves = ({ counsellor }) => {
+  const [leaves, setLeaves] = useState([]);
+  useEffect(() => {
+    const fetchLeaves = async () => {
+      const res = await mockDB.getLeaves('counsellor', counsellor.uid);
+      setLeaves(res);
+    };
+    fetchLeaves();
+  }, [counsellor]);
+
+  return (
+    <div className="space-y-6 text-xs font-semibold">
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
+        <h2 className="text-lg font-black text-slate-900 dark:text-white">Counsellor Leave Applications</h2>
+        <div className="space-y-3">
+          {leaves.length === 0 ? (
+            <p className="text-slate-400 p-4 text-center">No leave applications submitted.</p>
+          ) : leaves.map((l) => (
+            <div key={l.id} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex items-center justify-between border border-slate-200/40 dark:border-slate-800">
+              <div>
+                <h4 className="text-xs font-black text-slate-900 dark:text-white">{l.reason}</h4>
+                <span className="text-[9.5px] text-slate-400 font-bold block mt-0.5">{l.startDate} to {l.endDate}</span>
+              </div>
+              <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 font-black text-[10px] rounded-full uppercase">
+                {l.status}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

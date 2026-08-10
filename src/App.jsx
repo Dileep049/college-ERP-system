@@ -647,6 +647,13 @@ function AppContent() {
             </DashboardLayout>
           </ProtectedRoute>
         } />
+        <Route path="/counsellor/reports" element={
+          <ProtectedRoute allowedRole="counsellor">
+            <DashboardLayout>
+              <WardCounsellorPortal subPage="reports" />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
 
         {/* --- CENTRAL LIBRARY PORTAL ROUTES --- */}
         <Route path="/librarian/login" element={<LibrarianLogin />} />
