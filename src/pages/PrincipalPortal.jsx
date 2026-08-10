@@ -254,10 +254,11 @@ const PrincipalDashboard = ({ principal }) => {
   );
 };
 
-// 2. BRANCH ANALYTICS & COMPARISON
+// 2. BRANCH ANALYTICS & WARD COUNSELLOR VISIBILITY
 const PrincipalBranchAnalytics = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedBranch, setSelectedBranch] = useState(null);
 
   useEffect(() => {
     const fetchBranches = async () => {
@@ -269,13 +270,22 @@ const PrincipalBranchAnalytics = () => {
     fetchBranches();
   }, []);
 
-  if (loading) return <div className="p-8 text-center text-slate-400 text-xs">Loading branch analytics...</div>;
+  if (loading) return <div className="p-8 text-center text-slate-400 text-xs">Loading branch analytics & ward counsellors...</div>;
 
   return (
     <div className="space-y-6 text-xs font-semibold">
+      
+      {/* Header */}
       <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
-        <h2 className="text-lg font-black text-slate-900 dark:text-white mb-1">Branch Analytics & Institutional Comparison</h2>
-        <p className="text-xs text-slate-400 mb-6">Comparative metrics across all active academic branches in KBN College</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-lg font-black text-slate-900 dark:text-white">Branch Analytics & Ward Counsellors</h2>
+            <p className="text-xs text-slate-400">View active branch ward counsellors, HOD assignments, and institutional performance metrics</p>
+          </div>
+          <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 text-[10.5px] font-bold rounded-full border border-emerald-500/20">
+            Real-time HOD Sync (Read Only)
+          </span>
+        </div>
 
         {/* Branch Bar Chart */}
         <div className="h-64 mb-8">
@@ -293,34 +303,177 @@ const PrincipalBranchAnalytics = () => {
           </ResponsiveContainer>
         </div>
 
+        {/* Branch Ward Counsellors Section Header */}
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+          <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <UserCheck className="text-purple-600" size={18} />
+            Branch Ward Counsellors
+          </h3>
+          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Dynamic HOD Assignment</span>
+        </div>
+
+        {/* Branch Ward Counsellor Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          {data.map((b) => (
+            <div 
+              key={b.branch} 
+              onClick={() => setSelectedBranch(b)}
+              className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/50 dark:border-slate-800 hover:border-purple-500/50 hover:shadow-lg transition-all cursor-pointer space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">{b.branch}</h4>
+                <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-black ${b.isAssigned ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
+                  {b.isAssigned ? '🟢 Assigned' : '🟡 Ward Counsellor Not Assigned'}
+                </span>
+              </div>
+
+              {b.isAssigned ? (
+                <div className="flex items-center gap-3 pt-1">
+                  {b.counsellorPhoto ? (
+                    <img src={b.counsellorPhoto} alt={b.counsellorName} className="w-10 h-10 rounded-xl object-cover border border-purple-500/30" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-xl bg-purple-600/10 text-purple-600 font-black text-sm flex items-center justify-center border border-purple-500/20">
+                      {b.counsellorName?.substring(0, 2).toUpperCase() || 'WC'}
+                    </div>
+                  )}
+                  <div className="overflow-hidden">
+                    <h5 className="text-xs font-black text-slate-900 dark:text-white truncate">{b.counsellorName}</h5>
+                    <p className="text-[10px] text-slate-400 truncate">{b.counsellorEmail}</p>
+                    <div className="flex items-center gap-2 mt-0.5 text-[9.5px]">
+                      <span className="text-purple-600 dark:text-purple-400 font-bold">👥 {b.wardStudentsCount} Ward Students</span>
+                      {b.counsellorId && <span className="text-slate-400">• ID: {b.counsellorId}</span>}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl text-center">
+                  <p className="text-xs font-extrabold text-amber-600 dark:text-amber-400">🟡 Ward Counsellor Not Assigned</p>
+                  <p className="text-[9.5px] text-slate-400 mt-0.5">Awaiting HOD assignment</p>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between text-[10px] pt-2 border-t border-slate-200/40 dark:border-slate-800 text-slate-500 font-medium">
+                <span>HOD: <strong className="text-slate-700 dark:text-slate-300 font-bold">{b.hodName}</strong></span>
+                <span className="text-purple-600 font-bold hover:underline">View Branch Details →</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
         {/* Branch Analytics Table */}
+        <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Branch Comparison Table</h3>
         <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800">
           <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
             <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
               <tr>
                 <th className="p-4">Branch / Department</th>
-                <th className="p-4 text-center">Students</th>
+                <th className="p-4">Ward Counsellor</th>
+                <th className="p-4 text-center">Ward Students</th>
                 <th className="p-4 text-center">Faculty</th>
                 <th className="p-4 text-center">Avg Attendance %</th>
                 <th className="p-4 text-center">Pass Rate %</th>
                 <th className="p-4 text-center">Placement Rate %</th>
+                <th className="p-4 text-right">Details</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {data.map((b) => (
-                <tr key={b.branch} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                <tr key={b.branch} onClick={() => setSelectedBranch(b)} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 cursor-pointer">
                   <td className="p-4 font-extrabold text-slate-900 dark:text-white">{b.branch}</td>
-                  <td className="p-4 text-center font-bold text-purple-600">{b.students}</td>
+                  <td className="p-4">
+                    {b.isAssigned ? (
+                      <div>
+                        <span className="font-extrabold text-slate-900 dark:text-white block">{b.counsellorName}</span>
+                        <span className="text-[10px] text-slate-400 block">{b.counsellorEmail}</span>
+                      </div>
+                    ) : (
+                      <span className="text-amber-600 font-bold text-[10.5px]">🟡 Not Assigned</span>
+                    )}
+                  </td>
+                  <td className="p-4 text-center font-bold text-purple-600">{b.wardStudentsCount}</td>
                   <td className="p-4 text-center font-bold">{b.faculty}</td>
                   <td className="p-4 text-center font-extrabold text-emerald-600">{b.attendance}%</td>
                   <td className="p-4 text-center font-black text-purple-600">{b.passRate}%</td>
                   <td className="p-4 text-center font-black text-indigo-600">{b.placementRate}%</td>
+                  <td className="p-4 text-right text-purple-600 font-bold text-xs">View Overview</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Branch Overview Modal */}
+      {selectedBranch && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-xl w-full p-6 space-y-6 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div>
+                <span className="px-2.5 py-0.5 bg-purple-500/10 text-purple-600 text-[10px] font-black uppercase rounded-full">
+                  Branch Overview
+                </span>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white mt-1">{selectedBranch.branch}</h3>
+              </div>
+              <button onClick={() => setSelectedBranch(null)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-full">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* HOD & Ward Counsellor Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                <span className="text-[10px] text-slate-400 uppercase font-black block">Head of Department (HOD)</span>
+                <h4 className="text-sm font-black text-slate-900 dark:text-white mt-1">{selectedBranch.hodName}</h4>
+                <p className="text-[10.5px] text-purple-600 font-medium">{selectedBranch.hodEmail}</p>
+              </div>
+
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                <span className="text-[10px] text-slate-400 uppercase font-black block">Branch Ward Counsellor</span>
+                {selectedBranch.isAssigned ? (
+                  <div className="mt-1">
+                    <h4 className="text-sm font-black text-slate-900 dark:text-white">{selectedBranch.counsellorName}</h4>
+                    <p className="text-[10.5px] text-purple-600 font-medium">{selectedBranch.counsellorEmail}</p>
+                    <span className="text-[9.5px] text-emerald-600 font-bold block mt-1">👥 {selectedBranch.wardStudentsCount} Assigned Ward Students</span>
+                  </div>
+                ) : (
+                  <p className="text-xs font-bold text-amber-600 mt-1">🟡 Ward Counsellor Not Assigned</p>
+                )}
+              </div>
+            </div>
+
+            {/* Metrics Breakdown Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                <span className="text-[9.5px] text-slate-400 block font-bold">Students</span>
+                <span className="text-base font-black text-slate-900 dark:text-white">{selectedBranch.students}</span>
+              </div>
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                <span className="text-[9.5px] text-slate-400 block font-bold">Faculty</span>
+                <span className="text-base font-black text-slate-900 dark:text-white">{selectedBranch.faculty}</span>
+              </div>
+              <div className="p-3 bg-emerald-500/10 text-emerald-600 rounded-2xl">
+                <span className="text-[9.5px] block font-bold">Attendance</span>
+                <span className="text-base font-black">{selectedBranch.attendance}%</span>
+              </div>
+              <div className="p-3 bg-purple-500/10 text-purple-600 rounded-2xl">
+                <span className="text-[9.5px] block font-bold">Pass Rate</span>
+                <span className="text-base font-black">{selectedBranch.passRate}%</span>
+              </div>
+              <div className="p-3 bg-indigo-500/10 text-indigo-600 rounded-2xl">
+                <span className="text-[9.5px] block font-bold">Placement</span>
+                <span className="text-base font-black">{selectedBranch.placementRate}%</span>
+              </div>
+            </div>
+
+            <div className="text-right pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button onClick={() => setSelectedBranch(null)} className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-xs rounded-xl shadow-md">
+                Close Overview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

@@ -2471,7 +2471,9 @@ export const mockDB = {
     const students = JSON.parse(localStorage.getItem('acad_students') || '[]');
     const depts = await mockDB.getDepartmentsList();
 
-    return depts.map((dept, idx) => {
+    const results = [];
+    for (let idx = 0; idx < depts.length; idx++) {
+      const dept = depts[idx];
       const deptStudents = students.filter(s => s.department === dept);
       const studentCount = users.filter(u => u.role === 'student' && u.department === dept).length || (120 - (idx * 10));
       const facultyCount = users.filter(u => u.role === 'faculty' && u.department === dept).length || (12 - (idx % 4));
@@ -2480,15 +2482,35 @@ export const mockDB = {
         ? Math.round(deptStudents.reduce((acc, s) => acc + (s.attendancePercentage || s.attendance || 85), 0) / deptStudents.length)
         : (86 - (idx * 2));
 
-      return {
+      // Resolve HOD User
+      const hodUser = users.find(u => u.role === 'hod' && u.department === dept);
+      const hodName = hodUser?.fullName || hodUser?.name || (idx === 0 ? 'Dr. Alan Turing' : idx === 1 ? 'Dr. Sarah Connor' : `Dr. HOD ${dept.split(' ')[0]}`);
+      const hodEmail = hodUser?.email || `hod.${dept.substring(0, 4).toLowerCase()}@kbn.edu`;
+      const hodPhoto = hodUser?.profilePhotoUrl || null;
+
+      // Resolve Active Ward Counsellor assigned by HOD
+      const activeCounsellor = await mockDB.getActiveBranchWardCounsellor(dept);
+
+      results.push({
         branch: dept,
         students: studentCount > 0 ? studentCount : 80,
         faculty: facultyCount > 0 ? facultyCount : 10,
         attendance: Math.max(70, Math.min(95, avgAtt)),
         passRate: Math.max(65, 91 - (idx * 2.5)),
-        placementRate: Math.max(60, 82 - (idx * 3.2))
-      };
-    });
+        placementRate: Math.max(60, 82 - (idx * 3.2)),
+        hodName,
+        hodEmail,
+        hodPhoto,
+        counsellorName: activeCounsellor?.facultyName || null,
+        counsellorEmail: activeCounsellor?.facultyEmail || null,
+        counsellorId: activeCounsellor?.facultyId || null,
+        counsellorPhoto: activeCounsellor?.profilePhotoUrl || null,
+        wardStudentsCount: activeCounsellor ? (activeCounsellor.assignedStudentsCount || deptStudents.length || 45) : 0,
+        isAssigned: !!activeCounsellor
+      });
+    }
+
+    return results;
   },
 
   getSemesterResultAnalytics: async (department = 'All Departments', year = '2025-26', semester = 'Semester 6') => {
