@@ -2409,63 +2409,242 @@ export const mockDB = {
 
   // --- PRINCIPAL GOVERNANCE SERVICES ---
   getPrincipalAnalytics: async () => {
-    await mockDB.delay(100);
+    await mockDB.delay(80);
     const users = JSON.parse(localStorage.getItem('acad_users') || '[]');
     const students = JSON.parse(localStorage.getItem('acad_students') || '[]');
-    const fees = JSON.parse(localStorage.getItem('acad_fees') || '[]');
-    const issuedBooks = JSON.parse(localStorage.getItem('acad_issued_books') || '[]');
+    const wardCounsellors = JSON.parse(localStorage.getItem('acad_ward_counsellors') || '[]');
+    const depts = await mockDB.getDepartmentsList();
 
-    const totalStudents = users.filter(u => u.role === 'student').length || 450;
+    const totalStudents = users.filter(u => u.role === 'student').length || students.length || 620;
     const totalFaculty = users.filter(u => u.role === 'faculty').length || 38;
+    const totalHODs = users.filter(u => u.role === 'hod').length || depts.length || 9;
+    const activeWardCounsellors = wardCounsellors.filter(w => w.status === 'Active').length || depts.length;
 
-    const avgAtt = students.length > 0 ? Math.round(students.reduce((acc, s) => acc + (s.attendancePercentage || 0), 0) / students.length) : 84;
+    const avgAtt = students.length > 0
+      ? Math.round(students.reduce((acc, s) => acc + (s.attendancePercentage || s.attendance || 85), 0) / students.length)
+      : 86.4;
 
-    const totalCollected = fees.filter(f => f.status === 'paid').reduce((acc, f) => acc + f.amount, 0);
-    const totalInvoiced = fees.reduce((acc, f) => acc + f.amount, 0);
+    const atRiskCount = students.filter(s => (s.attendancePercentage || s.attendance || 85) < 75 || s.academicRisk === 'High').length || 18;
+    const passedCount = Math.round(totalStudents * 0.88);
+    const failedCount = totalStudents - passedCount;
+    const placementRate = 78.5;
 
-    const activeCheckouts = issuedBooks.filter(i => i.status === 'issued').length;
-    const placedCount = 24;
+    // Executive Insights generated dynamically
+    const insights = [
+      { type: 'academic', text: 'Computer Science & Engineering (CSE) holds the highest semester pass rate at 91.2%.' },
+      { type: 'attendance', text: `Overall institutional attendance stands at ${avgAtt}%, with ${atRiskCount} students identified at risk (<75%).` },
+      { type: 'placement', text: `Placement drive registered ${placementRate}% selection rate with CSE leading corporate placements.` },
+      { type: 'risk', text: `${atRiskCount} students require immediate academic counselling intervention.` }
+    ];
 
-    const branches = ['CSE', 'ECE', 'EEE', 'Mechanical', 'Civil', 'BCA', 'BBA', 'MBA', 'MCA'];
-    const branchAttendance = branches.map(b => {
-      const branchStuds = students.filter(s => s.department === b);
-      const att = branchStuds.length > 0 ? Math.round(branchStuds.reduce((acc, s) => acc + s.attendancePercentage, 0) / branchStuds.length) : 82;
-      return { name: b, Attendance: att, PassRate: Math.min(100, att + 8) };
-    });
-
-    const deptComparison = branches.map(b => {
-      const count = users.filter(u => u.role === 'student' && u.department === b).length || Math.floor(30 + Math.random() * 40);
-      return { name: b, Students: count };
-    });
+    // Top Performing Departments
+    const topDepartments = depts.slice(0, 4).map((dept, i) => ({
+      rank: i + 1,
+      name: dept,
+      passRate: 92 - (i * 3.5),
+      avgMarks: (82 - (i * 2.8)).toFixed(1),
+      attendance: (90 - (i * 2.1)).toFixed(1),
+      placementRate: 85 - (i * 4.2)
+    }));
 
     return {
       cards: {
         totalStudents,
         totalFaculty,
+        totalDepartments: depts.length,
+        totalHODs,
+        totalWardCounsellors: activeWardCounsellors,
         attendancePercentage: avgAtt,
-        totalCollected,
-        totalInvoiced,
-        activeCheckouts,
-        placedCount
+        studentsAtRisk: atRiskCount,
+        studentsPassed: passedCount,
+        studentsFailed: failedCount,
+        placementRate
       },
-      graphs: {
-        branchAttendance,
-        deptComparison,
-        daily: [
-          { name: 'Mon', Present: 410, Absent: 40 },
-          { name: 'Tue', Present: 430, Absent: 20 },
-          { name: 'Wed', Present: 425, Absent: 25 },
-          { name: 'Thu', Present: 435, Absent: 15 },
-          { name: 'Fri', Present: 400, Absent: 50 }
-        ],
-        weekly: [
-          { name: 'Week 1', Attendance: 82 },
-          { name: 'Week 2', Attendance: 85 },
-          { name: 'Week 3', Attendance: 87 },
-          { name: 'Week 4', Attendance: 89 }
-        ]
-      }
+      insights,
+      topDepartments
     };
+  },
+
+  getBranchAnalytics: async () => {
+    await mockDB.delay(60);
+    const users = JSON.parse(localStorage.getItem('acad_users') || '[]');
+    const students = JSON.parse(localStorage.getItem('acad_students') || '[]');
+    const depts = await mockDB.getDepartmentsList();
+
+    return depts.map((dept, idx) => {
+      const deptStudents = students.filter(s => s.department === dept);
+      const studentCount = users.filter(u => u.role === 'student' && u.department === dept).length || (120 - (idx * 10));
+      const facultyCount = users.filter(u => u.role === 'faculty' && u.department === dept).length || (12 - (idx % 4));
+
+      const avgAtt = deptStudents.length > 0
+        ? Math.round(deptStudents.reduce((acc, s) => acc + (s.attendancePercentage || s.attendance || 85), 0) / deptStudents.length)
+        : (86 - (idx * 2));
+
+      return {
+        branch: dept,
+        students: studentCount > 0 ? studentCount : 80,
+        faculty: facultyCount > 0 ? facultyCount : 10,
+        attendance: Math.max(70, Math.min(95, avgAtt)),
+        passRate: Math.max(65, 91 - (idx * 2.5)),
+        placementRate: Math.max(60, 82 - (idx * 3.2))
+      };
+    });
+  },
+
+  getSemesterResultAnalytics: async (department = 'All Departments', year = '2025-26', semester = 'Semester 6') => {
+    await mockDB.delay(60);
+    const total = 60;
+    const appeared = 58;
+    const passed = 52;
+    const failed = 6;
+    const passPercentage = Number(((passed / appeared) * 100).toFixed(2));
+
+    const subjects = [
+      { name: 'Neural Networks & Deep Learning', appeared: 58, passed: 55, failed: 3, passRate: 94.8, avgMarks: 78.4, status: 'Good' },
+      { name: 'Machine Learning Systems', appeared: 58, passed: 52, failed: 6, passRate: 89.6, avgMarks: 74.2, status: 'Good' },
+      { name: 'Database Management Systems', appeared: 58, passed: 50, failed: 8, passRate: 86.2, avgMarks: 71.5, status: 'Good' },
+      { name: 'Python for Data Science', appeared: 58, passed: 53, failed: 5, passRate: 91.3, avgMarks: 76.8, status: 'Good' },
+      { name: 'Compiler Design', appeared: 58, passed: 34, failed: 24, passRate: 58.6, avgMarks: 54.2, status: 'Critical' },
+      { name: 'Advanced Engineering Mathematics', appeared: 58, passed: 37, failed: 21, passRate: 63.7, avgMarks: 58.9, status: 'Attention' }
+    ];
+
+    const lowPerformanceAlerts = subjects.filter(s => s.passRate < 75).map(s => ({
+      subject: s.name,
+      passRate: s.passRate,
+      level: s.passRate < 60 ? 'Critical' : 'Attention',
+      message: s.passRate < 60 ? `⚠ ${s.name} — ${s.passRate}% Pass Rate (Critical < 60%)` : `⚠ ${s.name} — ${s.passRate}% Pass Rate (Attention Required)`
+    }));
+
+    const semesterTrend = [
+      { semester: 'Semester 1', passRate: 78.4 },
+      { semester: 'Semester 2', passRate: 81.2 },
+      { semester: 'Semester 3', passRate: 84.5 },
+      { semester: 'Semester 4', passRate: 86.1 },
+      { semester: 'Semester 5', passRate: 88.7 },
+      { semester: 'Semester 6', passRate: 89.6 }
+    ];
+
+    const branchComparison = [
+      { branch: 'CSE', passRate: 91.2 },
+      { branch: 'ECE', passRate: 87.4 },
+      { branch: 'EEE', passRate: 82.1 },
+      { branch: 'Mechanical', passRate: 78.5 },
+      { branch: 'Civil', passRate: 85.0 }
+    ];
+
+    return {
+      summary: {
+        totalStudents: total,
+        appearedStudents: appeared,
+        passedStudents: passed,
+        failedStudents: failed,
+        passPercentage,
+        averagePercentage: 72.4,
+        highestPercentage: 96.8,
+        lowestPercentage: 42.0,
+        distinctionCount: 22,
+        firstClassCount: 24,
+        secondClassCount: 6,
+        backlogsCount: 6
+      },
+      subjects,
+      lowPerformanceAlerts,
+      semesterTrend,
+      branchComparison
+    };
+  },
+
+  getAcademicRiskAnalytics: async () => {
+    await mockDB.delay(60);
+    const students = JSON.parse(localStorage.getItem('acad_students') || '[]');
+
+    const distribution = [
+      { range: '90 – 100%', count: 18 },
+      { range: '80 – 89%', count: 28 },
+      { range: '70 – 79%', count: 34 },
+      { range: '60 – 69%', count: 14 },
+      { range: '50 – 59%', count: 8 },
+      { range: 'Below 50%', count: 4 }
+    ];
+
+    const atRiskStudents = (students.length > 0 ? students : [
+      { rollNumber: '22KBN-CS042', name: 'K. Rahul Varma', department: 'CSE', semester: 'Semester 6', attendance: 64, marks: 45, risk: 'High' },
+      { rollNumber: '22KBN-EC019', name: 'P. Sneha Latha', department: 'ECE', semester: 'Semester 6', attendance: 71, marks: 52, risk: 'Medium' },
+      { rollNumber: '22KBN-EE008', name: 'M. Shiva Kumar', department: 'EEE', semester: 'Semester 6', attendance: 68, marks: 48, risk: 'High' },
+      { rollNumber: '22KBN-ME015', name: 'G. Suresh Babu', department: 'Mechanical', semester: 'Semester 6', attendance: 73, marks: 58, risk: 'Medium' },
+      { rollNumber: '22KBN-CS088', name: 'V. Anitha Devi', department: 'CSE', semester: 'Semester 6', attendance: 82, marks: 49, risk: 'Low' }
+    ]).map(s => ({
+      rollNumber: s.rollNumber || s.roll_number || '22KBN-CS001',
+      name: s.name || s.fullName || 'Student',
+      department: s.department || 'CSE',
+      semester: s.semester || 'Semester 6',
+      attendance: s.attendancePercentage || s.attendance || 72,
+      result: (s.attendancePercentage || s.attendance || 72) < 75 ? 'Low Attendance' : 'Low Marks',
+      risk: (s.attendancePercentage || s.attendance || 72) < 70 ? 'High' : (s.attendancePercentage || s.attendance || 72) < 75 ? 'Medium' : 'Low'
+    }));
+
+    return { distribution, atRiskStudents };
+  },
+
+  getFacultyAnalytics: async () => {
+    await mockDB.delay(60);
+    const users = JSON.parse(localStorage.getItem('acad_users') || '[]');
+    const depts = await mockDB.getDepartmentsList();
+    const leaves = JSON.parse(localStorage.getItem('acad_leave_requests') || '[]');
+
+    const totalFaculty = users.filter(u => u.role === 'faculty').length || 38;
+    const leavesSummary = [
+      { month: 'January', leaves: 12 },
+      { month: 'February', leaves: 8 },
+      { month: 'March', leaves: 15 },
+      { month: 'April', leaves: 10 },
+      { month: 'May', leaves: 6 },
+      { month: 'June', leaves: 14 }
+    ];
+
+    const departmentFaculty = depts.map((d, i) => {
+      const count = users.filter(u => u.role === 'faculty' && u.department === d).length || (8 - (i % 3));
+      return {
+        department: d,
+        facultyCount: count > 0 ? count : 8,
+        avgWorkload: `${18 + (i % 4)} hrs/wk`,
+        onLeave: leaves.filter(l => l.department === d && l.status === 'approved').length || (i % 2)
+      };
+    });
+
+    return {
+      totalFaculty,
+      leavesSummary,
+      departmentFaculty
+    };
+  },
+
+  getPlacementAnalytics: async () => {
+    await mockDB.delay(60);
+    const depts = await mockDB.getDepartmentsList();
+
+    const overview = {
+      eligibleStudents: 320,
+      registeredStudents: 298,
+      placedStudents: 251,
+      placementRate: 78.4,
+      companiesParticipated: 42,
+      highestPackage: '18.5 LPA',
+      averagePackage: '6.2 LPA'
+    };
+
+    const branchPlacements = depts.slice(0, 5).map((d, i) => {
+      const eligible = 80 - (i * 8);
+      const placed = Math.round(eligible * (0.85 - (i * 0.05)));
+      return {
+        department: d,
+        eligible,
+        placed,
+        placementRate: Number(((placed / eligible) * 100).toFixed(1))
+      };
+    });
+
+    return { overview, branchPlacements };
   },
 
   getPendingDocumentRequests: async () => {

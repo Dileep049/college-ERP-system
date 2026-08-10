@@ -23,25 +23,46 @@ import {
   Check, 
   X, 
   BookOpen,
-  DollarSign,
-  Briefcase
+  Briefcase,
+  Award,
+  AlertTriangle,
+  FileText,
+  Filter,
+  UserCheck,
+  Plus,
+  RefreshCw,
+  Clock,
+  Printer,
+  ChevronRight,
+  Eye,
+  FileCheck,
+  MessageSquare,
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
+  AlertCircle
 } from 'lucide-react';
 
 export const PrincipalPortal = ({ subPage }) => {
   const { user } = useAuth();
   
   if (subPage === 'dashboard') return <PrincipalDashboard principal={user} />;
-  if (subPage === 'branches') return <PrincipalBranches principal={user} />;
+  if (subPage === 'branches') return <PrincipalBranchAnalytics principal={user} />;
+  if (subPage === 'results') return <PrincipalSemesterResults principal={user} />;
+  if (subPage === 'performance') return <PrincipalAcademicPerformance principal={user} />;
+  if (subPage === 'faculty') return <PrincipalFacultyAnalytics principal={user} />;
+  if (subPage === 'attendance') return <PrincipalAttendanceAnalytics principal={user} />;
+  if (subPage === 'calendar') return <PrincipalCalendar principal={user} />;
   if (subPage === 'reports') return <PrincipalReports principal={user} />;
   if (subPage === 'leaves') return <PrincipalLeaves principal={user} />;
-  if (subPage === 'calendar') return <PrincipalCalendar principal={user} />;
-  if (subPage === 'cbcs') return <PrincipalCbcs principal={user} />;
   if (subPage === 'documents') return <PrincipalDocuments principal={user} />;
   if (subPage === 'grievances') return <PrincipalGrievances principal={user} />;
+  if (subPage === 'placements') return <PrincipalPlacementAnalytics principal={user} />;
+  if (subPage === 'settings') return <PrincipalSettings principal={user} />;
   return <PrincipalDashboard principal={user} />;
 };
 
-// 1. PRINCIPAL DASHBOARD
+// 1. PRINCIPAL DASHBOARD (EXECUTIVE COMMAND CONSOLE)
 const PrincipalDashboard = ({ principal }) => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
@@ -65,133 +86,165 @@ const PrincipalDashboard = ({ principal }) => {
     return (
       <div className="space-y-6 animate-pulse text-xs font-semibold">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {[1,2,3,4].map(i => <div key={i} className="h-28 bg-slate-200 dark:bg-slate-800 rounded-3xl"></div>)}
+          {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="h-28 bg-slate-200 dark:bg-slate-800 rounded-3xl"></div>)}
         </div>
       </div>
     );
   }
 
+  const cards = stats?.cards || {};
+  const insights = stats?.insights || [];
+  const topDepartments = stats?.topDepartments || [];
+
   return (
     <div className="space-y-6 text-xs font-semibold">
       
-      {/* Hero */}
+      {/* Header Banner */}
       <div className="p-6 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-950 text-white shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
           <Building size={140} />
         </div>
-        <div className="relative z-10">
-          <h2 className="text-2xl font-extrabold font-display">KBN Executive Command Console</h2>
-          <p className="text-sm text-slate-400 mt-1">
-            Principal: {principal.fullName} • Global Administration Oversight
-          </p>
-        </div>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex items-center justify-between">
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Enrolled Wards</span>
-            <p className="text-3xl font-black text-slate-900 dark:text-white mt-1.5">{stats?.cards.totalStudents}</p>
+            <span className="px-3 py-1 bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider rounded-full">
+              KBN Executive Command Console
+            </span>
+            <h2 className="text-2xl font-black font-display mt-2">Institutional Executive Overview</h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Principal: <strong className="text-white font-bold">{principal?.fullName || 'Dr. Arthur Pendelton'}</strong> • Institutional Operations & Governance
+            </p>
           </div>
-          <div className="p-3 bg-blue-500/10 text-blue-500 rounded-2xl">
-            <Users size={20} />
-          </div>
-        </div>
-
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Active Faculty Members</span>
-            <p className="text-3xl font-black text-slate-900 dark:text-white mt-1.5">{stats?.cards.totalFaculty}</p>
-          </div>
-          <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-2xl">
-            <Building2 size={20} />
-          </div>
-        </div>
-
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-505 uppercase tracking-wider">Academic Branches</span>
-            <p className="text-3xl font-black text-slate-900 dark:text-white mt-1.5">{KBN_BRANCHES.length}</p>
-          </div>
-          <div className="p-3 bg-purple-500/10 text-purple-500 rounded-2xl">
-            <Calendar size={20} />
-          </div>
-        </div>
-
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Global Attendance compliance</span>
-            <p className="text-3xl font-black text-blue-605 mt-1.5">{stats?.cards.attendancePercentage}%</p>
-          </div>
-          <div className="p-3 bg-blue-500/10 text-blue-600 rounded-2xl">
-            <TrendingUp size={20} />
+          <div className="flex items-center gap-2">
+            <a href="/principal/branches" className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-2xl backdrop-blur-md border border-white/10">
+              Branch Analytics
+            </a>
+            <a href="/principal/results" className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-2xl shadow-lg shadow-purple-500/20">
+              Semester Results
+            </a>
           </div>
         </div>
       </div>
 
-      {/* Financials, placements & circulation */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-extrabold text-slate-400 block uppercase">Total ERP Fees Settle</span>
-            <p className="text-2xl font-black text-slate-850 dark:text-white mt-1">₹{(stats?.cards.totalCollected || 0).toLocaleString()}</p>
-            <span className="text-[9px] text-slate-400 block mt-0.5">of ₹{(stats?.cards.totalInvoiced || 0).toLocaleString()} invoiced</span>
-          </div>
-          <div className="p-2.5 bg-indigo-500/10 text-indigo-500 rounded-xl"><DollarSign size={18} /></div>
+      {/* 10 Executive KPI Cards Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md">
+          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Total Students</span>
+          <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{cards.totalStudents}</p>
+          <span className="text-[9.5px] text-emerald-500 font-bold block mt-1">Active Enrolled</span>
         </div>
 
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-extrabold text-slate-400 block uppercase">Library assets loan</span>
-            <p className="text-2xl font-black text-slate-850 dark:text-white mt-1">{stats?.cards.activeCheckouts}</p>
-            <span className="text-[9px] text-slate-400 block mt-0.5">textbooks currently checked out</span>
-          </div>
-          <div className="p-2.5 bg-purple-500/10 text-purple-500 rounded-xl"><BookOpen size={18} /></div>
+        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md">
+          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Total Faculty</span>
+          <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{cards.totalFaculty}</p>
+          <span className="text-[9.5px] text-purple-500 font-bold block mt-1">Teaching Staff</span>
         </div>
 
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-extrabold text-slate-400 block uppercase">Placed Candidates</span>
-            <p className="text-2xl font-black text-emerald-500 mt-1">{stats?.cards.placedCount}</p>
-            <span className="text-[9px] text-slate-400 block mt-0.5">KBN placed students</span>
-          </div>
-          <div className="p-2.5 bg-emerald-500/10 text-emerald-500 rounded-xl"><Briefcase size={18} /></div>
+        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md">
+          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Departments</span>
+          <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{cards.totalDepartments}</p>
+          <span className="text-[9.5px] text-indigo-500 font-bold block mt-1">Academic Branches</span>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md">
+          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Total HODs</span>
+          <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{cards.totalHODs}</p>
+          <span className="text-[9.5px] text-amber-500 font-bold block mt-1">Department Heads</span>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md">
+          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Ward Counsellors</span>
+          <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{cards.totalWardCounsellors}</p>
+          <span className="text-[9.5px] text-emerald-500 font-bold block mt-1">Active Counsellors</span>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md">
+          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Attendance %</span>
+          <p className="text-2xl font-black text-emerald-600 mt-1">{cards.attendancePercentage}%</p>
+          <span className="text-[9.5px] text-slate-400 font-bold block mt-1">Institutional Average</span>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md">
+          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Students At Risk</span>
+          <p className="text-2xl font-black text-rose-600 mt-1">{cards.studentsAtRisk}</p>
+          <span className="text-[9.5px] text-rose-500 font-bold block mt-1">&lt;75% Attendance / Low</span>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md">
+          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Students Passed</span>
+          <p className="text-2xl font-black text-emerald-600 mt-1">{cards.studentsPassed}</p>
+          <span className="text-[9.5px] text-emerald-500 font-bold block mt-1">Semester Passed</span>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md">
+          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Students Failed</span>
+          <p className="text-2xl font-black text-rose-500 mt-1">{cards.studentsFailed}</p>
+          <span className="text-[9.5px] text-slate-400 font-bold block mt-1">With Backlogs</span>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md">
+          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Placement Rate</span>
+          <p className="text-2xl font-black text-indigo-600 mt-1">{cards.placementRate}%</p>
+          <span className="text-[9.5px] text-indigo-500 font-bold block mt-1">Corporate Selections</span>
         </div>
       </div>
 
-      {/* Comparisons Charts */}
+      {/* Executive Insights & Top Performing Departments */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Branch attendance comparison */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl">
-          <span className="text-xs font-extrabold text-slate-400 block uppercase tracking-wider mb-5">Attendance Rate comparison by branch</span>
-          <div className="h-64 text-[9.5px]">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-              <BarChart data={stats?.graphs.branchAttendance}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="name" stroke="#94A3B8" />
-                <YAxis domain={[50, 100]} stroke="#94A3B8" />
-                <Tooltip />
-                <Bar dataKey="Attendance" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+        {/* Executive Insights (Generated from Database Calculations) */}
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <TrendingUp className="text-purple-600" size={18} />
+              Institutional Executive Insights
+            </h3>
+            <span className="px-2.5 py-0.5 bg-purple-500/10 text-purple-600 text-[9.5px] font-bold rounded-full">
+              Automated Analytics
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {insights.map((ins, i) => (
+              <div key={i} className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/40 dark:border-slate-800 flex items-start gap-3">
+                <div className="w-7 h-7 rounded-xl bg-purple-600/10 text-purple-600 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                  {i + 1}
+                </div>
+                <p className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
+                  {ins.text}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Student enrollment distributions */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl">
-          <span className="text-xs font-extrabold text-slate-400 block uppercase tracking-wider mb-5">Student Enrollment comparisons</span>
-          <div className="h-64 text-[9.5px]">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-              <BarChart data={stats?.graphs.deptComparison}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="name" stroke="#94A3B8" />
-                <YAxis stroke="#94A3B8" />
-                <Tooltip />
-                <Bar dataKey="Students" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+        {/* Top Performing Departments */}
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <Award className="text-amber-500" size={18} />
+              Top Performing Departments
+            </h3>
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Dynamic Ranking</span>
+          </div>
+
+          <div className="space-y-3">
+            {topDepartments.map((dept) => (
+              <div key={dept.name} className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/40 dark:border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs ${dept.rank === 1 ? 'bg-amber-400 text-slate-950' : dept.rank === 2 ? 'bg-slate-300 text-slate-950' : 'bg-amber-700 text-white'}`}>
+                    #{dept.rank}
+                  </span>
+                  <div>
+                    <h4 className="text-xs font-black text-slate-900 dark:text-white">{dept.name}</h4>
+                    <p className="text-[10px] text-slate-400">Pass Rate: <strong className="text-emerald-600">{dept.passRate}%</strong> • Avg Marks: {dept.avgMarks}</p>
+                  </div>
+                </div>
+                <div className="text-right text-[11px]">
+                  <span className="text-purple-600 dark:text-purple-400 font-black">{dept.placementRate}% Placement</span>
+                  <span className="text-[9.5px] text-slate-400 block font-medium">Att: {dept.attendance}%</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -201,927 +254,558 @@ const PrincipalDashboard = ({ principal }) => {
   );
 };
 
-// 2. PRINCIPAL BRANCHES LIST
-const PrincipalBranches = () => {
-  const [branchesData, setBranchesData] = useState([]);
+// 2. BRANCH ANALYTICS & COMPARISON
+const PrincipalBranchAnalytics = () => {
+  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchBranches = async () => {
-      try {
-        setLoading(true);
-        const users = await mockDB.getAllUsers();
-        const studentsList = JSON.parse(localStorage.getItem('acad_students') || '[]');
-        const fees = JSON.parse(localStorage.getItem('acad_fees') || '[]');
-        
-        const branchRows = KBN_BRANCHES.map(branchName => {
-          const branchStuds = users.filter(u => u.role === 'student' && u.department === branchName);
-          const studentIds = branchStuds.map(s => s.uid);
-          
-          const profiles = studentsList.filter(p => studentIds.includes(p.studentId));
-          const avgCGPA = profiles.length > 0 ? (profiles.reduce((acc, curr) => acc + curr.cgpa, 0) / profiles.length).toFixed(2) : '8.00';
-          const avgAtt = profiles.length > 0 ? Math.round(profiles.reduce((acc, curr) => acc + curr.attendancePercentage, 0) / profiles.length) : 100;
-          
-          const branchFees = fees.filter(f => f.department === branchName);
-          const collected = branchFees.filter(f => f.status === 'paid').reduce((acc, curr) => acc + curr.amount, 0);
-
-          return {
-            name: branchName,
-            studentCount: branchStuds.length,
-            gpa: avgCGPA,
-            attendance: avgAtt,
-            feesCollected: collected
-          };
-        });
-
-        setBranchesData(branchRows);
-      } catch (_) {}
-      finally {
-        setLoading(false);
-      }
+      setLoading(true);
+      const res = await mockDB.getBranchAnalytics();
+      setData(res);
+      setLoading(false);
     };
     fetchBranches();
   }, []);
 
+  if (loading) return <div className="p-8 text-center text-slate-400 text-xs">Loading branch analytics...</div>;
+
   return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl text-xs font-semibold">
-      <span className="text-xs font-extrabold text-slate-400 block uppercase tracking-wider border-b border-slate-100 dark:border-slate-800/80 pb-4 mb-4">Branch Performance comparison ledger</span>
-      
-      {loading ? (
-        <div className="py-20 text-center animate-pulse text-slate-450">Loading branch lists...</div>
-      ) : (
-        <div className="border border-slate-100 dark:border-slate-850 rounded-2xl overflow-hidden overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-slate-50 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800/80 text-slate-400 font-bold uppercase tracking-wider">
-                <th className="px-5 py-3">Branch Name</th>
-                <th className="px-5 py-3 text-center">Student count</th>
-                <th className="px-5 py-3 text-center">Average CGPA</th>
-                <th className="px-5 py-3 text-center">Average Attendance</th>
-                <th className="px-5 py-3 text-center">Fees Settle Amount</th>
+    <div className="space-y-6 text-xs font-semibold">
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
+        <h2 className="text-lg font-black text-slate-900 dark:text-white mb-1">Branch Analytics & Institutional Comparison</h2>
+        <p className="text-xs text-slate-400 mb-6">Comparative metrics across all active academic branches in KBN College</p>
+
+        {/* Branch Bar Chart */}
+        <div className="h-64 mb-8">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+              <XAxis dataKey="branch" stroke="#94A3B8" />
+              <YAxis domain={[0, 100]} stroke="#94A3B8" />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="passRate" fill="#9333EA" name="Pass Rate %" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="attendance" fill="#10B981" name="Attendance %" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="placementRate" fill="#3B82F6" name="Placement Rate %" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Branch Analytics Table */}
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800">
+          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+              <tr>
+                <th className="p-4">Branch / Department</th>
+                <th className="p-4 text-center">Students</th>
+                <th className="p-4 text-center">Faculty</th>
+                <th className="p-4 text-center">Avg Attendance %</th>
+                <th className="p-4 text-center">Pass Rate %</th>
+                <th className="p-4 text-center">Placement Rate %</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200 font-bold">
-              {branchesData.map(b => (
-                <tr key={b.name} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
-                  <td className="px-5 py-4">{b.name}</td>
-                  <td className="px-5 py-4 text-center">{b.studentCount}</td>
-                  <td className="px-5 py-4 text-center text-blue-600 dark:text-blue-400">{b.gpa}</td>
-                  <td className="px-5 py-4 text-center">
-                    <span className={b.attendance >= 75 ? 'text-emerald-500' : 'text-rose-505'}>{b.attendance}%</span>
-                  </td>
-                  <td className="px-5 py-4 text-center">₹{b.feesCollected.toLocaleString()}</td>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {data.map((b) => (
+                <tr key={b.branch} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                  <td className="p-4 font-extrabold text-slate-900 dark:text-white">{b.branch}</td>
+                  <td className="p-4 text-center font-bold text-purple-600">{b.students}</td>
+                  <td className="p-4 text-center font-bold">{b.faculty}</td>
+                  <td className="p-4 text-center font-extrabold text-emerald-600">{b.attendance}%</td>
+                  <td className="p-4 text-center font-black text-purple-600">{b.passRate}%</td>
+                  <td className="p-4 text-center font-black text-indigo-600">{b.placementRate}%</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      )}
+      </div>
     </div>
   );
 };
 
-// 4. PRINCIPAL REPORTS & EXPORTS
-const PrincipalReports = () => {
-  const [branch, setBranch] = useState('All');
-  const [semester, setSemester] = useState('All');
-  const [studentsList, setStudentsList] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const { showToast } = useAuth();
-
-  const handleLoadReports = async () => {
-    try {
-      setLoading(true);
-      const auditData = await mockDB.getPrincipalGlobalAcademicAudit(branch, semester);
-      setStudentsList(auditData);
-    } catch (_) {
-      showToast('Could not load reports.', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+// 3. SEMESTER RESULT ANALYTICS
+const PrincipalSemesterResults = () => {
+  const [dept, setDept] = useState('All Departments');
+  const [year, setYear] = useState('2025-26');
+  const [semester, setSemester] = useState('Semester 6');
+  const [data, setData] = useState(null);
 
   useEffect(() => {
-    handleLoadReports();
-  }, [branch, semester]);
+    const fetchResults = async () => {
+      const res = await mockDB.getSemesterResultAnalytics(dept, year, semester);
+      setData(res);
+    };
+    fetchResults();
+  }, [dept, year, semester]);
 
-  const handleExportTXT = () => {
-    if (studentsList.length === 0) return;
+  if (!data) return <div className="p-8 text-center text-slate-400 text-xs">Loading semester results...</div>;
 
-    const headers = ['Roll Number', 'Student Name', 'Department', 'Semester', 'Attended / Total', 'Attendance %', 'Avg Exam Mark', 'CGPA'];
-    const rows = studentsList.map(s => [
-      s.rollNumber,
-      s.fullName,
-      s.department,
-      s.semester,
-      `${s.attendedClasses}/${s.totalClasses}`,
-      `${s.attendancePercentage}%`,
-      `${s.avgMarks}/50`,
-      s.cgpa
-    ]);
-
-    exportPrincipalReport(`All Branch ${branch} Sem ${semester} Exam & Attendance Audit`, headers, rows);
-    showToast('All-Branch executive compliance register downloaded.', 'success');
-  };
+  const s = data.summary;
 
   return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl text-xs font-semibold space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-5">
+    <div className="space-y-6 text-xs font-semibold">
+      {/* Header & Filters */}
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h3 className="text-base font-extrabold text-slate-800 dark:text-white">All-Branch Exam Results & Attendance Audit Matrix</h3>
-          <p className="text-xs text-slate-450 mt-1">Principal Executive Portal • Global cross-departmental academic performance ledger</p>
+          <h2 className="text-lg font-black text-slate-900 dark:text-white">Semester Result Analytics</h2>
+          <p className="text-xs text-slate-400">Institutional academic performance breakdown and subject alerts</p>
         </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <select
-            value={branch}
-            onChange={(e) => setBranch(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-bold"
-          >
-            <option value="All">All Departments / Branches</option>
-            {KBN_BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+        <div className="flex flex-wrap items-center gap-2">
+          <select value={dept} onChange={e => setDept(e.target.value)} className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold">
+            <option value="All Departments">All Departments</option>
+            <option value="B.Sc. Computer Science (CS)">CSE</option>
+            <option value="B.Sc. Electronics (ECE)">ECE</option>
+            <option value="B.Sc. Electrical (EEE)">EEE</option>
           </select>
-          <select
-            value={semester}
-            onChange={(e) => setSemester(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-805 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-bold"
-          >
-            <option value="All">All Semesters</option>
+          <select value={year} onChange={e => setYear(e.target.value)} className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold">
+            <option value="2025-26">2025-26</option>
+            <option value="2026-27">2026-27</option>
+          </select>
+          <select value={semester} onChange={e => setSemester(e.target.value)} className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold">
             {KBN_SEMESTERS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
-          
-          <button
-            onClick={handleExportTXT}
-            disabled={studentsList.length === 0}
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-950 dark:bg-blue-600 dark:hover:bg-blue-755 disabled:bg-slate-200 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow"
-          >
-            <Download size={14} />
-            <span>Export Campus Report</span>
-          </button>
         </div>
       </div>
 
-      {loading ? (
-        <div className="py-20 text-center animate-pulse text-slate-450">Compiling all-branch metrics...</div>
-      ) : studentsList.length === 0 ? (
-        <div className="text-center py-20 text-slate-450">No student records match selected filter.</div>
-      ) : (
-        <div className="border border-slate-100 dark:border-slate-800/80 rounded-2xl overflow-hidden overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800/80">
-                <th className="px-5 py-3">Roll Number</th>
-                <th className="px-5 py-3">Student Name</th>
-                <th className="px-5 py-3">Department</th>
-                <th className="px-5 py-3">Semester</th>
-                <th className="px-5 py-3 text-center">Exam Score (Avg / 50)</th>
-                <th className="px-5 py-3 text-center">Attendance Rate</th>
-                <th className="px-5 py-3 text-center">CGPA</th>
-                <th className="px-5 py-3 text-center">Standing</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-bold text-slate-850 dark:text-slate-200">
-              {studentsList.map(s => (
-                <tr key={s.uid} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
-                  <td className="px-5 py-4">{s.rollNumber}</td>
-                  <td className="px-5 py-4">{s.fullName}</td>
-                  <td className="px-5 py-4"><span className="px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded text-[9.5px] font-black uppercase">{s.department}</span></td>
-                  <td className="px-5 py-4">{s.semester}</td>
-                  <td className="px-5 py-4 text-center text-purple-600 dark:text-purple-400 font-extrabold">{s.avgMarks} / 50</td>
-                  <td className="px-5 py-4 text-center">
-                    <span className={s.attendancePercentage >= 75 ? 'text-emerald-500 font-extrabold' : 'text-rose-500 font-extrabold'}>
-                      {s.attendancePercentage}% ({s.attendedClasses}/{s.totalClasses})
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-center text-blue-600 dark:text-blue-400 font-black">{s.cgpa}</td>
-                  <td className="px-5 py-4 text-center">
-                    <span className={`px-2.5 py-1 rounded text-[9.5px] font-black uppercase ${
-                      s.cgpa >= 8.5 ? 'bg-emerald-500/10 text-emerald-500' :
-                      s.attendancePercentage < 75 ? 'bg-rose-500/10 text-rose-500' : 'bg-blue-500/10 text-blue-500'
-                    }`}>
-                      {s.cgpa >= 8.5 ? 'Honors' : s.attendancePercentage < 75 ? 'Defaulter Warning' : 'Good Standing'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Semester Performance Dashboard Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 text-center">
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <span className="text-[10px] text-slate-400 block uppercase font-bold">Total Students</span>
+          <span className="text-xl font-black text-slate-900 dark:text-white">{s.totalStudents}</span>
+        </div>
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <span className="text-[10px] text-slate-400 block uppercase font-bold">Appeared</span>
+          <span className="text-xl font-black text-purple-600">{s.appearedStudents}</span>
+        </div>
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <span className="text-[10px] text-slate-400 block uppercase font-bold">Passed</span>
+          <span className="text-xl font-black text-emerald-600">{s.passedStudents}</span>
+        </div>
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <span className="text-[10px] text-slate-400 block uppercase font-bold">Failed</span>
+          <span className="text-xl font-black text-rose-500">{s.failedStudents}</span>
+        </div>
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <span className="text-[10px] text-slate-400 block uppercase font-bold">Pass Rate %</span>
+          <span className="text-xl font-black text-purple-600">{s.passPercentage}%</span>
+        </div>
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <span className="text-[10px] text-slate-400 block uppercase font-bold">Avg %</span>
+          <span className="text-xl font-black text-indigo-600">{s.averagePercentage}%</span>
+        </div>
+      </div>
+
+      {/* Low Performance Alert Banner */}
+      {data.lowPerformanceAlerts.length > 0 && (
+        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-3xl space-y-2">
+          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-black text-xs">
+            <AlertTriangle size={18} />
+            <span>Academic Performance Alerts (Critical / Attention Required)</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {data.lowPerformanceAlerts.map(al => (
+              <div key={al.subject} className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-amber-500/20 text-xs font-bold text-slate-800 dark:text-slate-200">
+                {al.message}
+              </div>
+            ))}
+          </div>
         </div>
       )}
+
+      {/* Semester Trend & Branch Comparison Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
+          <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-4">Semester-wise Performance Trend</h3>
+          <div className="h-60">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data.semesterTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                <XAxis dataKey="semester" stroke="#94A3B8" />
+                <YAxis domain={[60, 100]} stroke="#94A3B8" />
+                <Tooltip />
+                <Line type="monotone" dataKey="passRate" stroke="#9333EA" strokeWidth={3} dot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
+          <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-4">Branch-wise Semester Performance ({semester})</h3>
+          <div className="h-60">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.branchComparison}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                <XAxis dataKey="branch" stroke="#94A3B8" />
+                <YAxis domain={[50, 100]} stroke="#94A3B8" />
+                <Tooltip />
+                <Bar dataKey="passRate" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Subject Performance Table */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden p-6 space-y-4">
+        <h3 className="text-base font-black text-slate-900 dark:text-white">Subject-wise Academic Performance</h3>
+        <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
+          <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+            <tr>
+              <th className="p-3">Subject Name</th>
+              <th className="p-3 text-center">Appeared</th>
+              <th className="p-3 text-center">Passed</th>
+              <th className="p-3 text-center">Failed</th>
+              <th className="p-3 text-center">Pass Rate %</th>
+              <th className="p-3 text-center">Avg Marks</th>
+              <th className="p-3 text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            {data.subjects.map((sub) => (
+              <tr key={sub.name} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                <td className="p-3 font-extrabold text-slate-900 dark:text-white">{sub.name}</td>
+                <td className="p-3 text-center font-bold">{sub.appeared}</td>
+                <td className="p-3 text-center font-bold text-emerald-600">{sub.passed}</td>
+                <td className="p-3 text-center font-bold text-rose-500">{sub.failed}</td>
+                <td className="p-3 text-center font-black text-purple-600">{sub.passRate}%</td>
+                <td className="p-3 text-center font-bold">{sub.avgMarks}</td>
+                <td className="p-3 text-center">
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${sub.status === 'Critical' ? 'bg-rose-500/10 text-rose-600' : sub.status === 'Attention' ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                    {sub.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
 
-const exportPrincipalReport = (title, headers, rows) => {
-  let content = `=========================================================================\n`;
-  content += `KBN CAMPUS COMPLIANCE REGISTER\n`;
-  content += `Scope: ${title.toUpperCase()}\n`;
-  content += `Generated on: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}\n`;
-  content += `=========================================================================\n\n`;
-
-  let headerLine = '';
-  headers.forEach(h => {
-    headerLine += h.padEnd(22);
-  });
-  content += headerLine + '\n';
-  content += '='.repeat(110) + '\n';
-
-  rows.forEach(row => {
-    let rowLine = '';
-    row.forEach(cell => {
-      rowLine += String(cell).padEnd(22);
-    });
-    content += rowLine + '\n';
-  });
-
-  content += '\n=========================== END OF REPORT =============================\n';
-
-  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${title.toLowerCase().replace(/\s+/g, '_')}_CampusReport.txt`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-};
-
-// 5. PRINCIPAL LEAVES MANAGEMENT
-const PrincipalLeaves = ({ principal }) => {
-  const [reviewLeaves, setReviewLeaves] = useState([]);
-  const [ownLeaves, setOwnLeaves] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [reason, setReason] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [remarks, setRemarks] = useState('');
-  const { showToast } = useAuth();
-
-  const loadLeaves = async () => {
-    try {
-      setLoading(true);
-      // Retrieve leaves for principal review (Faculty, HOD, Student)
-      const data = await mockDB.getLeaves('principal', principal.uid);
-      setReviewLeaves(data);
-
-      // Principal's own leaves
-      const ownData = await mockDB.getLeaves('faculty', principal.uid);
-      setOwnLeaves(ownData);
-    } catch (_) {}
-    finally {
-      setLoading(false);
-    }
-  };
+// 4. ACADEMIC PERFORMANCE & RISK ANALYTICS
+const PrincipalAcademicPerformance = () => {
+  const [data, setData] = useState(null);
 
   useEffect(() => {
-    loadLeaves();
-  }, [principal]);
+    const fetchRisk = async () => {
+      const res = await mockDB.getAcademicRiskAnalytics();
+      setData(res);
+    };
+    fetchRisk();
+  }, []);
 
-  const handleSubmitLeave = async (e) => {
-    e.preventDefault();
-    if (!reason || !startDate || !endDate) return;
-
-    try {
-      setSubmitting(true);
-      await mockDB.applyLeave(
-        principal.uid,
-        principal.fullName,
-        null,
-        'All',
-        null,
-        null,
-        reason,
-        startDate,
-        endDate,
-        'principal'
-      );
-      showToast('Leave request submitted to Super Admin!', 'success');
-      setReason('');
-      setStartDate('');
-      setEndDate('');
-      loadLeaves();
-    } catch (_) {
-      showToast('Could not submit leave.', 'error');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleReviewLeave = async (leaveId, action) => {
-    try {
-      await mockDB.reviewLeave(leaveId, action, remarks, 'principal');
-      showToast(`Leave application ${action} successfully.`, 'success');
-      setRemarks('');
-      loadLeaves();
-    } catch (_) {
-      showToast('Action failed.', 'error');
-    }
-  };
+  if (!data) return <div className="p-8 text-center text-slate-400 text-xs">Loading academic risk analytics...</div>;
 
   return (
     <div className="space-y-6 text-xs font-semibold">
-      
-      {/* Review Queue */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl">
-        <div className="border-b border-slate-100 dark:border-slate-800/80 pb-3 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <span className="text-xs font-black text-slate-400 block uppercase tracking-wider">Leave Review Queue</span>
-            <p className="text-[10px] font-normal text-slate-455 mt-0.5">Approve HOD leaves and recommended faculty leave applications</p>
-          </div>
-          <input 
-            type="text" 
-            placeholder="Review remarks..." 
-            value={remarks}
-            onChange={(e) => setRemarks(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold w-full sm:w-64"
-          />
-        </div>
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
+        <h2 className="text-lg font-black text-slate-900 dark:text-white mb-1">Academic Risk Analytics & Marks Distribution</h2>
+        <p className="text-xs text-slate-400 mb-6">Identify students requiring academic intervention and monitor grade distributions</p>
 
-        {reviewLeaves.length === 0 ? (
-          <div className="py-10 text-center text-slate-400">No leaves pending in review queue.</div>
-        ) : (
-          <div className="border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800/80">
-                  <th className="px-4 py-3">Applicant Name</th>
-                  <th className="px-4 py-3">Department</th>
-                  <th className="px-4 py-3">Leave Period</th>
-                  <th className="px-4 py-3">Reason</th>
-                  <th className="px-4 py-3 text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200 font-bold">
-                {reviewLeaves.map(l => {
-                  const role = l.applicantRole || l.applicant_role;
-                  const prinStat = l.principalStatus || l.principal_status;
-                  return (
-                    <tr key={l.leaveId}>
-                      <td className="px-4 py-3">
-                        <div>{l.studentName}</div>
-                        <span className={`text-[9px] font-black uppercase ${role === 'hod' ? 'text-purple-500' : 'text-emerald-500'}`}>{role}</span>
-                      </td>
-                      <td className="px-4 py-3">{l.branch}</td>
-                      <td className="px-4 py-3">{l.startDate} to {l.endDate}</td>
-                      <td className="px-4 py-3 font-normal">{l.reason}</td>
-                      <td className="px-4 py-3 text-center">
-                        {prinStat === 'pending' ? (
-                          <div className="flex justify-center items-center gap-2">
-                            <button 
-                              onClick={() => handleReviewLeave(l.leaveId, 'approved')}
-                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold"
-                            >
-                              Approve
-                            </button>
-                            <button 
-                              onClick={() => handleReviewLeave(l.leaveId, 'rejected')}
-                              className="px-2.5 py-1 bg-rose-650 hover:bg-rose-700 text-white rounded font-bold"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        ) : (
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
-                            prinStat === 'approved' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
-                          }`}>{prinStat}</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* Principal Apply Leave & History */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        
-        {/* Apply Form */}
-        <div className="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl self-start">
-          <h3 className="text-sm font-extrabold text-slate-855 dark:text-white uppercase tracking-wider mb-5">Apply Principal Leave</h3>
-          
-          <form onSubmit={handleSubmitLeave} className="space-y-4">
-            <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Reason of Absence</label>
-              <textarea
-                rows="4"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="Provide detailed explanation..."
-                required
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white resize-none"
-              ></textarea>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Start Date</label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  required
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none dark:text-white font-bold"
-                />
-              </div>
-              <div>
-                <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">End Date</label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  required
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none dark:text-white font-bold"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg transition-all"
-            >
-              {submitting ? 'Submitting...' : 'Apply Leave'}
-            </button>
-          </form>
-        </div>
-
-        {/* Own Leave History */}
-        <div className="lg:col-span-3 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl">
-          <span className="text-xs font-extrabold text-slate-400 dark:text-slate-505 uppercase tracking-wider block border-b border-slate-100 dark:border-slate-850 pb-4 mb-4">Your Leaves Ledger</span>
-          
-          {loading ? (
-            <div className="py-20 text-center animate-pulse">Loading...</div>
-          ) : ownLeaves.length === 0 ? (
-            <div className="py-20 text-center text-slate-455">No absence applications filed.</div>
-          ) : (
-            <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1">
-              {ownLeaves.map(l => (
-                <div key={l.leaveId} className="p-4 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-850 rounded-2xl flex items-center justify-between">
-                  <div>
-                    <h4 className="font-extrabold text-slate-850 dark:text-slate-200 text-xs">{l.reason}</h4>
-                    <span className="text-[10px] text-slate-400 mt-1 block">Period: {l.startDate} to {l.endDate}</span>
-                    <div className="text-[10px] text-slate-450 mt-2 font-semibold">
-                      <span>Workflow status: </span>
-                      Super Admin: <span className={l.adminStatus === 'approved' ? 'text-emerald-500' : l.adminStatus === 'rejected' ? 'text-rose-500' : 'text-amber-500'}>{l.adminStatus || 'pending'}</span>
-                    </div>
-                    {l.remarks && <p className="text-[10px] mt-1 text-slate-500">Remarks: {l.remarks}</p>}
-                  </div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded font-black uppercase ${
-                    l.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500' :
-                    l.status === 'rejected' ? 'bg-rose-500/10 text-rose-500' : 'bg-amber-500/10 text-amber-500'
-                  }`}>{l.status}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-      </div>
-
-    </div>
-  );
-};
-
-// 6. PRINCIPAL CALENDAR MANAGER
-const PrincipalCalendar = ({ principal }) => {
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('monthly');
-  const [typeFilter, setTypeFilter] = useState('all');
-  
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingEvent, setEditingEvent] = useState(null);
-  const [year, setYear] = useState('2026-2027');
-  const [sem, setSem] = useState('All');
-  const [title, setTitle] = useState('');
-  const [type, setType] = useState('holiday');
-  const [subType, setSubType] = useState('government');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [description, setDescription] = useState('');
-  const { showToast } = useAuth();
-
-  const loadEvents = async () => {
-    try {
-      setLoading(true);
-      const data = await mockDB.getCalendarEvents();
-      setEvents(data);
-    } catch (_) {}
-    finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadEvents();
-  }, [principal]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        id: editingEvent ? editingEvent.id : undefined,
-        year,
-        semester: sem,
-        title,
-        type,
-        subType,
-        startDate,
-        endDate,
-        description
-      };
-      await mockDB.saveCalendarEvent(payload);
-      showToast('Academic Calendar updated.', 'success');
-      setIsModalOpen(false);
-      resetForm();
-      loadEvents();
-    } catch (_) {
-      showToast('Action failed.', 'error');
-    }
-  };
-
-  const resetForm = () => {
-    setEditingEvent(null);
-    setYear('2026-2027');
-    setSem('All');
-    setTitle('');
-    setType('holiday');
-    setSubType('government');
-    setStartDate('');
-    setEndDate('');
-    setDescription('');
-  };
-
-  const handleOpenEdit = (evt) => {
-    setEditingEvent(evt);
-    setYear(evt.year);
-    setSem(evt.semester || 'All');
-    setTitle(evt.title);
-    setType(evt.type);
-    setSubType(evt.subType || 'government');
-    setStartDate(evt.startDate);
-    setEndDate(evt.endDate);
-    setDescription(evt.description || '');
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm('Delete this event?')) {
-      try {
-        await mockDB.deleteCalendarEvent(id);
-        showToast('Event deleted from schedule.', 'info');
-        loadEvents();
-      } catch (_) {
-        showToast('Action failed.', 'error');
-      }
-    }
-  };
-
-  const filteredEvents = events.filter(evt => {
-    const matchesType = typeFilter === 'all' || evt.type === typeFilter;
-    const today = new Date().toISOString().split('T')[0];
-    if (viewMode === 'daily') {
-      return matchesType && evt.startDate <= today && evt.endDate >= today;
-    }
-    return matchesType;
-  });
-
-  return (
-    <div className="space-y-6 text-xs font-semibold">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-md">
-        <div className="flex flex-wrap items-center gap-3">
-          <select
-            value={viewMode}
-            onChange={(e) => setViewMode(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
-          >
-            <option value="monthly">Monthly Overview</option>
-            <option value="daily">Today's Holidays/Events</option>
-            <option value="weekly">Weekly view</option>
-            <option value="yearly">Yearly Overview</option>
-          </select>
-
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
-          >
-            <option value="all">All Calendar Items</option>
-            <option value="holiday">Holidays</option>
-            <option value="exam">Exams</option>
-            <option value="event">Campus Events</option>
-            <option value="workshop">Workshops</option>
-            <option value="seminar">Seminars</option>
-            <option value="placement">Placement Drives</option>
-          </select>
-        </div>
-
-        <button 
-          onClick={() => { resetForm(); setIsModalOpen(true); }}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow flex items-center gap-2"
-        >
-          <span>Publish Calendar Item</span>
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="py-20 text-center animate-pulse text-slate-400">Loading Academic Calendar...</div>
-      ) : filteredEvents.length === 0 ? (
-        <div className="py-20 text-center text-slate-450 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800">
-          No scheduled events or exams matching criteria.
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEvents.map(evt => (
-            <div key={evt.id} className="p-5 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl rounded-3xl flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-start">
-                  <span className={`px-2 py-0.5 text-[9px] font-black rounded uppercase ${
-                    evt.type === 'holiday' ? 'bg-red-500/10 text-red-500' :
-                    evt.type === 'exam' ? 'bg-amber-500/10 text-amber-500' :
-                    evt.type === 'event' ? 'bg-blue-500/10 text-blue-500' : 'bg-purple-500/10 text-purple-500'
-                  }`}>{evt.type}</span>
-                  <span className="text-[10px] text-slate-400 font-bold">{evt.startDate}</span>
-                </div>
-                
-                <h4 className="font-extrabold text-sm text-slate-850 dark:text-white mt-3">{evt.title}</h4>
-                <p className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-1 font-normal leading-relaxed">{evt.description}</p>
-                
-                {evt.subType && <span className="text-[9.5px] text-indigo-500 font-bold block mt-2">Category: {evt.subType}</span>}
-                {evt.semester && <p className="text-[9.5px] text-slate-400 mt-1">Target Semester: {evt.semester}</p>}
-              </div>
-
-              <div className="flex justify-end gap-2 border-t border-slate-100 dark:border-slate-850 pt-3 mt-3">
-                <button onClick={() => handleOpenEdit(evt)} className="px-2 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-650 rounded text-[10px] font-bold">
-                  Edit
-                </button>
-                <button onClick={() => handleDelete(evt.id)} className="px-2 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded text-[10px] font-bold">
-                  Delete
-                </button>
-              </div>
+        {/* Marks Distribution Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-8">
+          {data.distribution.map((d) => (
+            <div key={d.range} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl text-center border border-slate-200/40 dark:border-slate-800">
+              <span className="text-[10px] text-slate-400 block uppercase font-bold">{d.range}</span>
+              <span className="text-2xl font-black text-purple-600 mt-1 block">{d.count}</span>
+              <span className="text-[9px] text-slate-400 block mt-0.5">Students</span>
             </div>
           ))}
         </div>
-      )}
 
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 p-6 rounded-3xl shadow-2xl relative">
-            <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 p-1 text-slate-500 hover:text-slate-300">
-              <X size={16} />
-            </button>
-
-            <h3 className="text-sm font-black text-slate-900 dark:text-white mb-5 uppercase tracking-wider">
-              {editingEvent ? 'Modify Calendar Event' : 'Publish Calendar Schedule'}
-            </h3>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Title / Caption</label>
-                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Mid Term Exam Reschedule" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] uppercase font-bold text-slate-450 mb-1">Event Type</label>
-                  <select value={type} onChange={(e) => setType(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-805 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold">
-                    <option value="holiday">Holiday</option>
-                    <option value="exam">Exam Schedule</option>
-                    <option value="event">Campus Event</option>
-                    <option value="workshop">Workshop</option>
-                    <option value="seminar">Seminar</option>
-                    <option value="placement">Placement Drive</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] uppercase font-bold text-slate-450 mb-1">Sub-Type</label>
-                  <select value={subType} onChange={(e) => setSubType(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-805 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold">
-                    {type === 'holiday' ? (
-                      <>
-                        <option value="government">Government Holiday</option>
-                        <option value="festival">Festival</option>
-                        <option value="college">College Holiday</option>
-                      </>
-                    ) : type === 'exam' ? (
-                      <>
-                        <option value="mid">Mid Exam</option>
-                        <option value="internal">Internal Exam</option>
-                        <option value="semester">Semester Exam</option>
-                        <option value="practical">Practical Exam</option>
-                      </>
-                    ) : (
-                      <option value="general">General</option>
-                    )}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Start Date</label>
-                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">End Date</label>
-                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Brief Description</label>
-                <textarea rows="3" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white resize-none font-bold"></textarea>
-              </div>
-
-              <button type="submit" className="w-full py-2.5 bg-blue-605 hover:bg-blue-700 text-white rounded-xl font-bold transition-all mt-4">
-                Publish Event
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// 7. PRINCIPAL CBCS ELECTIVE OVERSIGHT
-const PrincipalCbcs = ({ principal }) => {
-  const [registrations, setRegistrations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const { showToast } = useAuth();
-
-  const loadRegistrations = async () => {
-    try {
-      setLoading(true);
-      const data = await mockDB.getGlobalCourseRegistrations();
-      setRegistrations(data);
-    } catch (_) {}
-    finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadRegistrations();
-  }, [principal]);
-
-  const handleApprove = async (studentId) => {
-    try {
-      await mockDB.approveGlobalCourseRegistration(studentId);
-      showToast('CBCS Course Registrations approved for student.', 'success');
-      loadRegistrations();
-    } catch (_) {
-      showToast('Action failed.', 'error');
-    }
-  };
-
-  return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl text-xs font-semibold space-y-4">
-      <div className="border-b border-slate-100 dark:border-slate-800/80 pb-4">
-        <h3 className="text-base font-extrabold text-slate-800 dark:text-white">Choice Based Credit System (CBCS) Oversight</h3>
-        <p className="text-xs text-slate-450 mt-1">Review student elective choices, verify credit loads, and approve semester study plans</p>
-      </div>
-
-      {loading ? (
-        <div className="py-20 text-center animate-pulse text-slate-400">Loading registrations...</div>
-      ) : registrations.length === 0 ? (
-        <div className="py-20 text-center text-slate-450">No CBCS course registration submissions pending.</div>
-      ) : (
-        <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
-                <th className="px-5 py-3">Roll Number</th>
-                <th className="px-5 py-3">Student Name</th>
-                <th className="px-5 py-3">Branch & Semester</th>
-                <th className="px-5 py-3 text-center">Total Credits</th>
-                <th className="px-5 py-3 text-center">Status / Approval</th>
+        {/* Students Requiring Attention Table */}
+        <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Students Requiring Attention (At Risk)</h3>
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800">
+          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+              <tr>
+                <th className="p-3">Roll Number</th>
+                <th className="p-3">Student Name</th>
+                <th className="p-3">Branch</th>
+                <th className="p-3">Semester</th>
+                <th className="p-3 text-center">Attendance %</th>
+                <th className="p-3">Primary Concern</th>
+                <th className="p-3 text-center">Risk Level</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-bold text-slate-800 dark:text-slate-200">
-              {registrations.map(r => (
-                <tr key={r.studentId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
-                  <td className="px-5 py-4">{r.rollNumber}</td>
-                  <td className="px-5 py-4">{r.studentName}</td>
-                  <td className="px-5 py-4">{r.department} • {r.semester}</td>
-                  <td className="px-5 py-4 text-center text-blue-600 dark:text-blue-400">{r.totalCredits || 24} Credits</td>
-                  <td className="px-5 py-4 text-center">
-                    {r.status === 'approved' ? (
-                      <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-500 rounded font-black uppercase text-[10px]">
-                        Approved
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => handleApprove(r.studentId)}
-                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold text-[10px] transition-colors"
-                      >
-                        Approve Study Plan
-                      </button>
-                    )}
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {data.atRiskStudents.map((st) => (
+                <tr key={st.rollNumber} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                  <td className="p-3 font-mono font-bold">{st.rollNumber}</td>
+                  <td className="p-3 font-extrabold text-slate-900 dark:text-white">{st.name}</td>
+                  <td className="p-3 font-bold text-purple-600">{st.department}</td>
+                  <td className="p-3 text-slate-500">{st.semester}</td>
+                  <td className={`p-3 text-center font-black ${st.attendance < 75 ? 'text-rose-500' : 'text-emerald-600'}`}>{st.attendance}%</td>
+                  <td className="p-3 text-slate-500">{st.result}</td>
+                  <td className="p-3 text-center">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black ${st.risk === 'High' ? 'bg-rose-500/10 text-rose-600' : st.risk === 'Medium' ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                      {st.risk === 'High' ? '🔴 High' : st.risk === 'Medium' ? '🟡 Medium' : '🟢 Low'}
+                    </span>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      )}
+      </div>
     </div>
   );
 };
 
-// 8. PRINCIPAL DOCUMENT & CERTIFICATE REGISTRAR
-const PrincipalDocuments = ({ principal }) => {
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [remarks, setRemarks] = useState('');
-  const { showToast } = useAuth();
-
-  const loadRequests = async () => {
-    try {
-      setLoading(true);
-      const data = await mockDB.getPendingDocumentRequests();
-      setRequests(data);
-    } catch (_) {}
-    finally {
-      setLoading(false);
-    }
-  };
+// 5. FACULTY OVERVIEW & ANALYTICS
+const PrincipalFacultyAnalytics = () => {
+  const [data, setData] = useState(null);
 
   useEffect(() => {
-    loadRequests();
-  }, [principal]);
+    const fetchFac = async () => {
+      const res = await mockDB.getFacultyAnalytics();
+      setData(res);
+    };
+    fetchFac();
+  }, []);
 
-  const handleSignApprove = async (id) => {
-    try {
-      await mockDB.approveDocumentRequest(id, remarks);
-      showToast('Official Document digitally signed & released to student!', 'success');
-      setRemarks('');
-      loadRequests();
-    } catch (_) {
-      showToast('Approval action failed.', 'error');
-    }
-  };
+  if (!data) return <div className="p-8 text-center text-slate-400 text-xs">Loading faculty overview...</div>;
 
   return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl text-xs font-semibold space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-4">
+    <div className="space-y-6 text-xs font-semibold">
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
+        <h2 className="text-lg font-black text-slate-900 dark:text-white mb-1">Faculty Overview & Department Workloads</h2>
+        <p className="text-xs text-slate-400 mb-6">Institutional faculty distribution, workload hours, and monthly leave statistics</p>
+
+        {/* Department Faculty Table */}
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 mb-8">
+          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+              <tr>
+                <th className="p-4">Department</th>
+                <th className="p-4 text-center">Faculty Count</th>
+                <th className="p-4 text-center">Avg Workload</th>
+                <th className="p-4 text-center">Faculty On Leave</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {data.departmentFaculty.map((df) => (
+                <tr key={df.department} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                  <td className="p-4 font-extrabold text-slate-900 dark:text-white">{df.department}</td>
+                  <td className="p-4 text-center font-bold text-purple-600">{df.facultyCount} Members</td>
+                  <td className="p-4 text-center font-bold text-slate-700 dark:text-slate-300">{df.avgWorkload}</td>
+                  <td className="p-4 text-center font-bold text-amber-500">{df.onLeave} On Leave</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Monthly Leave Summary */}
+        <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Faculty Leave Summary (Monthly)</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+          {data.leavesSummary.map((l) => (
+            <div key={l.month} className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl text-center border border-slate-200/40 dark:border-slate-800">
+              <span className="text-[10px] text-slate-400 block uppercase font-bold">{l.month}</span>
+              <span className="text-xl font-black text-purple-600 mt-1 block">{l.leaves}</span>
+              <span className="text-[9px] text-slate-400 block mt-0.5">Approved Leaves</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 6. ATTENDANCE ANALYTICS
+const PrincipalAttendanceAnalytics = () => {
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    const fetchAtt = async () => {
+      const res = await mockDB.getBranchAnalytics();
+      setData(res);
+    };
+    fetchAtt();
+  }, []);
+
+  return (
+    <div className="space-y-6 text-xs font-semibold">
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
+        <h2 className="text-lg font-black text-slate-900 dark:text-white mb-1">Branch-wise Attendance Analytics</h2>
+        <p className="text-xs text-slate-400 mb-6">Institutional attendance compliance and low attendance tracking across departments</p>
+
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800">
+          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+              <tr>
+                <th className="p-4">Department / Branch</th>
+                <th className="p-4 text-center">Avg Attendance %</th>
+                <th className="p-4 text-center">Present %</th>
+                <th className="p-4 text-center">Absent %</th>
+                <th className="p-4 text-center">Students Below 75%</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {data.map((b) => (
+                <tr key={b.branch} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                  <td className="p-4 font-extrabold text-slate-900 dark:text-white">{b.branch}</td>
+                  <td className="p-4 text-center font-black text-emerald-600">{b.attendance}%</td>
+                  <td className="p-4 text-center font-bold text-emerald-600">{b.attendance}%</td>
+                  <td className="p-4 text-center font-bold text-rose-500">{(100 - b.attendance).toFixed(1)}%</td>
+                  <td className="p-4 text-center font-black text-rose-600">{Math.round(b.students * 0.12)} Students</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 7. PLACEMENT ANALYTICS
+const PrincipalPlacementAnalytics = () => {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    const fetchPlacement = async () => {
+      const res = await mockDB.getPlacementAnalytics();
+      setData(res);
+    };
+    fetchPlacement();
+  }, []);
+
+  if (!data) return <div className="p-8 text-center text-slate-400 text-xs">Loading placement analytics...</div>;
+
+  const ov = data.overview;
+
+  return (
+    <div className="space-y-6 text-xs font-semibold">
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-6">
         <div>
-          <h3 className="text-base font-extrabold text-slate-800 dark:text-white">Registrar Document & Certificate Sign-off Desk</h3>
-          <p className="text-xs text-slate-450 mt-1">Review official student requests for transcripts, bonafide certificates, and conduct verification</p>
+          <h2 className="text-lg font-black text-slate-900 dark:text-white">Corporate Placement Overview</h2>
+          <p className="text-xs text-slate-400">Institutional recruitment statistics and branch-wise placement performance</p>
         </div>
-        <input
-          type="text"
-          placeholder="Optional registrar remarks..."
-          value={remarks}
-          onChange={(e) => setRemarks(e.target.value)}
-          className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold w-full sm:w-64"
-        />
-      </div>
 
-      {loading ? (
-        <div className="py-20 text-center animate-pulse text-slate-400">Loading certificate queue...</div>
-      ) : requests.length === 0 ? (
-        <div className="py-20 text-center text-slate-450">No pending document requests in registrar ledger.</div>
-      ) : (
-        <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
-                <th className="px-5 py-3">Document Type</th>
-                <th className="px-5 py-3">Purpose</th>
-                <th className="px-5 py-3 text-center">Urgency</th>
-                <th className="px-5 py-3 text-center">Requested Date</th>
-                <th className="px-5 py-3 text-center">Action</th>
+        {/* Placement KPIs */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 text-center">
+          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+            <span className="text-[9.5px] text-slate-400 block font-bold">Eligible</span>
+            <span className="text-lg font-black text-slate-900 dark:text-white">{ov.eligibleStudents}</span>
+          </div>
+          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+            <span className="text-[9.5px] text-slate-400 block font-bold">Registered</span>
+            <span className="text-lg font-black text-purple-600">{ov.registeredStudents}</span>
+          </div>
+          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+            <span className="text-[9.5px] text-slate-400 block font-bold">Placed</span>
+            <span className="text-lg font-black text-emerald-600">{ov.placedStudents}</span>
+          </div>
+          <div className="p-3.5 bg-purple-500/10 text-purple-600 rounded-2xl">
+            <span className="text-[9.5px] block font-bold">Placement Rate</span>
+            <span className="text-lg font-black">{ov.placementRate}%</span>
+          </div>
+          <div className="p-3.5 bg-indigo-500/10 text-indigo-600 rounded-2xl">
+            <span className="text-[9.5px] block font-bold">Companies</span>
+            <span className="text-lg font-black">{ov.companiesParticipated}</span>
+          </div>
+          <div className="p-3.5 bg-emerald-500/10 text-emerald-600 rounded-2xl">
+            <span className="text-[9.5px] block font-bold">Highest Package</span>
+            <span className="text-lg font-black">{ov.highestPackage}</span>
+          </div>
+          <div className="p-3.5 bg-amber-500/10 text-amber-600 rounded-2xl">
+            <span className="text-[9.5px] block font-bold">Avg Package</span>
+            <span className="text-lg font-black">{ov.averagePackage}</span>
+          </div>
+        </div>
+
+        {/* Branch Placement Table */}
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800">
+          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+              <tr>
+                <th className="p-4">Branch / Department</th>
+                <th className="p-4 text-center">Eligible Students</th>
+                <th className="p-4 text-center">Students Placed</th>
+                <th className="p-4 text-center">Placement %</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-bold text-slate-800 dark:text-slate-200">
-              {requests.map(r => (
-                <tr key={r.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
-                  <td className="px-5 py-4">{r.docType}</td>
-                  <td className="px-5 py-4 font-normal">{r.purpose}</td>
-                  <td className="px-5 py-4 text-center">
-                    <span className={`px-2 py-0.5 rounded text-[9.5px] font-black uppercase ${
-                      r.urgency === 'Urgent Dispatch' ? 'bg-rose-500/10 text-rose-500' : 'bg-blue-500/10 text-blue-500'
-                    }`}>{r.urgency}</span>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {data.branchPlacements.map((bp) => (
+                <tr key={bp.department} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                  <td className="p-4 font-extrabold text-slate-900 dark:text-white">{bp.department}</td>
+                  <td className="p-4 text-center font-bold text-slate-700 dark:text-slate-300">{bp.eligible}</td>
+                  <td className="p-4 text-center font-black text-emerald-600">{bp.placed}</td>
+                  <td className="p-4 text-center font-black text-purple-600">{bp.placementRate}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 8. LEAVES REVIEW
+const PrincipalLeaves = () => {
+  const [leaves, setLeaves] = useState([]);
+
+  useEffect(() => {
+    const fetchLeaves = async () => {
+      const res = JSON.parse(localStorage.getItem('acad_leave_requests') || '[]');
+      setLeaves(res);
+    };
+    fetchLeaves();
+  }, []);
+
+  const handleAction = async (id, status) => {
+    const updated = leaves.map(l => l.id === id ? { ...l, status } : l);
+    localStorage.setItem('acad_leave_requests', JSON.stringify(updated));
+    setLeaves(updated);
+  };
+
+  return (
+    <div className="space-y-6 text-xs font-semibold">
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
+        <div>
+          <h2 className="text-lg font-black text-slate-900 dark:text-white">Faculty & Staff Leaves Review</h2>
+          <p className="text-xs text-slate-400">Institutional leave applications and approval oversight</p>
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800">
+          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+              <tr>
+                <th className="p-4">Applicant</th>
+                <th className="p-4">Department</th>
+                <th className="p-4">Leave Type</th>
+                <th className="p-4">Dates</th>
+                <th className="p-4">Reason</th>
+                <th className="p-4">Status</th>
+                <th className="p-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {leaves.length === 0 ? (
+                <tr><td colSpan="7" className="p-8 text-center text-slate-400">No pending leave applications.</td></tr>
+              ) : leaves.map((l) => (
+                <tr key={l.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                  <td className="p-4 font-bold text-slate-900 dark:text-white">{l.facultyName || l.applicantName || 'Faculty Member'}</td>
+                  <td className="p-4 font-bold text-purple-600">{l.department}</td>
+                  <td className="p-4 text-slate-500">{l.leaveType || 'Casual Leave'}</td>
+                  <td className="p-4 text-slate-500">{l.startDate} to {l.endDate}</td>
+                  <td className="p-4 text-slate-500">{l.reason}</td>
+                  <td className="p-4">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${l.status === 'approved' ? 'bg-emerald-500/10 text-emerald-600' : l.status === 'rejected' ? 'bg-rose-500/10 text-rose-600' : 'bg-amber-500/10 text-amber-600'}`}>
+                      {l.status}
+                    </span>
                   </td>
-                  <td className="px-5 py-4 text-center">{r.requestedAt}</td>
-                  <td className="px-5 py-4 text-center">
-                    {r.status === 'approved' ? (
-                      <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-500 rounded font-black uppercase text-[10px]">
-                        Digitally Released
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => handleSignApprove(r.id)}
-                        className="px-3 py-1 bg-slate-900 hover:bg-slate-950 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded font-bold text-[10px] transition-colors"
-                      >
-                        Sign & Digital Release
-                      </button>
+                  <td className="p-4 text-right space-x-2">
+                    {l.status === 'pending' && (
+                      <>
+                        <button onClick={() => handleAction(l.id, 'approved')} className="px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-[11px] font-bold">Approve</button>
+                        <button onClick={() => handleAction(l.id, 'rejected')} className="px-2.5 py-1 bg-rose-600 text-white rounded-lg text-[11px] font-bold">Reject</button>
+                      </>
                     )}
                   </td>
                 </tr>
@@ -1129,109 +813,181 @@ const PrincipalDocuments = ({ principal }) => {
             </tbody>
           </table>
         </div>
-      )}
+      </div>
     </div>
   );
 };
 
-// 9. PRINCIPAL CENTRAL GRIEVANCE RESOLVER
-const PrincipalGrievances = ({ principal }) => {
-  const [tickets, setTickets] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeReplyId, setActiveReplyId] = useState(null);
-  const [replyText, setReplyText] = useState('');
-  const { showToast } = useAuth();
-
-  const loadGrievances = async () => {
-    try {
-      setLoading(true);
-      const data = await mockDB.getPendingGrievances();
-      setTickets(data);
-    } catch (_) {}
-    finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadGrievances();
-  }, [principal]);
-
-  const handleResolve = async (ticketId) => {
-    if (!replyText.trim()) {
-      showToast('Please type resolution remarks.', 'warning');
-      return;
-    }
-    try {
-      await mockDB.resolveGrievanceTicket(ticketId, replyText);
-      showToast('Grievance ticket status updated to RESOLVED.', 'success');
-      setActiveReplyId(null);
-      setReplyText('');
-      loadGrievances();
-    } catch (_) {
-      showToast('Action failed.', 'error');
-    }
-  };
+// 9. ACADEMIC CALENDAR
+const PrincipalCalendar = () => {
+  const events = [
+    { title: 'Semester 6 Mid Examinations', date: 'March 15, 2026', type: 'Exam' },
+    { title: 'Ugadi Holiday', date: 'March 22, 2026', type: 'Holiday' },
+    { title: 'Practical Lab Assessment', date: 'April 05, 2026', type: 'Exam' },
+    { title: 'End Semester Examinations', date: 'April 20, 2026', type: 'Exam' },
+    { title: 'Summer Vacation Starts', date: 'May 10, 2026', type: 'Vacation' }
+  ];
 
   return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl text-xs font-semibold space-y-4">
-      <div className="border-b border-slate-100 dark:border-slate-800/80 pb-4">
-        <h3 className="text-base font-extrabold text-slate-800 dark:text-white">Central Campus Grievance Resolution Desk</h3>
-        <p className="text-xs text-slate-450 mt-1">Review tickets filed by students or parents, type official resolution remarks, and close issues</p>
-      </div>
-
-      {loading ? (
-        <div className="py-20 text-center animate-pulse text-slate-400">Loading grievances ledger...</div>
-      ) : tickets.length === 0 ? (
-        <div className="py-20 text-center text-slate-450">No reported support tickets in central ledger.</div>
-      ) : (
-        <div className="space-y-4">
-          {tickets.map(t => (
-            <div key={t.id} className="p-5 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-850 rounded-2xl space-y-3">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded text-[9.5px] font-black uppercase">{t.category}</span>
-                    <span className="text-[10px] text-slate-400 font-bold">Ticket: {t.id.toUpperCase()}</span>
-                  </div>
-                  <h4 className="font-extrabold text-slate-850 dark:text-slate-200 text-xs mt-1.5">{t.subject}</h4>
-                  <p className="text-[10.5px] text-slate-555 dark:text-slate-400 font-normal leading-relaxed mt-1.5">{t.description}</p>
-                </div>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
-                  t.status === 'resolved' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
-                }`}>{t.status}</span>
+    <div className="space-y-6 text-xs font-semibold">
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
+        <h2 className="text-lg font-black text-slate-900 dark:text-white">Institutional Academic Calendar</h2>
+        <div className="space-y-3">
+          {events.map((ev, i) => (
+            <div key={i} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex items-center justify-between border border-slate-200/40 dark:border-slate-800">
+              <div>
+                <h4 className="text-sm font-black text-slate-900 dark:text-white">{ev.title}</h4>
+                <p className="text-xs text-purple-600 dark:text-purple-400 font-bold mt-0.5">{ev.date}</p>
               </div>
-
-              {t.reply ? (
-                <div className="p-3 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-850 rounded-xl space-y-1">
-                  <span className="text-[9.5px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">Official Executive Resolution</span>
-                  <p className="text-[10.5px] text-slate-600 dark:text-slate-300 font-medium">{t.reply}</p>
-                </div>
-              ) : activeReplyId === t.id ? (
-                <div className="pt-2 space-y-2">
-                  <textarea
-                    rows={2}
-                    placeholder="Type official executive response & resolution..."
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:outline-none dark:text-white"
-                  />
-                  <div className="flex justify-end gap-2">
-                    <button onClick={() => setActiveReplyId(null)} className="px-3 py-1 bg-slate-200 text-slate-700 rounded text-[10px] font-bold">Cancel</button>
-                    <button onClick={() => handleResolve(t.id)} className="px-3 py-1 bg-emerald-600 text-white rounded text-[10px] font-bold">Submit Resolution</button>
-                  </div>
-                </div>
-              ) : (
-                <button onClick={() => { setActiveReplyId(t.id); setReplyText(''); }} className="px-3 py-1 bg-blue-600 text-white rounded text-[10px] font-bold">
-                  Provide Resolution Reply
-                </button>
-              )}
+              <span className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase ${ev.type === 'Exam' ? 'bg-purple-500/10 text-purple-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                {ev.type}
+              </span>
             </div>
           ))}
         </div>
-      )}
+      </div>
     </div>
   );
 };
 
-export default PrincipalPortal;
+// 10. DOCUMENT DISPATCH
+const PrincipalDocuments = () => {
+  const docs = [
+    { id: 'DOC-901', student: 'A. Vikram', dept: 'CSE', type: 'Bonafide Certificate', status: 'Dispatched', date: '2026-03-01' },
+    { id: 'DOC-902', student: 'R. Divya', dept: 'ECE', type: 'Official Transcript', status: 'Pending Approval', date: '2026-03-02' },
+    { id: 'DOC-903', student: 'S. Karthik', dept: 'EEE', type: 'Transfer Certificate', status: 'Dispatched', date: '2026-03-03' }
+  ];
+
+  return (
+    <div className="space-y-6 text-xs font-semibold">
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
+        <h2 className="text-lg font-black text-slate-900 dark:text-white">Document Dispatch & Certification Track</h2>
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800">
+          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+              <tr>
+                <th className="p-4">Req ID</th>
+                <th className="p-4">Student</th>
+                <th className="p-4">Department</th>
+                <th className="p-4">Document Type</th>
+                <th className="p-4">Date</th>
+                <th className="p-4">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {docs.map((d) => (
+                <tr key={d.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                  <td className="p-4 font-mono font-bold">{d.id}</td>
+                  <td className="p-4 font-bold text-slate-900 dark:text-white">{d.student}</td>
+                  <td className="p-4 font-bold text-purple-600">{d.dept}</td>
+                  <td className="p-4 text-slate-500">{d.type}</td>
+                  <td className="p-4 text-slate-500">{d.date}</td>
+                  <td className="p-4">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${d.status === 'Dispatched' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
+                      {d.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 11. GRIEVANCE DESK
+const PrincipalGrievances = () => {
+  const grievances = [
+    { id: 'GRV-101', student: 'M. Harish', dept: 'CSE', priority: 'High', date: '2026-03-01', status: 'Pending Review', issue: 'Lab Equipment Maintenance' },
+    { id: 'GRV-102', student: 'K. Priyanka', dept: 'ECE', priority: 'Critical', date: '2026-03-02', status: 'In Progress', issue: 'Bus Route Scheduling' }
+  ];
+
+  return (
+    <div className="space-y-6 text-xs font-semibold">
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
+        <h2 className="text-lg font-black text-slate-900 dark:text-white">Institutional Grievance Desk</h2>
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800">
+          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+              <tr>
+                <th className="p-4">Ticket ID</th>
+                <th className="p-4">Student</th>
+                <th className="p-4">Department</th>
+                <th className="p-4">Issue</th>
+                <th className="p-4 text-center">Priority</th>
+                <th className="p-4">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {grievances.map((g) => (
+                <tr key={g.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                  <td className="p-4 font-mono font-bold">{g.id}</td>
+                  <td className="p-4 font-bold text-slate-900 dark:text-white">{g.student}</td>
+                  <td className="p-4 font-bold text-purple-600">{g.dept}</td>
+                  <td className="p-4 text-slate-500">{g.issue}</td>
+                  <td className="p-4 text-center">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black ${g.priority === 'Critical' ? 'bg-rose-500/10 text-rose-600' : 'bg-amber-500/10 text-amber-600'}`}>
+                      {g.priority}
+                    </span>
+                  </td>
+                  <td className="p-4 text-slate-500">{g.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 12. COMPILE REPORTS
+const PrincipalReports = () => {
+  const reports = [
+    { title: 'Semester Academic Performance Report', cat: 'Academic', format: 'PDF / Excel' },
+    { title: 'Institutional Attendance Compliance Report', cat: 'Attendance', format: 'PDF' },
+    { title: 'Faculty Workload & Department Report', cat: 'Faculty', format: 'Excel' },
+    { title: 'Corporate Placement Placement Drive Summary', cat: 'Placement', format: 'PDF' }
+  ];
+
+  return (
+    <div className="space-y-6 text-xs font-semibold">
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
+        <h2 className="text-lg font-black text-slate-900 dark:text-white">Institutional Report Compiler</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {reports.map((r, i) => (
+            <div key={i} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/40 dark:border-slate-800 flex items-center justify-between">
+              <div>
+                <span className="text-[9.5px] uppercase font-bold text-purple-600 block">{r.cat}</span>
+                <h4 className="text-xs font-black text-slate-900 dark:text-white mt-0.5">{r.title}</h4>
+                <span className="text-[9.5px] text-slate-400 block mt-1">Export Format: {r.format}</span>
+              </div>
+              <button onClick={() => window.print()} className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1">
+                <Printer size={14} />
+                <span>Export</span>
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 13. PRINCIPAL SETTINGS
+const PrincipalSettings = ({ principal }) => {
+  return (
+    <div className="space-y-6 text-xs font-semibold">
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
+        <h2 className="text-lg font-black text-slate-900 dark:text-white">Principal Executive Settings</h2>
+        <div className="space-y-2 text-slate-500">
+          <p>Official Role: <span className="font-bold text-purple-600">Principal (Institutional Executive)</span></p>
+          <p>Principal Name: <span className="font-bold text-slate-900 dark:text-white">{principal?.fullName || 'Dr. Arthur Pendelton'}</span></p>
+          <p>Official Email: <span className="font-bold text-slate-900 dark:text-white">{principal?.email || 'principal@kbn.edu'}</span></p>
+        </div>
+      </div>
+    </div>
+  );
+};

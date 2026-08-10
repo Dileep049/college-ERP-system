@@ -508,18 +508,52 @@ function AppContent() {
             </DashboardLayout>
           </ProtectedRoute>
         } />
-
+        <Route path="/principal/results" element={
+          <ProtectedRoute allowedRole="principal">
+            <DashboardLayout>
+              <PrincipalPortal subPage="results" />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/principal/performance" element={
+          <ProtectedRoute allowedRole="principal">
+            <DashboardLayout>
+              <PrincipalPortal subPage="performance" />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/principal/faculty" element={
+          <ProtectedRoute allowedRole="principal">
+            <DashboardLayout>
+              <PrincipalPortal subPage="faculty" />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/principal/attendance" element={
+          <ProtectedRoute allowedRole="principal">
+            <DashboardLayout>
+              <PrincipalPortal subPage="attendance" />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/principal/placements" element={
+          <ProtectedRoute allowedRole="principal">
+            <DashboardLayout>
+              <PrincipalPortal subPage="placements" />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/principal/settings" element={
+          <ProtectedRoute allowedRole="principal">
+            <DashboardLayout>
+              <PrincipalPortal subPage="settings" />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
         <Route path="/principal/reports" element={
           <ProtectedRoute allowedRole="principal">
             <DashboardLayout>
               <PrincipalPortal subPage="reports" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/principal/cbcs" element={
-          <ProtectedRoute allowedRole="principal">
-            <DashboardLayout>
-              <PrincipalPortal subPage="cbcs" />
             </DashboardLayout>
           </ProtectedRoute>
         } />

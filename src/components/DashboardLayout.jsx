@@ -132,14 +132,19 @@ export const DashboardLayout = ({ children }) => {
       { label: 'Settings', path: '/hod/settings', icon: Settings }
     ],
     principal: [
-      { label: 'Institutional Panel', path: '/principal/dashboard', icon: LayoutDashboard },
-      { label: 'Course Registration', path: '/principal/cbcs', icon: ClipboardList },
+      { label: 'Executive Console', path: '/principal/dashboard', icon: LayoutDashboard },
+      { label: 'Branch Analytics', path: '/principal/branches', icon: Building2 },
+      { label: 'Semester Results', path: '/principal/results', icon: Award },
+      { label: 'Academic Performance', path: '/principal/performance', icon: TrendingUp },
+      { label: 'Faculty Overview', path: '/principal/faculty', icon: Users },
+      { label: 'Attendance Analytics', path: '/principal/attendance', icon: CheckSquare },
+      { label: 'Academic Calendar', path: '/principal/calendar', icon: Clock },
+      { label: 'Compile Reports', path: '/principal/reports', icon: FileText },
+      { label: 'Leaves Review', path: '/principal/leaves', icon: Calendar },
       { label: 'Document Dispatch', path: '/principal/documents', icon: FileCheck },
       { label: 'Grievance Desk', path: '/principal/grievances', icon: MessageSquare },
-      { label: 'Branch Analytics', path: '/principal/branches', icon: Building2 },
-      { label: 'Leaves Review', path: '/principal/leaves', icon: Calendar },
-      { label: 'Academic Calendar', path: '/principal/calendar', icon: Clock },
-      { label: 'Compile Reports', path: '/principal/reports', icon: FileText }
+      { label: 'Placement Analytics', path: '/principal/placements', icon: Briefcase },
+      { label: 'Settings', path: '/principal/settings', icon: Settings }
     ],
     placement: [
       { label: 'Command Board', path: '/placement/dashboard', icon: LayoutDashboard },
