@@ -95,16 +95,11 @@ export const DashboardLayout = ({ children }) => {
   const menuConfig = {
     student: [
       { label: 'Dashboard', path: '/student/dashboard', icon: LayoutDashboard },
-      { label: 'Course Enrollment', path: '/student/course-registration', icon: ClipboardList },
-      { label: 'Exam Hall Ticket', path: '/student/hall-ticket', icon: Ticket },
       { label: 'Apply Leave', path: '/student/leaves', icon: Calendar },
       { label: 'Internal Marks', path: '/student/marks', icon: FileText },
       { label: 'Semester Results', path: '/student/results', icon: Award },
       { label: 'Assignments', path: '/student/assignments', icon: CheckSquare },
       { label: 'Study Notes', path: '/student/notes', icon: BookOpen },
-      { label: 'Online Fees', path: '/student/fees', icon: CreditCard },
-      { label: 'Library Catalog', path: '/student/library', icon: Library },
-      { label: 'Hostel & Transport', path: '/student/hostel-transport', icon: Home },
       { label: 'Document Requests', path: '/student/document-requests', icon: FileCheck },
       { label: 'Counselling', path: '/student/counselling', icon: UserCheck },
       { label: 'Placements', path: '/student/placements', icon: Briefcase },

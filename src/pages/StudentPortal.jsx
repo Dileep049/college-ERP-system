@@ -96,12 +96,7 @@ export const StudentPortal = ({ subPage }) => {
   if (subPage === 'marks') return <StudentMarks student={studentUser} isParent={isParent} />;
   if (subPage === 'results') return <StudentResults student={studentUser} isParent={isParent} />;
   if (subPage === 'assignments') return <StudentAssignments student={studentUser} isParent={isParent} />;
-  if (subPage === 'timetable') return <StudentTimetable student={studentUser} isParent={isParent} />;
-  if (subPage === 'calendar') return <StudentCalendar student={studentUser} isParent={isParent} />;
-  if (subPage === 'course-registration') return <StudentCourseRegistration student={studentUser} isParent={isParent} />;
-  if (subPage === 'hall-ticket') return <StudentHallTicket student={studentUser} isParent={isParent} />;
   if (subPage === 'document-requests') return <StudentDocumentRequests student={studentUser} isParent={isParent} />;
-  if (subPage === 'hostel-transport') return <StudentHostelTransport student={studentUser} isParent={isParent} />;
   if (subPage === 'support-desk') return <StudentSupportDesk student={studentUser} isParent={isParent} />;
   return <StudentDashboard student={studentUser} isParent={isParent} />;
 };
@@ -321,26 +316,26 @@ const StudentDashboard = ({ student, isParent }) => {
       <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl">
         <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-505 uppercase tracking-wider block border-b border-slate-100 dark:border-slate-850 pb-4 mb-5">Quick Access Portal Links</span>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-          <a href="/student/course-registration" className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-850 text-center hover:bg-blue-50/50 dark:hover:bg-slate-800 transition-all group flex flex-col items-center">
+          <a href="/student/leaves" className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-850 text-center hover:bg-blue-50/50 dark:hover:bg-slate-800 transition-all group flex flex-col items-center">
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-              <ClipboardList size={18} />
+              <Calendar size={18} />
             </div>
-            <span className="font-extrabold text-[11px] text-slate-800 dark:text-slate-200">Choice Electives</span>
-            <span className="text-[9px] text-slate-400 mt-1 block">Course Enrollment</span>
+            <span className="font-extrabold text-[11px] text-slate-800 dark:text-slate-200">Apply Leave</span>
+            <span className="text-[9px] text-slate-400 mt-1 block">Leave Request</span>
           </a>
-          <a href="/student/hall-ticket" className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-850 text-center hover:bg-indigo-50/50 dark:hover:bg-slate-800 transition-all group flex flex-col items-center">
+          <a href="/student/marks" className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-850 text-center hover:bg-indigo-50/50 dark:hover:bg-slate-800 transition-all group flex flex-col items-center">
             <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-              <Ticket size={18} />
+              <FileText size={18} />
             </div>
-            <span className="font-extrabold text-[11px] text-slate-800 dark:text-slate-200">Exam Hall Ticket</span>
-            <span className="text-[9px] text-slate-400 mt-1 block">Admit Card</span>
+            <span className="font-extrabold text-[11px] text-slate-800 dark:text-slate-200">Internal Marks</span>
+            <span className="text-[9px] text-slate-400 mt-1 block">Mid Examinations</span>
           </a>
-          <a href="/student/hostel-transport" className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-850 text-center hover:bg-emerald-50/50 dark:hover:bg-slate-800 transition-all group flex flex-col items-center">
+          <a href="/student/results" className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-850 text-center hover:bg-emerald-50/50 dark:hover:bg-slate-800 transition-all group flex flex-col items-center">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-              <Home size={18} />
+              <Award size={18} />
             </div>
-            <span className="font-extrabold text-[11px] text-slate-800 dark:text-slate-200">Hostel & Bus</span>
-            <span className="text-[9px] text-slate-400 mt-1 block">Facility Booking</span>
+            <span className="font-extrabold text-[11px] text-slate-800 dark:text-slate-200">Semester Results</span>
+            <span className="text-[9px] text-slate-400 mt-1 block">Grades & GPA</span>
           </a>
           <a href="/student/document-requests" className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-850 text-center hover:bg-purple-50/50 dark:hover:bg-slate-800 transition-all group flex flex-col items-center">
             <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">

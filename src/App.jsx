@@ -229,20 +229,6 @@ function AppContent() {
             </DashboardLayout>
           </ProtectedRoute>
         } />
-        <Route path="/student/fees" element={
-          <ProtectedRoute allowedRole="student">
-            <DashboardLayout>
-              <StudentPortal subPage="fees" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/student/library" element={
-          <ProtectedRoute allowedRole="student">
-            <DashboardLayout>
-              <StudentPortal subPage="library" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
         <Route path="/student/counselling" element={
           <ProtectedRoute allowedRole="student">
             <DashboardLayout>
@@ -250,31 +236,10 @@ function AppContent() {
             </DashboardLayout>
           </ProtectedRoute>
         } />
-        <Route path="/student/course-registration" element={
-          <ProtectedRoute allowedRole="student">
-            <DashboardLayout>
-              <StudentPortal subPage="course-registration" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/student/hall-ticket" element={
-          <ProtectedRoute allowedRole="student">
-            <DashboardLayout>
-              <StudentPortal subPage="hall-ticket" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
         <Route path="/student/document-requests" element={
           <ProtectedRoute allowedRole="student">
             <DashboardLayout>
               <StudentPortal subPage="document-requests" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/student/hostel-transport" element={
-          <ProtectedRoute allowedRole="student">
-            <DashboardLayout>
-              <StudentPortal subPage="hostel-transport" />
             </DashboardLayout>
           </ProtectedRoute>
         } />
