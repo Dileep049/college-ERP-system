@@ -29,7 +29,8 @@ import {
   ClipboardList,
   FileCheck,
   Clock,
-  Upload
+  Upload,
+  TrendingUp
 } from 'lucide-react';
 
 export const DashboardLayout = ({ children }) => {
