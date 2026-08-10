@@ -36,11 +36,13 @@ import {
   ChevronRight,
   Eye,
   FileCheck,
-  MessageSquare,
   ShieldCheck,
   CheckCircle2,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Camera,
+  Upload,
+  RotateCcw
 } from 'lucide-react';
 
 export const PrincipalPortal = ({ subPage }) => {
@@ -56,7 +58,6 @@ export const PrincipalPortal = ({ subPage }) => {
   if (subPage === 'reports') return <PrincipalReports principal={user} />;
   if (subPage === 'leaves') return <PrincipalLeaves principal={user} />;
   if (subPage === 'documents') return <PrincipalDocuments principal={user} />;
-  if (subPage === 'grievances') return <PrincipalGrievances principal={user} />;
   if (subPage === 'placements') return <PrincipalPlacementAnalytics principal={user} />;
   if (subPage === 'settings') return <PrincipalSettings principal={user} />;
   return <PrincipalDashboard principal={user} />;
@@ -105,14 +106,23 @@ const PrincipalDashboard = ({ principal }) => {
           <Building size={140} />
         </div>
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <span className="px-3 py-1 bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider rounded-full">
-              KBN Executive Command Console
-            </span>
-            <h2 className="text-2xl font-black font-display mt-2">Institutional Executive Overview</h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Principal: <strong className="text-white font-bold">{principal?.fullName || 'Dr. Arthur Pendelton'}</strong> • Institutional Operations & Governance
-            </p>
+          <div className="flex items-center gap-4">
+            {principal?.profilePhotoUrl ? (
+              <img src={principal.profilePhotoUrl} alt={principal?.fullName} className="w-14 h-14 rounded-2xl object-cover border-2 border-amber-400/50 shadow-xl" />
+            ) : (
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-600 text-slate-950 flex items-center justify-center font-black text-lg shadow-xl border-2 border-amber-400/50">
+                {principal?.fullName ? principal.fullName.split(' ').map(n => n[0]).join('') : 'DA'}
+              </div>
+            )}
+            <div>
+              <span className="px-3 py-0.5 bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider rounded-full">
+                KBN Executive Command Console
+              </span>
+              <h2 className="text-2xl font-black font-display mt-1">Institutional Executive Overview</h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Principal: <strong className="text-white font-bold">{principal?.fullName || 'Dr. Arthur Pendelton'}</strong> • Institutional Operations & Governance
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <a href="/principal/branches" className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-2xl backdrop-blur-md border border-white/10">
@@ -1050,53 +1060,7 @@ const PrincipalDocuments = () => {
   );
 };
 
-// 11. GRIEVANCE DESK
-const PrincipalGrievances = () => {
-  const grievances = [
-    { id: 'GRV-101', student: 'M. Harish', dept: 'CSE', priority: 'High', date: '2026-03-01', status: 'Pending Review', issue: 'Lab Equipment Maintenance' },
-    { id: 'GRV-102', student: 'K. Priyanka', dept: 'ECE', priority: 'Critical', date: '2026-03-02', status: 'In Progress', issue: 'Bus Route Scheduling' }
-  ];
-
-  return (
-    <div className="space-y-6 text-xs font-semibold">
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
-        <h2 className="text-lg font-black text-slate-900 dark:text-white">Institutional Grievance Desk</h2>
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800">
-          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
-            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
-              <tr>
-                <th className="p-4">Ticket ID</th>
-                <th className="p-4">Student</th>
-                <th className="p-4">Department</th>
-                <th className="p-4">Issue</th>
-                <th className="p-4 text-center">Priority</th>
-                <th className="p-4">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {grievances.map((g) => (
-                <tr key={g.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                  <td className="p-4 font-mono font-bold">{g.id}</td>
-                  <td className="p-4 font-bold text-slate-900 dark:text-white">{g.student}</td>
-                  <td className="p-4 font-bold text-purple-600">{g.dept}</td>
-                  <td className="p-4 text-slate-500">{g.issue}</td>
-                  <td className="p-4 text-center">
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black ${g.priority === 'Critical' ? 'bg-rose-500/10 text-rose-600' : 'bg-amber-500/10 text-amber-600'}`}>
-                      {g.priority}
-                    </span>
-                  </td>
-                  <td className="p-4 text-slate-500">{g.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// 12. COMPILE REPORTS
+// 11. COMPILE REPORTS
 const PrincipalReports = () => {
   const reports = [
     { title: 'Semester Academic Performance Report', cat: 'Academic', format: 'PDF / Excel' },
@@ -1129,18 +1093,127 @@ const PrincipalReports = () => {
   );
 };
 
-// 13. PRINCIPAL SETTINGS
+// 12. PRINCIPAL SETTINGS & PROFILE PHOTO MANAGEMENT
 const PrincipalSettings = ({ principal }) => {
+  const { updateProfilePhoto } = useAuth();
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const handlePhotoSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      return alert('Invalid file format. Please select a JPG, JPEG, PNG, or WEBP image.');
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      return alert('File size exceeds maximum limit of 5 MB.');
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoPreview(reader.result);
+      setMessage('');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSavePhoto = async () => {
+    if (!photoPreview) return;
+    try {
+      setIsUploading(true);
+      await updateProfilePhoto(photoPreview);
+      setPhotoPreview(null);
+      setMessage('Profile photo updated successfully!');
+      setTimeout(() => setMessage(''), 4000);
+    } catch (e) {
+      alert('Failed to upload photo. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRestoreDefault = async () => {
+    if (confirm('Are you sure you want to restore the default initial avatar (DA)?')) {
+      try {
+        setIsUploading(true);
+        await updateProfilePhoto(null);
+        setPhotoPreview(null);
+        setMessage('Default avatar restored!');
+        setTimeout(() => setMessage(''), 4000);
+      } catch (e) {
+        alert('Failed to restore avatar.');
+      } finally {
+        setIsUploading(false);
+      }
+    }
+  };
+
   return (
     <div className="space-y-6 text-xs font-semibold">
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
-        <h2 className="text-lg font-black text-slate-900 dark:text-white">Principal Executive Settings</h2>
-        <div className="space-y-2 text-slate-500">
-          <p>Official Role: <span className="font-bold text-purple-600">Principal (Institutional Executive)</span></p>
-          <p>Principal Name: <span className="font-bold text-slate-900 dark:text-white">{principal?.fullName || 'Dr. Arthur Pendelton'}</span></p>
-          <p>Official Email: <span className="font-bold text-slate-900 dark:text-white">{principal?.email || 'principal@kbn.edu'}</span></p>
+      
+      {/* Profile Photo Management Card */}
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-6">
+        <div>
+          <h2 className="text-lg font-black text-slate-900 dark:text-white">Principal Profile & Photo Management</h2>
+          <p className="text-xs text-slate-400">Manage your official Principal profile photo displayed across the Institutional Console</p>
+        </div>
+
+        {message && (
+          <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-2xl text-xs font-bold">
+            {message}
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/40 dark:border-slate-800">
+          <div className="relative group">
+            {photoPreview ? (
+              <img src={photoPreview} alt="Preview" className="w-24 h-24 rounded-2xl object-cover border-2 border-purple-500 shadow-lg" />
+            ) : principal?.profilePhotoUrl ? (
+              <img src={principal.profilePhotoUrl} alt="Principal" className="w-24 h-24 rounded-2xl object-cover border-2 border-purple-500/40 shadow-lg" />
+            ) : (
+              <div className="w-24 h-24 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-600 text-slate-950 font-black text-2xl flex items-center justify-center shadow-lg border-2 border-amber-400/50">
+                {principal?.fullName ? principal.fullName.split(' ').map(n => n[0]).join('') : 'DA'}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3 text-center sm:text-left flex-1">
+            <div>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white">{principal?.fullName || 'Dr. Arthur Pendelton'}</h3>
+              <p className="text-xs text-purple-600 font-bold">Principal (Institutional Executive)</p>
+              <p className="text-[11px] text-slate-400">{principal?.email || 'principal@kbn.edu'}</p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
+              <label className="px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs shadow-md cursor-pointer flex items-center gap-1.5">
+                <Camera size={14} />
+                <span>{principal?.profilePhotoUrl ? 'Change Photo' : 'Upload Photo'}</span>
+                <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" onChange={handlePhotoSelect} className="hidden" />
+              </label>
+
+              {photoPreview && (
+                <button onClick={handleSavePhoto} disabled={isUploading} className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md flex items-center gap-1.5">
+                  <Upload size={14} />
+                  <span>{isUploading ? 'Uploading...' : 'Confirm Upload'}</span>
+                </button>
+              )}
+
+              {(principal?.profilePhotoUrl || photoPreview) && (
+                <button onClick={handleRestoreDefault} disabled={isUploading} className="px-3.5 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 rounded-xl font-bold text-xs flex items-center gap-1.5">
+                  <RotateCcw size={14} />
+                  <span>Restore Default Avatar</span>
+                </button>
+              )}
+            </div>
+            <p className="text-[9.5px] text-slate-400">Supported formats: JPG, JPEG, PNG, WEBP (Max 5 MB)</p>
+          </div>
         </div>
       </div>
+
     </div>
   );
 };

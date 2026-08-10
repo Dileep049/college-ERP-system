@@ -564,13 +564,6 @@ function AppContent() {
             </DashboardLayout>
           </ProtectedRoute>
         } />
-        <Route path="/principal/grievances" element={
-          <ProtectedRoute allowedRole="principal">
-            <DashboardLayout>
-              <PrincipalPortal subPage="grievances" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
         <Route path="/principal/leaves" element={
           <ProtectedRoute allowedRole="principal">
             <DashboardLayout>

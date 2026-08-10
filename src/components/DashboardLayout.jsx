@@ -143,7 +143,6 @@ export const DashboardLayout = ({ children }) => {
       { label: 'Compile Reports', path: '/principal/reports', icon: FileText },
       { label: 'Leaves Review', path: '/principal/leaves', icon: Calendar },
       { label: 'Document Dispatch', path: '/principal/documents', icon: FileCheck },
-      { label: 'Grievance Desk', path: '/principal/grievances', icon: MessageSquare },
       { label: 'Placement Analytics', path: '/principal/placements', icon: Briefcase },
       { label: 'Settings', path: '/principal/settings', icon: Settings }
     ],
@@ -259,9 +258,13 @@ export const DashboardLayout = ({ children }) => {
         {/* Profile Card in Sidebar */}
         <div className="p-4 mx-4 my-5 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-800/40 dark:to-slate-800/60 border border-slate-200/60 dark:border-slate-850">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-sky-400 text-white flex items-center justify-center font-bold text-sm shadow-md">
-              {user.fullName.split(' ').map(n => n[0]).join('')}
-            </div>
+            {user.profilePhotoUrl ? (
+              <img src={user.profilePhotoUrl} alt={user.fullName} className="w-10 h-10 rounded-xl object-cover border border-blue-500/30 shadow-md" />
+            ) : (
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-sky-400 text-white flex items-center justify-center font-bold text-sm shadow-md">
+                {user.fullName.split(' ').map(n => n[0]).join('')}
+              </div>
+            )}
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-slate-800 dark:text-slate-250 truncate">{user.fullName}</p>
               <p className="text-[10.5px] font-medium text-slate-450 dark:text-slate-400 truncate mt-0.5">{user.email}</p>
