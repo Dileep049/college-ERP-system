@@ -356,7 +356,7 @@ export const AIChatbot = ({ user }) => {
 
       {/* Chat window */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 w-96 h-[500px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/95 rounded-3xl shadow-2xl z-50 flex flex-col overflow-hidden animate-slide-up">
+        <div className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 w-[calc(100vw-2rem)] max-w-sm sm:w-96 h-[480px] sm:h-[500px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/95 rounded-3xl shadow-2xl z-50 flex flex-col overflow-hidden animate-slide-up">
           
           {/* Header */}
           <div className="p-4 bg-gradient-to-r from-blue-600 to-indigo-650 text-white flex items-center justify-between">

@@ -57,7 +57,7 @@ export const IDCardGenerator = ({ user }) => {
   const isStudent = user.role === 'student';
 
   return (
-    <div className="flex flex-col md:flex-row items-center gap-8 p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-xl max-w-3xl mx-auto">
+    <div className="flex flex-col md:flex-row items-center gap-6 sm:gap-8 p-4 sm:p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-xl max-w-3xl mx-auto w-full min-w-0">
       
       {/* Upload & Instructions */}
       <div className="flex-1 space-y-4 text-xs font-semibold">

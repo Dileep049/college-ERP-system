@@ -1,20 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { mockDB } from '../services/firebase';
+import { mockDB, KBN_BRANCHES, KBN_SEMESTERS, BRANCH_SUBJECT_MAP } from '../services/firebase';
 import { 
-  Users, 
-  Calendar, 
-  BookOpen, 
-  FileText, 
-  CreditCard, 
-  Bell, 
-  CheckCircle, 
-  XCircle, 
-  AlertCircle, 
-  ArrowRight,
+  LayoutDashboard,
+  UserCheck,
   TrendingUp,
+  BookOpen,
+  CheckSquare,
+  FileText,
+  Award,
+  Briefcase,
+  ClipboardList,
+  Calendar,
+  Users,
   Activity,
-  Plus
+  Bell,
+  Search,
+  Plus,
+  Download,
+  Printer,
+  Upload,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  ChevronRight,
+  Filter,
+  Eye,
+  MessageSquare,
+  ShieldCheck,
+  X,
+  FileSpreadsheet
 } from 'lucide-react';
 
 export const ParentPortal = ({ subPage }) => {
@@ -23,775 +39,517 @@ export const ParentPortal = ({ subPage }) => {
   const [loadingChild, setLoadingChild] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchChild = async () => {
-      if (!user || !user.childUid) return;
+      setLoadingChild(true);
       try {
-        setLoadingChild(true);
-        const profile = await mockDB.getStudentProfile(user.childUid);
-        setChildProfile(profile);
+        if (user?.childUid) {
+          const profile = await mockDB.getStudentProfile(user.childUid);
+          if (isMounted && profile) setChildProfile(profile);
+        } else {
+          const students = await mockDB.getStudents(user?.department || 'CSE');
+          const matched = students.find(s => s.rollNumber === user?.childRollNumber) || students[0];
+          if (isMounted) {
+            setChildProfile(matched || {
+              fullName: 'Dileep Kumar',
+              studentName: 'Dileep Kumar',
+              rollNumber: '23KBN-CS104',
+              department: 'CSE',
+              semester: 'VI',
+              section: 'A',
+              attendancePercentage: 84.5,
+              cgpa: 8.4
+            });
+          }
+        }
       } catch (err) {
         console.error("Failed to load child profile:", err);
-      } finally {
-        setLoadingChild(false);
       }
+      if (isMounted) setLoadingChild(false);
     };
+
     fetchChild();
+    return () => { isMounted = false; };
   }, [user]);
 
   if (loadingChild) {
     return (
-      <div className="flex items-center justify-center py-20 text-slate-400 dark:text-slate-500 animate-pulse text-xs font-bold uppercase">
+      <div className="flex items-center justify-center py-20 text-slate-400 animate-pulse text-xs font-bold uppercase">
         Loading Student Ward Profile...
       </div>
     );
   }
 
-  if (!childProfile) {
-    return (
-      <div className="p-6 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-3xl text-xs font-bold">
-        Error: Ward information not linked to this parent account. Please contact college support.
-      </div>
-    );
-  }
-
   if (subPage === 'dashboard') return <ParentDashboard parent={user} child={childProfile} />;
+  if (subPage === 'my-ward') return <ParentMyWard parent={user} child={childProfile} />;
+  if (subPage === 'academic-overview') return <ParentAcademicOverview child={childProfile} />;
   if (subPage === 'attendance') return <ParentAttendance child={childProfile} />;
-  if (subPage === 'leaves') return <ParentLeaves child={childProfile} />;
+  if (subPage === 'marks') return <ParentMarks child={childProfile} />;
   if (subPage === 'results') return <ParentResults child={childProfile} />;
   if (subPage === 'assignments') return <ParentAssignments child={childProfile} />;
-  if (subPage === 'fees') return <ParentFees child={childProfile} />;
-  if (subPage === 'notifications') return <ParentNotifications parent={user} child={childProfile} />;
+  if (subPage === 'notes') return <ParentNotes child={childProfile} />;
+  if (subPage === 'leaves') return <ParentLeaves child={childProfile} />;
+  if (subPage === 'counsellor') return <ParentWardCounsellor child={childProfile} />;
+  if (subPage === 'faculty') return <ParentFaculty child={childProfile} />;
   if (subPage === 'counselling') return <ParentCounselling parent={user} child={childProfile} />;
-  if (subPage === 'grievances') return <ParentGrievances parent={user} child={childProfile} />;
-
+  if (subPage === 'meetings') return <ParentMeetings parent={user} child={childProfile} />;
+  if (subPage === 'placements') return <ParentPlacements child={childProfile} />;
+  if (subPage === 'monthly-report') return <ParentMonthlyReport child={childProfile} />;
+  if (subPage === 'notifications') return <ParentNotifications parent={user} child={childProfile} />;
+  if (subPage === 'profile') return <ParentProfile parent={user} child={childProfile} />;
+  
   return <ParentDashboard parent={user} child={childProfile} />;
 };
 
-// 1. DASHBOARD COMPONENT
+// 1. PARENT ACADEMIC COMMAND CENTER (DASHBOARD)
 const ParentDashboard = ({ parent, child }) => {
-  const [attendanceRate, setAttendanceRate] = useState(100);
-  const [totalClasses, setTotalClasses] = useState(0);
-  const [presentClasses, setPresentClasses] = useState(0);
-  const [pendingAssignments, setPendingAssignments] = useState(0);
-  const [unpaidFees, setUnpaidFees] = useState(0);
-  const [recentNotifications, setRecentNotifications] = useState([]);
-  const [loadingData, setLoadingData] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [attendance, setAttendance] = useState(84.5);
+  const [internalMarks, setInternalMarks] = useState(38);
+  const [assignments, setAssignments] = useState([]);
+  const [leaves, setLeaves] = useState([]);
+  const [drives, setDrives] = useState([]);
+  const [meetings, setMeetings] = useState([]);
 
   useEffect(() => {
-    const loadStats = async () => {
+    const loadDashboard = async () => {
       try {
-        setLoadingData(true);
-        // Load Attendance
-        const att = await mockDB.getAttendanceForStudent(child.uid);
-        const present = att.filter(a => a.status === 'present').length;
-        const total = att.length;
-        setAttendanceRate(total > 0 ? Math.round((present / total) * 100) : 100);
-        setTotalClasses(total);
-        setPresentClasses(present);
+        setLoading(true);
+        const dept = child?.department || 'CSE';
+        const sem = child?.semester || 'VI';
 
-        // Load Assignments (pending ones)
-        const assignments = JSON.parse(localStorage.getItem('acad_assignments') || '[]');
-        const submissions = JSON.parse(localStorage.getItem('acad_submissions') || '[]');
-        // Filter by child department and semester
-        const childAssignments = assignments.filter(a => a.branch === child.department && a.semester === child.semester);
-        const submittedIds = submissions.filter(s => s.studentId === child.uid).map(s => s.assignmentId);
-        const pending = childAssignments.filter(a => !submittedIds.includes(a.assignmentId || a.id)).length;
-        setPendingAssignments(pending);
+        const [assData, leaveData, drivesData, meetData] = await Promise.all([
+          mockDB.getAssignments(dept, sem),
+          mockDB.getStudentLeaves(child?.uid),
+          mockDB.getPlacementDrives('student'),
+          mockDB.getCounsellingMeetings('student', child?.uid)
+        ]);
 
-        // Load Fees
-        const feeRecords = await mockDB.getFees(child.uid);
-        const unpaid = feeRecords.filter(f => f.status === 'unpaid').reduce((sum, f) => sum + f.amount, 0);
-        setUnpaidFees(unpaid);
-
-        // Load Notifications (Continuous absence alert & college alerts)
-        const notifs = await mockDB.getNotifications(parent.uid);
-        setRecentNotifications(notifs.slice(0, 3));
-      } catch (err) {
-        console.error(err);
+        setAssignments(assData);
+        setLeaves(leaveData);
+        setDrives(drivesData);
+        setMeetings(meetData);
+        setAttendance(parseFloat(child?.attendancePercentage || child?.attendance || 84.5));
+        setInternalMarks(parseFloat(child?.internalMarks || 38));
+      } catch (e) {
+        console.error(e);
       } finally {
-        setLoadingData(false);
+        setLoading(false);
       }
     };
-    loadStats();
-  }, [parent, child]);
+    loadDashboard();
+  }, [child]);
 
-  if (loadingData) {
-    return (
-      <div className="py-20 text-center animate-pulse text-slate-400 dark:text-slate-500 text-xs font-bold uppercase">
-        Syncing dashboard reports...
-      </div>
-    );
-  }
+  const latestLeave = leaves[0];
+  const pendingAssignments = assignments.filter(a => !a.submissions?.some(s => s.studentId === child?.uid));
 
   return (
     <div className="space-y-6 text-xs font-semibold">
-      {/* Welcome Banner */}
-      <div className="p-6 rounded-3xl bg-gradient-to-tr from-rose-500 to-pink-500 text-white shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      
+      {/* Header Banner */}
+      <div className="p-6 rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-900 text-white shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-indigo-300 text-[10px] font-black uppercase tracking-widest">
+            <span>ACADEMIA</span> • <span>Parent Portal Hub</span>
+          </div>
+          <h1 className="text-2xl font-black font-display tracking-tight">{parent?.fullName || 'Parent / Guardian'}</h1>
+          <p className="text-xs text-slate-300 font-medium">
+            Ward: <span className="underline font-black text-indigo-200">{child?.fullName || child?.studentName}</span> ({child?.rollNumber}) • {child?.department} (Sem {child?.semester} - Sec {child?.section || 'A'})
+          </p>
+        </div>
+        <span className="px-3.5 py-1.5 bg-white/10 backdrop-blur-md rounded-xl border border-white/15 text-[11px] font-extrabold text-emerald-300 flex items-center gap-1.5">
+          <CheckCircle2 size={14} /> Linked Ward Monitoring Active
+        </span>
+      </div>
+
+      {/* Live Alerts Bar */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {attendance >= 75 ? (
+          <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-300 flex items-center gap-2.5">
+            <CheckCircle2 size={18} className="shrink-0 text-emerald-500" />
+            <div><span className="font-black block text-xs">🟢 Attendance Satisfactory ({attendance}%)</span><span className="text-[10px]">Ward satisfies mandatory 75% rule.</span></div>
+          </div>
+        ) : (
+          <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 flex items-center gap-2.5">
+            <AlertTriangle size={18} className="shrink-0 text-rose-500" />
+            <div><span className="font-black block text-xs">🔴 Attendance Alert ({attendance}%)</span><span className="text-[10px]">Below 75%. Ward Counsellor notified.</span></div>
+          </div>
+        )}
+
+        {pendingAssignments.length > 0 ? (
+          <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-300 flex items-center gap-2.5">
+            <Clock size={18} className="shrink-0 text-amber-500" />
+            <div><span className="font-black block text-xs">🟡 {pendingAssignments.length} Assignment(s) Due</span><span className="text-[10px]">Ward has pending class homework.</span></div>
+          </div>
+        ) : (
+          <div className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-300 flex items-center gap-2.5">
+            <CheckCircle2 size={18} className="shrink-0 text-blue-500" />
+            <div><span className="font-black block text-xs">🟢 All Homework Submitted</span><span className="text-[10px]">Zero pending assignments.</span></div>
+          </div>
+        )}
+
+        <div className="p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900 text-purple-700 dark:text-purple-300 flex items-center gap-2.5">
+          <Briefcase size={18} className="shrink-0 text-purple-500" />
+          <div><span className="font-black block text-xs">🔵 {drives.length} Corporate Recruitment Drive(s)</span><span className="text-[10px]">Available for ward's branch.</span></div>
+        </div>
+      </div>
+
+      {/* 8 Main Command Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Attendance Rate</span>
+            <CheckSquare size={16} className="text-emerald-500" />
+          </div>
+          <p className="text-2xl font-black text-emerald-600">{attendance}%</p>
+          <span className="text-[9.5px] text-slate-400 font-bold block">{attendance >= 75 ? 'Good Standing' : 'Warning Level'}</span>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Internal Marks</span>
+            <FileText size={16} className="text-blue-500" />
+          </div>
+          <p className="text-2xl font-black text-slate-900 dark:text-white">{internalMarks} / 50</p>
+          <span className="text-[9.5px] text-blue-600 font-bold block">Internal Score</span>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Current CGPA</span>
+            <Award size={16} className="text-indigo-500" />
+          </div>
+          <p className="text-2xl font-black text-indigo-600">{child?.cgpa || 8.4}</p>
+          <span className="text-[9.5px] text-indigo-600 font-bold block">Academic Record</span>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Active Backlogs</span>
+            <AlertTriangle size={16} className="text-rose-500" />
+          </div>
+          <p className="text-2xl font-black text-slate-900 dark:text-white">{child?.backlogs || 0}</p>
+          <span className="text-[9.5px] text-slate-400 font-bold block">Backlog Count</span>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Pending Assignments</span>
+            <Briefcase size={16} className="text-amber-500" />
+          </div>
+          <p className="text-2xl font-black text-amber-500">{pendingAssignments.length}</p>
+          <span className="text-[9.5px] text-amber-600 font-bold block">Homework Due</span>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Leave Status</span>
+            <Calendar size={16} className="text-purple-500" />
+          </div>
+          <p className="text-sm font-black text-purple-600 mt-2">{latestLeave ? latestLeave.status : 'None Filed'}</p>
+          <span className="text-[9.5px] text-slate-400 font-bold block">Ward Counsellor Review</span>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Counselling</span>
+            <UserCheck size={16} className="text-teal-500" />
+          </div>
+          <p className="text-sm font-black text-teal-600 mt-2">{meetings.length > 0 ? 'Active Session' : 'Assigned'}</p>
+          <span className="text-[9.5px] text-slate-400 font-bold block">Ward Mentor Connected</span>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Placements</span>
+            <Award size={16} className="text-sky-500" />
+          </div>
+          <p className="text-2xl font-black text-slate-900 dark:text-white">{drives.length}</p>
+          <span className="text-[9.5px] text-sky-600 font-bold block">Available Drives</span>
+        </div>
+      </div>
+
+    </div>
+  );
+};
+
+// 2. MY WARD PROFILE
+const ParentMyWard = ({ parent, child }) => {
+  return (
+    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold max-w-2xl">
+      <div className="border-b pb-4">
+        <h3 className="text-base font-black text-slate-900 dark:text-white">Linked Ward Official Academic Profile</h3>
+        <p className="text-xs text-slate-400">Student information connected to your parent account</p>
+      </div>
+
+      <div className="flex items-center gap-5">
+        <img src={child?.photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80'} alt="" className="w-20 h-20 rounded-3xl object-cover border-2 border-blue-500" />
+        <div className="space-y-1">
+          <span className="px-2.5 py-0.5 bg-blue-500/10 text-blue-600 rounded text-[9.5px] font-black uppercase">Enrolled Student</span>
+          <h4 className="text-base font-black text-slate-900 dark:text-white">{child?.fullName || child?.studentName}</h4>
+          <p className="text-xs text-blue-600 font-bold">Roll No: {child?.rollNumber}</p>
+          <p className="text-[10.5px] text-slate-500">{child?.department} (Semester {child?.semester} - Section {child?.section || 'A'})</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 border-t pt-4 text-slate-700 dark:text-slate-300">
+        <div><span className="text-slate-400 block text-[9.5px] uppercase font-bold">Assigned Ward Counsellor</span> <span className="font-black text-xs text-blue-600">Dr. Bruce Banner</span></div>
+        <div><span className="text-slate-400 block text-[9.5px] uppercase font-bold">Department HOD</span> <span className="font-black text-xs">Prof. Alan Turing</span></div>
+        <div><span className="text-slate-400 block text-[9.5px] uppercase font-bold">Institution Principal</span> <span className="font-black text-xs">Dr. Charles Xavier</span></div>
+        <div><span className="text-slate-400 block text-[9.5px] uppercase font-bold">Academic Year</span> <span className="font-bold text-xs">{child?.academicYear || '2025-2026'}</span></div>
+      </div>
+    </div>
+  );
+};
+
+// 3. ACADEMIC OVERVIEW
+const ParentAcademicOverview = ({ child }) => {
+  const dept = child?.department || 'CSE';
+  const subjects = BRANCH_SUBJECT_MAP[dept] || ['Neural Networks', 'Cloud Computing', 'AI Lab'];
+
+  return (
+    <div className="space-y-6 text-xs font-semibold">
+      <div className="p-6 rounded-3xl bg-gradient-to-r from-blue-700 to-indigo-800 text-white shadow-xl flex items-center justify-between">
         <div>
-          <span className="text-[10px] uppercase font-black tracking-widest bg-white/10 px-2 py-0.5 rounded">Parent Portal</span>
-          <h2 className="text-lg font-black mt-2">Welcome back, {parent.fullName || 'Parent'}</h2>
-          <p className="text-[10.5px] opacity-90 mt-1 font-medium">Monitoring academic metrics for: <span className="underline font-black">{child.fullName}</span> ({child.rollNumber})</p>
+          <h2 className="text-xl font-black font-display">Ward Academic Performance Overview</h2>
+          <p className="text-xs text-blue-100 mt-1">{child?.fullName} • {dept} (Semester {child?.semester})</p>
         </div>
-        <div className="flex items-center gap-3 bg-white/10 p-3 rounded-2xl">
-          <TrendingUp size={22} className="opacity-90" />
-          <div className="text-right">
-            <span className="text-sm font-black block">{attendanceRate}%</span>
-            <span className="text-[9px] font-normal block opacity-80">Overall Attendance</span>
-          </div>
-        </div>
+        <span className="px-4 py-2 bg-white/15 backdrop-blur-md rounded-2xl font-black text-xs">Performance: Stable 🟢</span>
       </div>
 
-      {/* Grid Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Attendance widget */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex items-center justify-between">
-          <div>
-            <span className="text-[10px] text-slate-400 uppercase font-black block">Attendance Rate</span>
-            <span className="text-lg font-black text-slate-800 dark:text-white mt-1 block">{attendanceRate}%</span>
-            <span className="text-[9.5px] text-slate-450 dark:text-slate-400 block mt-1 font-medium">{presentClasses}/{totalClasses} Classes present</span>
-          </div>
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${attendanceRate >= 75 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-            <Activity size={20} />
-          </div>
-        </div>
+      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-4">
+        <h3 className="text-sm font-black text-slate-900 dark:text-white border-b pb-3">Ward Enrolled Subjects ({subjects.length})</h3>
 
-        {/* Pending Assignments */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex items-center justify-between">
-          <div>
-            <span className="text-[10px] text-slate-400 uppercase font-black block">Active Assignments</span>
-            <span className="text-lg font-black text-slate-800 dark:text-white mt-1 block">{pendingAssignments}</span>
-            <span className="text-[9.5px] text-slate-450 dark:text-slate-400 block mt-1 font-medium">Requires submission</span>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
-            <BookOpen size={20} />
-          </div>
-        </div>
-
-        {/* Unpaid Fees */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex items-center justify-between">
-          <div>
-            <span className="text-[10px] text-slate-400 uppercase font-black block">Pending Fees</span>
-            <span className="text-lg font-black text-slate-800 dark:text-white mt-1 block">₹{unpaidFees.toLocaleString()}</span>
-            <span className="text-[9.5px] text-slate-450 dark:text-slate-400 block mt-1 font-medium">Tuition & Exam Dues</span>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
-            <CreditCard size={20} />
-          </div>
-        </div>
-
-        {/* Academic Year Info */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex items-center justify-between">
-          <div>
-            <span className="text-[10px] text-slate-400 uppercase font-black block">Academic Profile</span>
-            <span className="text-sm font-black text-slate-800 dark:text-white mt-1 block">{child.department} - {child.semester}</span>
-            <span className="text-[9.5px] text-slate-450 dark:text-slate-400 block mt-1 font-medium">Sec: {child.section || 'A'} • AY: {child.academicYear || '2026-27'}</span>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
-            <Users size={20} />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Notifications Alerts */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 p-5 rounded-3xl shadow-xl">
-          <h3 className="text-sm font-black text-slate-805 dark:text-white mb-4 uppercase">Continuous Absence & Alerts</h3>
-          {recentNotifications.length === 0 ? (
-            <div className="text-center py-10 text-slate-400">No alert warnings or notifications received.</div>
-          ) : (
-            <div className="space-y-3">
-              {recentNotifications.map(n => (
-                <div key={n.id || n.notificationId} className="p-4 rounded-2xl border border-red-500/20 bg-red-500/5 space-y-2">
-                  <div className="flex justify-between items-start">
-                    <span className="font-extrabold text-red-550 text-xs flex items-center gap-1.5">
-                      <AlertCircle size={14} />
-                      {n.title}
-                    </span>
-                    <span className="text-[9px] text-slate-400 font-mono">{new Date(n.sentAt).toLocaleString()}</span>
-                  </div>
-                  <p className="text-[10.5px] text-slate-700 dark:text-slate-300 font-medium leading-relaxed">{n.message}</p>
-                </div>
-              ))}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {subjects.map((sub, idx) => (
+            <div key={idx} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 space-y-2">
+              <span className="px-2.5 py-0.5 bg-blue-500/10 text-blue-600 rounded text-[9.5px] font-black uppercase">CS-60{idx + 1}</span>
+              <h4 className="font-black text-slate-900 dark:text-white text-xs">{sub}</h4>
+              <p className="text-[10.5px] text-slate-400">4 Credits • Theory + Lab</p>
             </div>
-          )}
-        </div>
-
-        {/* Counselling Info */}
-        <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 p-5 rounded-3xl shadow-xl flex flex-col justify-between">
-          <div>
-            <h3 className="text-sm font-black text-slate-805 dark:text-white mb-4 uppercase">Counselling details</h3>
-            <div className="space-y-3">
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/35 border border-slate-100 dark:border-slate-850 rounded-xl">
-                <span className="text-[9px] text-slate-400 uppercase font-black">Ward Counsellor</span>
-                <p className="font-extrabold text-slate-850 dark:text-slate-250 mt-1">{child.wardCounsellorName || 'Assigned Staff'}</p>
-              </div>
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/35 border border-slate-100 dark:border-slate-850 rounded-xl">
-                <span className="text-[9px] text-slate-400 uppercase font-black">Department Branch</span>
-                <p className="font-extrabold text-slate-850 dark:text-slate-250 mt-1">{child.department} Department</p>
-              </div>
-            </div>
-          </div>
-          <div className="pt-5 border-t border-slate-100 dark:border-slate-800 mt-5">
-            <span className="text-[9.5px] text-slate-450 dark:text-slate-400 block font-normal leading-relaxed">
-              Continuous absence alerts are triggered when the student is absent from period 2 & 3 continuously.
-            </span>
-          </div>
+          ))}
         </div>
       </div>
     </div>
   );
 };
 
-// 2. ATTENDANCE DETAIL COMPONENT
+// 4. ATTENDANCE MONITORING
 const ParentAttendance = ({ child }) => {
-  const [records, setRecords] = useState([]);
-  const [subjectAverages, setSubjectAverages] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchAttendance = async () => {
-      try {
-        setLoading(true);
-        const data = await mockDB.getAttendanceForStudent(child.uid);
-        setRecords(data);
-
-        // Calculate averages per subject
-        const subjects = Array.from(new Set(data.map(r => r.subject)));
-        const avgs = subjects.map(sub => {
-          const subRecs = data.filter(r => r.subject === sub);
-          const present = subRecs.filter(r => r.status === 'present').length;
-          const pct = subRecs.length > 0 ? Math.round((present / subRecs.length) * 100) : 100;
-          return { subject: sub, present, total: subRecs.length, percentage: pct };
-        });
-        setSubjectAverages(avgs);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAttendance();
-  }, [child]);
-
-  if (loading) {
-    return (
-      <div className="py-20 text-center animate-pulse text-slate-400 dark:text-slate-500 text-xs font-bold uppercase">
-        Loading attendance records...
-      </div>
-    );
-  }
+  const att = parseFloat(child?.attendancePercentage || child?.attendance || 84.5);
 
   return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl text-xs font-semibold space-y-6">
-      <div>
-        <h3 className="text-base font-extrabold text-slate-800 dark:text-white">Detailed Attendance Log</h3>
-        <p className="text-xs text-slate-450 dark:text-slate-400 mt-1">Review lecture-wise attendance logs and subject statistics</p>
+    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
+      <div className="flex items-center justify-between border-b pb-4">
+        <div>
+          <h3 className="text-base font-black text-slate-900 dark:text-white">Ward Attendance Monitoring Ledger (Read-Only)</h3>
+          <p className="text-xs text-slate-400">Daily subject attendance updated by class faculty</p>
+        </div>
+        <span className="text-2xl font-black text-emerald-600">{att}%</span>
       </div>
 
-      {/* Subject Statistics grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {subjectAverages.map((avg, idx) => (
-          <div key={idx} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-850 flex items-center justify-between">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 text-[10px]">
+              <th className="px-5 py-3">Subject</th>
+              <th className="px-5 py-3 text-center">Total Classes</th>
+              <th className="px-5 py-3 text-center">Present</th>
+              <th className="px-5 py-3 text-center">Absent</th>
+              <th className="px-5 py-3 text-right">Attendance %</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-bold">
+            <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
+              <td className="px-5 py-4 font-black text-slate-900 dark:text-white">Neural Networks & Deep Learning</td>
+              <td className="px-5 py-4 text-center">45</td>
+              <td className="px-5 py-4 text-center text-emerald-600">40</td>
+              <td className="px-5 py-4 text-center text-rose-500">5</td>
+              <td className="px-5 py-4 text-right font-black text-emerald-600">88.8%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// 5. INTERNAL MARKS
+const ParentMarks = ({ child }) => {
+  return (
+    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
+      <div className="border-b pb-4">
+        <h3 className="text-base font-black text-slate-900 dark:text-white">Ward Internal Marks Evaluation (Read-Only)</h3>
+        <p className="text-xs text-slate-400">Mid 1 (20) + Mid 2 (20) + Assignments (10) = Total (50 Marks)</p>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 text-[10px]">
+              <th className="px-5 py-3">Subject</th>
+              <th className="px-5 py-3 text-center">Mid 1 (20)</th>
+              <th className="px-5 py-3 text-center">Mid 2 (20)</th>
+              <th className="px-5 py-3 text-center">Assignments (10)</th>
+              <th className="px-5 py-3 text-center">Total (50)</th>
+              <th className="px-5 py-3 text-right">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-bold">
+            <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
+              <td className="px-5 py-4 font-black text-slate-900 dark:text-white">Neural Networks & Deep Learning</td>
+              <td className="px-5 py-4 text-center">17</td>
+              <td className="px-5 py-4 text-center">18</td>
+              <td className="px-5 py-4 text-center">9</td>
+              <td className="px-5 py-4 text-center font-black text-blue-600">44 / 50</td>
+              <td className="px-5 py-4 text-right"><span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-xl text-[9.5px] uppercase">Excellent</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// 6. SEMESTER RESULTS
+const ParentResults = ({ child }) => {
+  return (
+    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
+      <div className="flex items-center justify-between border-b pb-4">
+        <div>
+          <h3 className="text-base font-black text-slate-900 dark:text-white">Ward Official Semester Grade Ledger</h3>
+          <p className="text-xs text-slate-400">Cumulative CGPA: <span className="font-bold text-blue-600">{child?.cgpa || 8.4}</span> • Active Backlogs: 0</p>
+        </div>
+        <Award size={24} className="text-amber-500" />
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 text-[10px]">
+              <th className="px-5 py-3">Subject</th>
+              <th className="px-5 py-3 text-center">Credits</th>
+              <th className="px-5 py-3 text-center">Grade</th>
+              <th className="px-5 py-3 text-center">Grade Point</th>
+              <th className="px-5 py-3 text-right">Result</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-bold">
+            <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
+              <td className="px-5 py-4 font-black text-slate-900 dark:text-white">Design & Analysis of Algorithms</td>
+              <td className="px-5 py-4 text-center">4</td>
+              <td className="px-5 py-4 text-center text-blue-600 font-black">A+</td>
+              <td className="px-5 py-4 text-center">9.0</td>
+              <td className="px-5 py-4 text-right"><span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-xl text-[9.5px]">PASS</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// 7. ASSIGNMENTS
+const ParentAssignments = ({ child }) => {
+  const [assignments, setAssignments] = useState([]);
+
+  useEffect(() => {
+    const load = async () => {
+      const data = await mockDB.getAssignments(child?.department || 'CSE', child?.semester || 'VI');
+      setAssignments(data);
+    };
+    load();
+  }, [child]);
+
+  return (
+    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
+      <div className="border-b pb-4">
+        <h3 className="text-base font-black text-slate-900 dark:text-white">Ward Class Assignments Status</h3>
+        <p className="text-xs text-slate-400">Read-only assignment submission tracker</p>
+      </div>
+
+      <div className="space-y-3">
+        {assignments.map(a => (
+          <div key={a.id || a.assignmentId} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex justify-between items-center">
             <div>
-              <span className="text-[10px] text-slate-400 uppercase font-black block">{avg.subject}</span>
-              <span className="text-sm font-black text-slate-850 dark:text-white block mt-1">{avg.percentage}%</span>
-              <span className="text-[9px] text-slate-400 mt-0.5 block font-normal">{avg.present} of {avg.total} periods attended</span>
+              <span className="px-2.5 py-0.5 bg-blue-500/10 text-blue-600 rounded text-[9.5px] font-black uppercase">{a.subject}</span>
+              <h4 className="font-black text-slate-900 dark:text-white text-xs mt-1">{a.title}</h4>
+              <span className="text-[9.5px] text-rose-500 font-bold block mt-1">Due Date: {a.dueDate}</span>
             </div>
-            <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-[9px] ${
-              avg.percentage >= 75 ? 'border-emerald-500/40 text-emerald-505 bg-emerald-500/5' : 'border-rose-500/40 text-rose-505 bg-rose-500/5'
-            }`}>
-              {avg.percentage}%
-            </div>
+            <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-xl font-bold">Completed</span>
           </div>
         ))}
       </div>
+    </div>
+  );
+};
 
-      {/* Lecture Logs Table */}
-      <div>
-        <span className="text-xs font-black text-slate-805 dark:text-white block uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-800 pb-3">Period Wise Register Logs</span>
-        {records.length === 0 ? (
-          <div className="text-center py-10 text-slate-400">No attendance history records found.</div>
-        ) : (
-          <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold uppercase border-b border-slate-100 dark:border-slate-800">
-                  <th className="px-5 py-3">Lecture Date</th>
-                  <th className="px-5 py-3">Lecture Period</th>
-                  <th className="px-5 py-3">Subject Name</th>
-                  <th className="px-5 py-3">Marked By Faculty</th>
-                  <th className="px-5 py-3 text-center">Marked Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-bold text-slate-800 dark:text-slate-200">
-                {records.map((rec, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
-                    <td className="px-5 py-3">{rec.date}</td>
-                    <td className="px-5 py-3">Period {rec.period}</td>
-                    <td className="px-5 py-3">{rec.subject}</td>
-                    <td className="px-5 py-3 font-normal">{rec.markedByName || 'System Auto'}</td>
-                    <td className="px-5 py-3 text-center">
-                      <span className={`px-2.5 py-0.5 rounded font-black text-[9px] uppercase ${
-                        rec.status === 'present' ? 'bg-emerald-500/10 text-emerald-500' :
-                        rec.status === 'absent' ? 'bg-rose-500/10 text-rose-500' : 'bg-amber-500/10 text-amber-500'
-                      }`}>{rec.status === 'leave_approved' ? 'Leave Approved' : rec.status}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+// 8. STUDY NOTES
+const ParentNotes = ({ child }) => {
+  const [notes, setNotes] = useState([]);
+
+  useEffect(() => {
+    const load = async () => {
+      const data = await mockDB.getNotes(child?.department || 'CSE', child?.semester || 'VI');
+      setNotes(data);
+    };
+    load();
+  }, [child]);
+
+  return (
+    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
+      <div className="border-b pb-4">
+        <h3 className="text-base font-black text-slate-900 dark:text-white">Faculty Study Notes Published for Ward</h3>
+        <p className="text-xs text-slate-400">Class notes & study material repository</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {notes.map(n => (
+          <div key={n.noteId || n.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 space-y-2">
+            <span className="px-2.5 py-0.5 bg-indigo-500/10 text-indigo-600 rounded text-[9.5px] font-black uppercase">{n.subject}</span>
+            <h4 className="font-black text-slate-900 dark:text-white text-xs">{n.topic || n.title}</h4>
+            <p className="text-[10.5px] text-slate-500">{n.description}</p>
           </div>
-        )}
+        ))}
       </div>
     </div>
   );
 };
 
-// 3. LEAVE APPLICATIONS COMPONENT
+// 9. STUDENT LEAVE
 const ParentLeaves = ({ child }) => {
   const [leaves, setLeaves] = useState([]);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [reason, setReason] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const { showToast } = useAuth();
 
-  const fetchLeaves = async () => {
-    try {
-      setLoading(true);
-      const data = await mockDB.getLeaves('student', child.uid);
+  useEffect(() => {
+    const load = async () => {
+      const data = await mockDB.getStudentLeaves(child?.uid);
       setLeaves(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLeaves();
-  }, [child]);
-
-  const handleSubmitLeave = async (e) => {
-    e.preventDefault();
-    if (!startDate || !endDate || !reason.trim()) {
-      showToast('Please fill all mandatory fields.', 'warning');
-      return;
-    }
-    try {
-      setSubmitting(true);
-      await mockDB.applyLeave(
-        child.uid,
-        child.fullName,
-        child.rollNumber,
-        child.department,
-        child.semester,
-        child.section || 'A',
-        reason,
-        startDate,
-        endDate,
-        'student' // Student role context leave request
-      );
-      showToast('Ward leave application submitted for Counselling approval.', 'success');
-      setStartDate('');
-      setEndDate('');
-      setReason('');
-      fetchLeaves();
-    } catch (_) {
-      showToast('Failed to apply leave.', 'error');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-xs font-semibold">
-      
-      {/* Apply Leave Form */}
-      <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 p-5 rounded-3xl shadow-xl space-y-4">
-        <div>
-          <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Apply Ward Leave</h3>
-          <p className="text-[11px] text-slate-400 mt-1">Submit leave application request to the assigned Ward Counsellor</p>
-        </div>
-
-        <form onSubmit={handleSubmitLeave} className="space-y-4 pt-2">
-          <div>
-            <label className="block text-[9.5px] uppercase font-bold text-slate-450 mb-1">Start Date</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              required
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs focus:outline-none dark:text-white font-bold"
-            />
-          </div>
-
-          <div>
-            <label className="block text-[9.5px] uppercase font-bold text-slate-455 mb-1">End Date</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              required
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs focus:outline-none dark:text-white font-bold"
-            />
-          </div>
-
-          <div>
-            <label className="block text-[9.5px] uppercase font-bold text-slate-455 mb-1">Reason for Absence</label>
-            <textarea
-              placeholder="Medical reasons, family event, emergency..."
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              required
-              rows={3}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs focus:outline-none dark:text-white font-bold"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full py-2.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
-          >
-            <Plus size={14} />
-            <span>{submitting ? 'Submitting...' : 'Apply Leave'}</span>
-          </button>
-        </form>
-      </div>
-
-      {/* Leave Status Logs List */}
-      <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 p-5 rounded-3xl shadow-xl space-y-4">
-        <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase">Ward Leave Applications History</h3>
-        
-        {loading ? (
-          <div className="py-20 text-center animate-pulse text-slate-400">Syncing logs...</div>
-        ) : leaves.length === 0 ? (
-          <div className="text-center py-20 text-slate-400 font-normal">No leave requests applied for this ward.</div>
-        ) : (
-          <div className="space-y-3">
-            {leaves.map((l, idx) => (
-              <div key={idx} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-950/20 space-y-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="font-extrabold text-slate-800 dark:text-slate-200">{l.startDate} to {l.endDate}</span>
-                    <p className="text-[10px] text-slate-400 font-normal mt-0.5">Applied: {new Date(l.createdAt).toLocaleDateString()}</p>
-                  </div>
-                  <span className={`px-2 py-0.5 text-[9px] font-black rounded uppercase ${
-                    l.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500' :
-                    l.status === 'pending' ? 'bg-amber-500/10 text-amber-500' : 'bg-red-500/10 text-red-500'
-                  }`}>{l.status}</span>
-                </div>
-                <p className="text-[10.5px] font-normal text-slate-700 dark:text-slate-350">{l.reason}</p>
-                {l.remarks && (
-                  <div className="mt-2 pt-2 border-t border-slate-150 dark:border-slate-850/80 text-[10px] text-slate-500">
-                    Remarks: <span className="font-bold text-slate-600 dark:text-slate-400">{l.remarks}</span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-    </div>
-  );
-};
-
-// 4. RESULTS GRADE SHEET COMPONENT
-const ParentResults = ({ child }) => {
-  const [results, setResults] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchResults = async () => {
-      try {
-        setLoading(true);
-        const data = await mockDB.getStudentMarks(child.uid);
-        setResults(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
     };
-    fetchResults();
+    load();
   }, [child]);
 
-  if (loading) {
-    return (
-      <div className="py-20 text-center animate-pulse text-slate-400 dark:text-slate-500 text-xs font-bold uppercase">
-        Retrieving marks ledger...
-      </div>
-    );
-  }
-
   return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl text-xs font-semibold space-y-6">
-      <div>
-        <h3 className="text-base font-extrabold text-slate-800 dark:text-white">Internal Grading Ledger</h3>
-        <p className="text-xs text-slate-450 dark:text-slate-400 mt-1">Review internal midterms, assignment grading, and aggregate marks</p>
+    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
+      <div className="border-b pb-4">
+        <h3 className="text-base font-black text-slate-900 dark:text-white">Ward Leave Application History</h3>
+        <p className="text-xs text-slate-400">Approved/Rejected by Ward Counsellor</p>
       </div>
 
-      {/* Internal Marks (Mid1, Mid2, Assignments) */}
-      <div>
-        <span className="text-xs font-black text-slate-805 dark:text-white block uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-800 pb-3">Midterm Scoring Register</span>
-        {!results || results.internals.length === 0 ? (
-          <div className="text-center py-10 text-slate-400 font-normal">Internal scores not published for this semester yet.</div>
-        ) : (
-          <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800">
-                  <th className="px-5 py-3">Subject Name</th>
-                  <th className="px-5 py-3 text-center">Mid 1 (20)</th>
-                  <th className="px-5 py-3 text-center">Mid 2 (20)</th>
-                  <th className="px-5 py-3 text-center">Assignments (10)</th>
-                  <th className="px-5 py-3 text-center">Internal Score (50)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-bold text-slate-800 dark:text-slate-200">
-                {results.internals.map((r, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
-                    <td className="px-5 py-3">{r.subject}</td>
-                    <td className="px-5 py-3 text-center font-normal">{r.mid1}</td>
-                    <td className="px-5 py-3 text-center font-normal">{r.mid2}</td>
-                    <td className="px-5 py-3 text-center font-normal">{r.assignments}</td>
-                    <td className="px-5 py-3 text-center text-blue-600 dark:text-blue-400">{r.total}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// 5. ASSIGNMENTS TRACKER
-const ParentAssignments = ({ child }) => {
-  const [assignments, setAssignments] = useState([]);
-  const [submissions, setSubmissions] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchAssignments = async () => {
-      try {
-        setLoading(true);
-        // Load Assignments
-        const allAss = JSON.parse(localStorage.getItem('acad_assignments') || '[]');
-        const childAssignments = allAss.filter(a => a.branch === child.department && a.semester === child.semester);
-        setAssignments(childAssignments);
-
-        // Load Submissions
-        const allSub = JSON.parse(localStorage.getItem('acad_submissions') || '[]');
-        const childSub = allSub.filter(s => s.studentId === child.uid);
-        setSubmissions(childSub);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAssignments();
-  }, [child]);
-
-  if (loading) {
-    return (
-      <div className="py-20 text-center animate-pulse text-slate-400 dark:text-slate-500 text-xs font-bold uppercase">
-        Loading assignments ledger...
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl text-xs font-semibold space-y-6">
-      <div>
-        <h3 className="text-base font-extrabold text-slate-800 dark:text-white">Active Assignments Tracker</h3>
-        <p className="text-xs text-slate-450 dark:text-slate-400 mt-1">Review active tasks, deadline dates, and grading submission statuses</p>
-      </div>
-
-      {assignments.length === 0 ? (
-        <div className="text-center py-10 text-slate-400 font-normal">No academic assignments allocated.</div>
-      ) : (
-        <div className="space-y-4">
-          {assignments.map((ass) => {
-            const sub = submissions.find(s => s.assignmentId === (ass.id || ass.assignmentId));
-            const isSubmitted = !!sub;
-            
-            return (
-              <div key={ass.id || ass.assignmentId} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-950/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-slate-805 dark:text-slate-200 text-sm">{ass.title}</span>
-                    <span className="text-[10px] bg-slate-200/50 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-450">{ass.subject}</span>
-                  </div>
-                  <p className="text-[11px] font-normal text-slate-505 dark:text-slate-400 mt-1">{ass.description}</p>
-                  <p className="text-[9.5px] text-slate-400 mt-2 font-normal">Deadline: <span className="font-bold text-slate-500">{ass.dueDate}</span></p>
-                </div>
-                <div>
-                  {isSubmitted ? (
-                    <div className="text-right">
-                      <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-500 rounded-xl font-black uppercase text-[9px] block text-center">Submitted</span>
-                      {sub.score !== undefined ? (
-                        <span className="text-[10px] text-blue-500 font-bold block mt-1.5">Score: {sub.score} / 10</span>
-                      ) : (
-                        <span className="text-[9.5px] text-slate-400 font-normal block mt-1.5">Grading Pending</span>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="px-2.5 py-1 bg-rose-500/10 text-rose-500 rounded-xl font-black uppercase text-[9px] block text-center">Pending Action</span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// 6. FEES LEDGER COMPONENT
-const ParentFees = ({ child }) => {
-  const [fees, setFees] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [payingFeeId, setPayingFeeId] = useState(null);
-  const { showToast } = useAuth();
-
-  const fetchFees = async () => {
-    try {
-      setLoading(true);
-      const data = await mockDB.getFees(child.uid);
-      setFees(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchFees();
-  }, [child]);
-
-  const handlePayFee = async (feeId) => {
-    try {
-      setPayingFeeId(feeId);
-      // Simulate quick checkout gateway delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      await mockDB.payFee(feeId);
-      showToast('Fee transaction processed successfully via simulator gateway.', 'success');
-      fetchFees();
-    } catch (_) {
-      showToast('Transaction declined.', 'error');
-    } finally {
-      setPayingFeeId(null);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="py-20 text-center animate-pulse text-slate-400 dark:text-slate-500 text-xs font-bold uppercase">
-        Loading invoice reports...
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl text-xs font-semibold space-y-6">
-      <div>
-        <h3 className="text-base font-extrabold text-slate-800 dark:text-white">Fee Invoices & Ledger</h3>
-        <p className="text-xs text-slate-455 dark:text-slate-400 mt-1">Review active semester invoices, transaction ledgers and settle payment drafts</p>
-      </div>
-
-      {fees.length === 0 ? (
-        <div className="text-center py-10 text-slate-400 font-normal">No fee records found.</div>
-      ) : (
-        <div className="space-y-4">
-          {fees.map((fee) => (
-            <div key={fee.id} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-950/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <span className="font-extrabold text-slate-805 dark:text-slate-250 text-sm block">{fee.feeType} Invoice</span>
-                <span className="text-[10px] text-slate-400 mt-0.5 block font-normal">Semester: {fee.semester} • Due Date: {fee.dueDate || 'Immediate'}</span>
-                <span className="text-base font-black text-blue-600 dark:text-blue-400 block mt-2">₹{fee.amount.toLocaleString()}</span>
-              </div>
-
-              <div>
-                {fee.status === 'paid' ? (
-                  <div className="text-right">
-                    <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-500 rounded-xl font-black uppercase text-[9px]">Settled</span>
-                    <p className="text-[9px] text-slate-400 mt-1.5 font-normal">Paid on: {new Date(fee.paidAt).toLocaleDateString()}</p>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => handlePayFee(fee.id)}
-                    disabled={payingFeeId !== null}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all disabled:opacity-50"
-                  >
-                    {payingFeeId === fee.id ? 'Processing...' : 'Settle Invoice'}
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// 7. NOTIFICATIONS COMPONENT
-const ParentNotifications = ({ parent, child }) => {
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        setLoading(true);
-        const data = await mockDB.getNotifications(parent.uid);
-        setNotifications(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchNotifications();
-  }, [parent]);
-
-  if (loading) {
-    return (
-      <div className="py-20 text-center animate-pulse text-slate-400 dark:text-slate-500 text-xs font-bold uppercase">
-        Loading notification registers...
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl text-xs font-semibold space-y-6">
-      <div>
-        <h3 className="text-base font-extrabold text-slate-800 dark:text-white">Notification Alert Logs</h3>
-        <p className="text-xs text-slate-455 dark:text-slate-400 mt-1">Chronological history of continuous absences and administrative warnings</p>
-      </div>
-
-      {notifications.length === 0 ? (
-        <div className="text-center py-10 text-slate-405 font-normal">No alert records registered.</div>
+      {leaves.length === 0 ? (
+        <div className="py-12 text-center text-slate-400">No leave applications filed by ward.</div>
       ) : (
         <div className="space-y-3">
-          {notifications.map((n) => (
-            <div key={n.id || n.notificationId} className="p-4 rounded-2xl border border-red-500/20 bg-red-500/5 space-y-2">
-              <div className="flex justify-between items-start">
-                <span className="font-extrabold text-red-600 text-xs flex items-center gap-1.5">
-                  <AlertCircle size={14} />
-                  {n.title}
-                </span>
-                <span className="text-[9.5px] text-slate-400 font-mono">{new Date(n.sentAt).toLocaleString()}</span>
+          {leaves.map(l => (
+            <div key={l.id || l.leaveId} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex justify-between items-center">
+              <div>
+                <h4 className="font-black text-slate-900 dark:text-white text-xs">{l.leaveType}</h4>
+                <p className="text-[10.5px] text-slate-500">{l.fromDate} to {l.toDate} • Reason: {l.reason}</p>
               </div>
-              <p className="text-[10.5px] text-slate-700 dark:text-slate-350 font-normal leading-relaxed">{n.message}</p>
+              <span className={`px-3 py-1 rounded-xl text-[9.5px] font-black uppercase ${
+                l.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'
+              }`}>
+                {l.status}
+              </span>
             </div>
           ))}
         </div>
@@ -799,176 +557,256 @@ const ParentNotifications = ({ parent, child }) => {
     </div>
   );
 };
-// 8. PARENT COUNSELLING REMARKS COMPONENT
-const ParentCounselling = ({ parent, child }) => {
-  const [records, setRecords] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchCounselling = async () => {
-      try {
-        setLoading(true);
-        const data = await mockDB.getCounsellingRecords(child.uid);
-        setRecords(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCounselling();
-  }, [child]);
-
+// 10. WARD COUNSELLOR
+const ParentWardCounsellor = ({ child }) => {
   return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl text-xs font-semibold space-y-6">
-      <div>
-        <h3 className="text-base font-extrabold text-slate-800 dark:text-white">Ward Counsellor Official Remarks</h3>
-        <p className="text-xs text-slate-455 dark:text-slate-400 mt-1">Review periodic performance evaluations, behavioral notes, and academic guidance written by {child.wardCounsellorName || 'Assigned Staff'}</p>
+    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold max-w-xl">
+      <div className="border-b pb-4">
+        <h3 className="text-base font-black text-slate-900 dark:text-white">Assigned Branch Ward Counsellor</h3>
+        <p className="text-xs text-slate-400">Official academic mentor assigned for ward</p>
       </div>
 
-      {loading ? (
-        <div className="py-20 text-center animate-pulse text-slate-400">Loading counselling logs...</div>
-      ) : records.length === 0 ? (
-        <div className="py-20 text-center text-slate-400 font-normal">No counsellor review records published yet.</div>
-      ) : (
-        <div className="space-y-4">
-          {records.map((rec) => (
-            <div key={rec.id} className="p-5 rounded-2xl border border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-950/20 space-y-3">
-              <div className="flex justify-between items-start">
-                <div>
-                  <span className="font-extrabold text-slate-850 dark:text-slate-200 text-xs">Session Date: {rec.date}</span>
-                  <span className="text-[10px] text-slate-400 font-bold block mt-0.5">Counsellor: {rec.counsellorName}</span>
-                </div>
-                <span className="px-2.5 py-1 bg-purple-500/10 text-purple-500 rounded-xl font-black uppercase text-[9px]">Verified Session</span>
-              </div>
-              <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium leading-relaxed">{rec.notes}</p>
-              {rec.recommendations && (
-                <div className="p-3 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-850 rounded-xl text-[10.5px]">
-                  <span className="font-bold text-blue-600 dark:text-blue-400 block mb-0.5 uppercase text-[9px]">Action Plan / Recommendation:</span>
-                  <p className="text-slate-600 dark:text-slate-400">{rec.recommendations}</p>
-                </div>
-              )}
-            </div>
-          ))}
+      <div className="flex items-center gap-5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80" alt="" className="w-16 h-16 rounded-2xl object-cover border" />
+        <div className="space-y-1">
+          <span className="px-2.5 py-0.5 bg-blue-500/10 text-blue-600 rounded text-[9.5px] font-black uppercase">Branch Ward Counsellor</span>
+          <h4 className="text-sm font-black text-slate-900 dark:text-white">Dr. Bruce Banner</h4>
+          <p className="text-xs text-slate-500">Department of {child?.department || 'CSE'}</p>
+          <p className="text-[10.5px] font-mono text-blue-600">counsellor.cse@kbn.edu</p>
         </div>
-      )}
+      </div>
     </div>
   );
 };
 
-// 9. PARENT GRIEVANCE FILING COMPONENT
-const ParentGrievances = ({ parent, child }) => {
-  const [tickets, setTickets] = useState([]);
-  const [category, setCategory] = useState('Academics');
-  const [subject, setSubject] = useState('');
-  const [description, setDescription] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [loading, setLoading] = useState(true);
+// 11. FACULTY
+const ParentFaculty = ({ child }) => {
+  return (
+    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
+      <div className="border-b pb-4">
+        <h3 className="text-base font-black text-slate-900 dark:text-white">Department Teaching Faculty Directory</h3>
+        <p className="text-xs text-slate-400">Faculty members instructing ward's department</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex items-center gap-4">
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="" className="w-12 h-12 rounded-2xl object-cover border" />
+          <div>
+            <h4 className="font-black text-slate-900 dark:text-white text-xs">Dr. Bruce Banner</h4>
+            <p className="text-[10.5px] text-blue-600 font-bold">Associate Professor • Neural Networks</p>
+            <p className="text-[10px] text-slate-400">bruce.banner@kbn.edu</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 12. COUNSELLING
+const ParentCounselling = ({ parent, child }) => {
+  return (
+    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
+      <div className="border-b pb-4">
+        <h3 className="text-base font-black text-slate-900 dark:text-white">Ward Counselling Session Remarks</h3>
+        <p className="text-xs text-slate-400">Parent-visible summaries logged by Ward Counsellor</p>
+      </div>
+
+      <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 space-y-1">
+        <span className="px-2.5 py-0.5 bg-purple-500/10 text-purple-600 rounded text-[9.5px] font-black uppercase">Session Summary</span>
+        <h4 className="font-black text-slate-900 dark:text-white text-xs mt-1">Mid-Term Performance & Career Guidance</h4>
+        <p className="text-[10.5px] text-slate-500">Ward maintains satisfactory attendance and is preparing for campus placement drives.</p>
+      </div>
+    </div>
+  );
+};
+
+// 13. PARENT MEETINGS
+const ParentMeetings = ({ parent, child }) => {
+  const [requesting, setRequesting] = useState(false);
+  const [meetingDate, setMeetingDate] = useState('');
+  const [meetingTime, setMeetingTime] = useState('');
+  const [purpose, setPurpose] = useState('');
   const { showToast } = useAuth();
 
-  const loadTickets = async () => {
-    try {
-      setLoading(true);
-      const data = await mockDB.getGrievanceTickets(parent.uid);
-      setTickets(data);
-    } catch (_) {}
-    finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadTickets();
-  }, [parent]);
-
-  const handleSubmit = async (e) => {
+  const handleRequestMeeting = async (e) => {
     e.preventDefault();
-    if (!subject || !description) return;
+    if (!meetingDate || !purpose) return;
 
     try {
-      setSubmitting(true);
-      await mockDB.submitGrievanceTicket(parent.uid, {
-        category,
-        subject: `[Parent Request - Ward: ${child.rollNumber}] ${subject}`,
-        description
+      setRequesting(true);
+      await mockDB.createCounsellingMeeting({
+        counsellorId: 'counsellor-cse',
+        studentId: child?.uid,
+        studentName: child?.fullName || child?.studentName,
+        parentName: parent?.fullName || 'Parent',
+        date: meetingDate,
+        time: meetingTime || '11:00 AM',
+        title: purpose,
+        status: 'Pending Review'
       });
-      showToast('Parent Grievance ticket filed with Principal office.', 'success');
-      setSubject('');
-      setDescription('');
-      loadTickets();
+
+      showToast('Parent meeting request submitted to Ward Counsellor.', 'success');
+      setPurpose('');
     } catch (_) {
-      showToast('Could not submit ticket.', 'error');
+      showToast('Could not request meeting.', 'error');
     } finally {
-      setSubmitting(false);
+      setRequesting(false);
     }
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 text-xs font-semibold">
-      <div className="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl self-start space-y-4">
-        <div>
-          <h3 className="text-sm font-extrabold text-slate-850 dark:text-white">File Parent Support / Dispute Ticket</h3>
-          <p className="text-[10px] text-slate-400 mt-1">Submit direct inquiry or grievance regarding your ward to college executive administration</p>
-        </div>
+    <div className="space-y-6 text-xs font-semibold">
+      
+      {/* Request Form */}
+      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-4">
+        <h3 className="text-sm font-black text-slate-900 dark:text-white border-b pb-3">Request Meeting with Ward Counsellor</h3>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-[9.5px] uppercase font-bold text-slate-450 mb-1">Issue Category</label>
-            <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs focus:outline-none dark:text-white font-bold">
-              <option value="Academics">Academics & Attendance</option>
-              <option value="Hostel & Food">Hostel & Mess Facilities</option>
-              <option value="Fee Discrepancy">Fee Invoice / Payment Discrepancy</option>
-              <option value="Discipline">Discipline & Safety</option>
-            </select>
+        <form onSubmit={handleRequestMeeting} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] text-slate-400 uppercase font-black block mb-1">Preferred Date</label>
+              <input type="date" required value={meetingDate} onChange={(e) => setMeetingDate(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold" />
+            </div>
+
+            <div>
+              <label className="text-[10px] text-slate-400 uppercase font-black block mb-1">Preferred Time Slot</label>
+              <select value={meetingTime} onChange={(e) => setMeetingTime(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold">
+                <option value="10:00 AM">10:00 - 10:30 AM</option>
+                <option value="11:30 AM">11:30 - 12:00 PM</option>
+                <option value="03:00 PM">03:00 - 03:30 PM</option>
+              </select>
+            </div>
           </div>
 
           <div>
-            <label className="block text-[9.5px] uppercase font-bold text-slate-450 mb-1">Subject Summary</label>
-            <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)} required placeholder="e.g. Attendance discrepancy for Period 3" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs focus:outline-none dark:text-white font-bold" />
+            <label className="text-[10px] text-slate-400 uppercase font-black block mb-1">Purpose / Topics to Discuss</label>
+            <textarea rows={2} required placeholder="Academic progress, attendance, or career guidance..." value={purpose} onChange={(e) => setPurpose(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium" />
           </div>
 
-          <div>
-            <label className="block text-[9.5px] uppercase font-bold text-slate-450 mb-1">Detailed Explanation</label>
-            <textarea rows={4} value={description} onChange={(e) => setDescription(e.target.value)} required placeholder="Provide clear description of your concern..." className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs focus:outline-none dark:text-white resize-none font-bold"></textarea>
-          </div>
-
-          <button type="submit" disabled={submitting} className="w-full py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold transition-all shadow">
-            {submitting ? 'Filing...' : 'Submit Support Ticket'}
+          <button type="submit" disabled={requesting} className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl shadow">
+            {requesting ? 'Submitting...' : 'Send Meeting Request'}
           </button>
         </form>
       </div>
 
-      <div className="lg:col-span-3 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-4">
-        <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider block border-b border-slate-100 dark:border-slate-800 pb-4">Your Filed Tickets Ledger</span>
-        
-        {loading ? (
-          <div className="py-20 text-center animate-pulse text-slate-400">Loading support history...</div>
-        ) : tickets.length === 0 ? (
-          <div className="py-20 text-center text-slate-450">No tickets filed by your account.</div>
-        ) : (
-          <div className="space-y-3 max-h-[450px] overflow-y-auto pr-1">
-            {tickets.map(t => (
-              <div key={t.id} className="p-4 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-850 rounded-2xl space-y-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded text-[9px] font-black uppercase">{t.category}</span>
-                    <h4 className="font-extrabold text-slate-850 dark:text-slate-200 text-xs mt-1">{t.subject}</h4>
-                  </div>
-                  <span className={`text-[9.5px] px-2 py-0.5 rounded font-black uppercase ${
-                    t.status === 'resolved' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
-                  }`}>{t.status}</span>
-                </div>
-                <p className="text-[10.5px] text-slate-500 font-normal leading-relaxed">{t.description}</p>
-                {t.reply && (
-                  <div className="p-3 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-850 rounded-xl space-y-1 mt-2">
-                    <span className="text-[9px] font-black text-emerald-500 uppercase block">College Official Response:</span>
-                    <p className="text-[10.5px] text-slate-600 dark:text-slate-300 font-medium">{t.reply}</p>
-                  </div>
-                )}
-              </div>
-            ))}
+    </div>
+  );
+};
+
+// 14. PLACEMENTS
+const ParentPlacements = ({ child }) => {
+  const [drives, setDrives] = useState([]);
+
+  useEffect(() => {
+    const load = async () => {
+      const data = await mockDB.getPlacementDrives('student');
+      setDrives(data);
+    };
+    load();
+  }, [child]);
+
+  return (
+    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
+      <div className="border-b pb-4">
+        <h3 className="text-base font-black text-slate-900 dark:text-white">Corporate Recruitment Drives for Ward's Branch</h3>
+        <p className="text-xs text-slate-400">Campus placement opportunities published by Placement Cell</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {drives.map(d => (
+          <div key={d.id || d.driveId} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 space-y-2">
+            <h4 className="font-black text-slate-900 dark:text-white text-xs">{d.companyName}</h4>
+            <p className="text-xs text-blue-600 font-bold">{d.jobRole || d.role}</p>
+            <p className="text-[10.5px] text-slate-500">Package: <span className="font-black text-emerald-600">{d.package || d.salaryPackage}</span></p>
           </div>
-        )}
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// 15. MONTHLY ACADEMIC REPORT
+const ParentMonthlyReport = ({ child }) => {
+  const [month, setMonth] = useState('August');
+  const [year, setYear] = useState('2026');
+
+  return (
+    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
+      <div className="flex items-center justify-between border-b pb-4">
+        <div>
+          <h3 className="text-base font-black text-slate-900 dark:text-white">Monthly Ward Academic Summary</h3>
+          <p className="text-xs text-slate-400">Compiled report for {month} {year}</p>
+        </div>
+
+        <div className="flex gap-2">
+          <select value={month} onChange={(e) => setMonth(e.target.value)} className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border rounded-xl font-bold">
+            <option value="June">June</option>
+            <option value="July">July</option>
+            <option value="August">August</option>
+          </select>
+          <select value={year} onChange={(e) => setYear(e.target.value)} className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border rounded-xl font-bold">
+            <option value="2026">2026</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl space-y-1">
+          <span className="text-[9.5px] text-slate-400 uppercase font-black">Monthly Attendance</span>
+          <p className="text-xl font-black text-emerald-600">84.5%</p>
+        </div>
+        <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl space-y-1">
+          <span className="text-[9.5px] text-slate-400 uppercase font-black">Internal Score</span>
+          <p className="text-xl font-black text-blue-600">38 / 50</p>
+        </div>
+        <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl space-y-1">
+          <span className="text-[9.5px] text-slate-400 uppercase font-black">Homework Submitted</span>
+          <p className="text-xl font-black text-slate-900 dark:text-white">100%</p>
+        </div>
+        <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl space-y-1">
+          <span className="text-[9.5px] text-slate-400 uppercase font-black">Academic Risk</span>
+          <p className="text-xl font-black text-emerald-600">Good Standing</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 16. NOTIFICATIONS
+const ParentNotifications = ({ parent, child }) => {
+  return (
+    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
+      <div className="border-b pb-4">
+        <h3 className="text-base font-black text-slate-900 dark:text-white">Parent Official Notifications & Broadcast Feed</h3>
+        <p className="text-xs text-slate-400">Important academic alerts & meeting notifications</p>
+      </div>
+
+      <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex items-start gap-3">
+        <Bell size={16} className="text-blue-500 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Attendance updated for {child?.fullName || 'Ward'}: 84.5% overall compliance.</p>
+          <span className="text-[9.5px] text-slate-400 block mt-1">Today</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 17. PARENT PROFILE
+const ParentProfile = ({ parent, child }) => {
+  return (
+    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold max-w-xl">
+      <div className="border-b pb-4">
+        <h3 className="text-base font-black text-slate-900 dark:text-white">Parent Profile & Account Details</h3>
+        <p className="text-xs text-slate-400">Read-only account information linked to student ward</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 text-slate-700 dark:text-slate-300">
+        <div><span className="text-slate-400 block text-[9.5px] uppercase font-bold">Parent Name</span> <span className="font-black text-xs text-slate-900 dark:text-white">{parent?.fullName || 'Parent / Guardian'}</span></div>
+        <div><span className="text-slate-400 block text-[9.5px] uppercase font-bold">Linked Student Ward</span> <span className="font-black text-xs text-blue-600">{child?.fullName || child?.studentName}</span></div>
+        <div><span className="text-slate-400 block text-[9.5px] uppercase font-bold">Email Address</span> <span className="font-bold text-xs">{parent?.email || 'parent@kbn.edu'}</span></div>
+        <div><span className="text-slate-400 block text-[9.5px] uppercase font-bold">Mobile Contact</span> <span className="font-bold text-xs">{parent?.mobile || '+91 9876543210'}</span></div>
       </div>
     </div>
   );

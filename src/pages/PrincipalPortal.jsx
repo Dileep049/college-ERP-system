@@ -52,7 +52,8 @@ export const PrincipalPortal = ({ subPage }) => {
   if (subPage === 'branches') return <PrincipalBranchAnalytics principal={user} />;
   if (subPage === 'results') return <PrincipalSemesterResults principal={user} />;
   if (subPage === 'performance') return <PrincipalAcademicPerformance principal={user} />;
-  if (subPage === 'faculty') return <PrincipalFacultyAnalytics principal={user} />;
+  if (subPage === 'faculty' || subPage === 'faculty-overview') return <PrincipalFacultyOverview principal={user} />;
+  if (subPage === 'ward-counsellors' || subPage === 'counsellors') return <PrincipalWardCounsellorOverview principal={user} />;
   if (subPage === 'attendance') return <PrincipalAttendanceAnalytics principal={user} />;
   if (subPage === 'calendar') return <PrincipalCalendar principal={user} />;
   if (subPage === 'reports') return <PrincipalReports principal={user} />;
@@ -269,6 +270,7 @@ const PrincipalBranchAnalytics = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedBranch, setSelectedBranch] = useState(null);
+  const [branchFacultyAllocations, setBranchFacultyAllocations] = useState([]);
 
   useEffect(() => {
     const fetchBranches = async () => {
@@ -279,6 +281,18 @@ const PrincipalBranchAnalytics = () => {
     };
     fetchBranches();
   }, []);
+
+  useEffect(() => {
+    const fetchBranchAllocations = async () => {
+      if (selectedBranch?.branch) {
+        const allocs = await mockDB.getSubjectAllocations(selectedBranch.branch);
+        setBranchFacultyAllocations(allocs);
+      } else {
+        setBranchFacultyAllocations([]);
+      }
+    };
+    fetchBranchAllocations();
+  }, [selectedBranch]);
 
   if (loading) return <div className="p-8 text-center text-slate-400 text-xs">Loading branch analytics & ward counsellors...</div>;
 
@@ -372,7 +386,7 @@ const PrincipalBranchAnalytics = () => {
 
         {/* Branch Analytics Table */}
         <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Branch Comparison Table</h3>
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto">
           <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
             <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
               <tr>
@@ -449,6 +463,33 @@ const PrincipalBranchAnalytics = () => {
                   <p className="text-xs font-bold text-amber-600 mt-1">🟡 Ward Counsellor Not Assigned</p>
                 )}
               </div>
+            </div>
+
+            {/* Assigned Faculty Section in Branch Modal */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                HOD Assigned Teaching Faculty ({branchFacultyAllocations.length})
+              </h4>
+              {branchFacultyAllocations.length === 0 ? (
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-center text-slate-400 text-xs">
+                  No active faculty course assignments recorded for {selectedBranch.branch}.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {branchFacultyAllocations.map(fac => (
+                    <div key={fac.id || fac.allocationId} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/50 dark:border-slate-800 flex items-center justify-between">
+                      <div>
+                        <strong className="text-xs font-black text-slate-900 dark:text-white block">{fac.facultyName}</strong>
+                        <span className="text-[10.5px] text-purple-600 dark:text-purple-400 font-bold">{fac.subjectName || fac.subject}</span>
+                      </div>
+                      <div className="text-right text-[11px]">
+                        <span className="text-indigo-600 font-bold block">{fac.semester || 'Semester 1'} • {fac.section || 'Section A'}</span>
+                        <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-full text-[9.5px] font-black uppercase">Assigned</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Metrics Breakdown Grid */}
@@ -611,7 +652,7 @@ const PrincipalSemesterResults = () => {
       </div>
 
       {/* Subject Performance Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden p-6 space-y-4">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden overflow-x-auto p-6 space-y-4">
         <h3 className="text-base font-black text-slate-900 dark:text-white">Subject-wise Academic Performance</h3>
         <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
           <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
@@ -681,7 +722,7 @@ const PrincipalAcademicPerformance = () => {
 
         {/* Students Requiring Attention Table */}
         <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Students Requiring Attention (At Risk)</h3>
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto">
           <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
             <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
               <tr>
@@ -718,62 +759,416 @@ const PrincipalAcademicPerformance = () => {
   );
 };
 
-// 5. FACULTY OVERVIEW & ANALYTICS
-const PrincipalFacultyAnalytics = () => {
-  const [data, setData] = useState(null);
+// 5. FACULTY OVERVIEW & HOD COURSE ALLOCATIONS (VIEW ONLY)
+const PrincipalFacultyOverview = ({ principal }) => {
+  const [allocations, setAllocations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [branchFilter, setBranchFilter] = useState('All Branches');
+  const [semesterFilter, setSemesterFilter] = useState('All Semesters');
+  const [statusFilter, setStatusFilter] = useState('All Statuses');
+  const [selectedFaculty, setSelectedFaculty] = useState(null);
+
+  const loadData = async () => {
+    setLoading(true);
+    const data = await mockDB.getAllFacultyAllocations();
+    setAllocations(data);
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchFac = async () => {
-      const res = await mockDB.getFacultyAnalytics();
-      setData(res);
-    };
-    fetchFac();
-  }, []);
+    loadData();
+  }, [principal]);
 
-  if (!data) return <div className="p-8 text-center text-slate-400 text-xs">Loading faculty overview...</div>;
+  const filteredAllocations = allocations.filter((a) => {
+    const matchesSearch =
+      (a.facultyName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (a.facultyEmail || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (a.subjectName || a.subject || '').toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesBranch =
+      branchFilter === 'All Branches' ||
+      a.branch === branchFilter ||
+      a.department === branchFilter;
+
+    const matchesSemester =
+      semesterFilter === 'All Semesters' || a.semester === semesterFilter;
+
+    const matchesStatus =
+      statusFilter === 'All Statuses' || (a.status || 'Active') === statusFilter;
+
+    return matchesSearch && matchesBranch && matchesSemester && matchesStatus;
+  });
+
+  const facultyAllAssignments = selectedFaculty
+    ? allocations.filter(
+        (a) =>
+          a.facultyId === selectedFaculty.facultyId ||
+          a.facultyEmail === selectedFaculty.facultyEmail
+      )
+    : [];
 
   return (
     <div className="space-y-6 text-xs font-semibold">
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
-        <h2 className="text-lg font-black text-slate-900 dark:text-white mb-1">Faculty Overview & Department Workloads</h2>
-        <p className="text-xs text-slate-400 mb-6">Institutional faculty distribution, workload hours, and monthly leave statistics</p>
-
-        {/* Department Faculty Table */}
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 mb-8">
-          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
-            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
-              <tr>
-                <th className="p-4">Department</th>
-                <th className="p-4 text-center">Faculty Count</th>
-                <th className="p-4 text-center">Avg Workload</th>
-                <th className="p-4 text-center">Faculty On Leave</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {data.departmentFaculty.map((df) => (
-                <tr key={df.department} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                  <td className="p-4 font-extrabold text-slate-900 dark:text-white">{df.department}</td>
-                  <td className="p-4 text-center font-bold text-purple-600">{df.facultyCount} Members</td>
-                  <td className="p-4 text-center font-bold text-slate-700 dark:text-slate-300">{df.avgWorkload}</td>
-                  <td className="p-4 text-center font-bold text-amber-500">{df.onLeave} On Leave</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Monthly Leave Summary */}
-        <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Faculty Leave Summary (Monthly)</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-          {data.leavesSummary.map((l) => (
-            <div key={l.month} className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl text-center border border-slate-200/40 dark:border-slate-800">
-              <span className="text-[10px] text-slate-400 block uppercase font-bold">{l.month}</span>
-              <span className="text-xl font-black text-purple-600 mt-1 block">{l.leaves}</span>
-              <span className="text-[9px] text-slate-400 block mt-0.5">Approved Leaves</span>
-            </div>
-          ))}
+      {/* Banner */}
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-0.5 bg-purple-500/10 text-purple-600 rounded-full text-[10px] font-black uppercase">
+              Principal Executive View
+            </span>
+            <span className="px-3 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-full text-[10px] font-black uppercase">
+              View Only
+            </span>
+          </div>
+          <h2 className="text-xl font-black text-slate-900 dark:text-white mt-1">Faculty & Subject Course Allocations</h2>
+          <p className="text-xs text-slate-400 mt-0.5">Real-time breakdown of WHO teaches WHAT subject for WHICH branch, semester & section</p>
         </div>
       </div>
+
+      {/* Filters & Search */}
+      <div className="p-4 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3 flex-1">
+          <div className="relative min-w-[220px]">
+            <Search size={14} className="absolute left-3 top-3 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search faculty, email, or subject..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-semibold"
+            />
+          </div>
+
+          <select
+            value={branchFilter}
+            onChange={(e) => setBranchFilter(e.target.value)}
+            className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold"
+          >
+            <option value="All Branches">All Branches</option>
+            {KBN_BRANCHES.map(b => (
+              <option key={b} value={b}>{b}</option>
+            ))}
+          </select>
+
+          <select
+            value={semesterFilter}
+            onChange={(e) => setSemesterFilter(e.target.value)}
+            className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold"
+          >
+            <option value="All Semesters">All Semesters</option>
+            <option value="Semester 1">Semester 1</option>
+            <option value="Semester 2">Semester 2</option>
+            <option value="Semester 3">Semester 3</option>
+            <option value="Semester 4">Semester 4</option>
+            <option value="Semester 5">Semester 5</option>
+            <option value="Semester 6">Semester 6</option>
+          </select>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold"
+          >
+            <option value="All Statuses">All Statuses</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+            <option value="Reassigned">Reassigned</option>
+          </select>
+        </div>
+
+        <span className="text-[11px] font-bold text-slate-400">
+          Showing {filteredAllocations.length} Faculty Assignments
+        </span>
+      </div>
+
+      {/* Faculty Assignment Table */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden overflow-x-auto">
+        <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
+          <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+            <tr>
+              <th className="p-4">Faculty Member</th>
+              <th className="p-4">Designation</th>
+              <th className="p-4">Official Contact</th>
+              <th className="p-4">Branch / Department</th>
+              <th className="p-4 text-center">Semester</th>
+              <th className="p-4 text-center">Section</th>
+              <th className="p-4">Assigned Subject</th>
+              <th className="p-4 text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            {loading ? (
+              <tr>
+                <td colSpan="8" className="p-8 text-center text-slate-400 animate-pulse">Loading faculty course allocations...</td>
+              </tr>
+            ) : filteredAllocations.length === 0 ? (
+              <tr>
+                <td colSpan="8" className="p-8 text-center text-slate-400">No faculty assignments match the selected filters.</td>
+              </tr>
+            ) : (
+              filteredAllocations.map((alloc) => (
+                <tr
+                  key={alloc.id || alloc.allocationId}
+                  onClick={() => setSelectedFaculty(alloc)}
+                  className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 cursor-pointer transition-all"
+                >
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      {alloc.facultyPhoto ? (
+                        <img src={alloc.facultyPhoto} alt={alloc.facultyName} className="w-10 h-10 rounded-xl object-cover border border-purple-500/30 shrink-0" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-xl bg-purple-600/10 text-purple-600 font-black flex items-center justify-center border border-purple-500/20 shrink-0">
+                          {alloc.facultyName?.substring(0, 2).toUpperCase() || 'FC'}
+                        </div>
+                      )}
+                      <div>
+                        <strong className="text-slate-900 dark:text-white font-extrabold text-xs block">{alloc.facultyName}</strong>
+                        <span className="text-[10px] text-slate-400 font-mono">ID: {alloc.facultyId}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-4 font-bold text-slate-600 dark:text-slate-300">{alloc.facultyDesignation}</td>
+                  <td className="p-4">
+                    <span className="text-slate-900 dark:text-white block font-medium">{alloc.facultyEmail}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">📞 {alloc.facultyPhone}</span>
+                  </td>
+                  <td className="p-4 font-black text-purple-600 dark:text-purple-400">{alloc.branch || alloc.department}</td>
+                  <td className="p-4 text-center font-bold text-indigo-600">{alloc.semester}</td>
+                  <td className="p-4 text-center font-bold text-slate-700 dark:text-slate-300">{alloc.section}</td>
+                  <td className="p-4 font-black text-slate-900 dark:text-white">{alloc.subjectName || alloc.subject}</td>
+                  <td className="p-4 text-center">
+                    <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-full text-[10px] font-black">
+                      {alloc.status || 'Active'}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Faculty Details Drawer Modal */}
+      {selectedFaculty && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-lg w-full p-6 space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div>
+                <span className="px-2.5 py-0.5 bg-purple-500/10 text-purple-600 text-[10px] font-black uppercase rounded-full">
+                  Faculty Assignment Profile
+                </span>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white mt-1">{selectedFaculty.facultyName}</h3>
+              </div>
+              <button onClick={() => setSelectedFaculty(null)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Profile Summary */}
+            <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+              {selectedFaculty.facultyPhoto ? (
+                <img src={selectedFaculty.facultyPhoto} alt={selectedFaculty.facultyName} className="w-16 h-16 rounded-2xl object-cover border-2 border-purple-500/30 shrink-0" />
+              ) : (
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white font-black text-xl flex items-center justify-center shadow-md shrink-0">
+                  {selectedFaculty.facultyName?.substring(0, 2).toUpperCase()}
+                </div>
+              )}
+              <div>
+                <h4 className="text-sm font-black text-slate-900 dark:text-white">{selectedFaculty.facultyName}</h4>
+                <p className="text-xs text-purple-600 dark:text-purple-400 font-bold">{selectedFaculty.facultyDesignation}</p>
+                <p className="text-[11px] text-slate-400">{selectedFaculty.facultyEmail}</p>
+                <p className="text-[11px] text-slate-400 font-mono">📞 {selectedFaculty.facultyPhone}</p>
+              </div>
+            </div>
+
+            {/* Assignments List */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">Active Academic Assignments ({facultyAllAssignments.length})</h4>
+              {facultyAllAssignments.map((asg, idx) => (
+                <div key={idx} className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-800 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-slate-900 dark:text-white">{asg.subjectName || asg.subject}</span>
+                    <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-full text-[9.5px] font-black">Active</span>
+                  </div>
+                  <div className="text-[11px] text-purple-600 dark:text-purple-400 font-bold">
+                    {asg.branch || asg.department} • {asg.semester} • {asg.section}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl text-[11px] text-slate-600 dark:text-slate-300">
+              <strong className="text-purple-700 dark:text-purple-300 block">📌 Principal View Only:</strong>
+              This allocation was configured by the respective Head of Department (HOD). Principal has read-only audit visibility.
+            </div>
+
+            <div className="text-right border-t border-slate-100 dark:border-slate-800 pt-3">
+              <button onClick={() => setSelectedFaculty(null)} className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-xs rounded-xl">
+                Close Profile
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 6. WARD COUNSELLOR OVERVIEW (VIEW ONLY)
+const PrincipalWardCounsellorOverview = ({ principal }) => {
+  const [counsellors, setCounsellors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCounsellor, setSelectedCounsellor] = useState(null);
+
+  const loadData = async () => {
+    setLoading(true);
+    const data = await mockDB.getAllWardCounsellors();
+    setCounsellors(data);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [principal]);
+
+  return (
+    <div className="space-y-6 text-xs font-semibold">
+      {/* Banner */}
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-0.5 bg-purple-500/10 text-purple-600 rounded-full text-[10px] font-black uppercase">
+              Principal Executive View
+            </span>
+            <span className="px-3 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-full text-[10px] font-black uppercase">
+              View Only
+            </span>
+          </div>
+          <h2 className="text-xl font-black text-slate-900 dark:text-white mt-1">Branch Ward Counsellors Overview</h2>
+          <p className="text-xs text-slate-400 mt-0.5">Assigned faculty mentors monitoring student ward attendance & performance</p>
+        </div>
+      </div>
+
+      {/* Ward Counsellor Table */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden overflow-x-auto">
+        <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
+          <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+            <tr>
+              <th className="p-4">Ward Counsellor</th>
+              <th className="p-4">Designation</th>
+              <th className="p-4">Official Email</th>
+              <th className="p-4">Phone Number</th>
+              <th className="p-4">Assigned Branch</th>
+              <th className="p-4 text-center">Ward Students</th>
+              <th className="p-4 text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            {loading ? (
+              <tr>
+                <td colSpan="7" className="p-8 text-center text-slate-400 animate-pulse">Loading branch ward counsellors...</td>
+              </tr>
+            ) : counsellors.length === 0 ? (
+              <tr>
+                <td colSpan="7" className="p-8 text-center text-slate-400">No active ward counsellors assigned.</td>
+              </tr>
+            ) : (
+              counsellors.map((c) => (
+                <tr
+                  key={c.id}
+                  onClick={() => setSelectedCounsellor(c)}
+                  className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 cursor-pointer transition-all"
+                >
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      {c.facultyPhoto ? (
+                        <img src={c.facultyPhoto} alt={c.facultyName} className="w-10 h-10 rounded-xl object-cover border border-purple-500/30 shrink-0" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-xl bg-purple-600/10 text-purple-600 font-black flex items-center justify-center border border-purple-500/20 shrink-0">
+                          {c.facultyName?.substring(0, 2).toUpperCase() || 'WC'}
+                        </div>
+                      )}
+                      <div>
+                        <strong className="text-slate-900 dark:text-white font-extrabold text-xs block">{c.facultyName}</strong>
+                        <span className="text-[10px] text-purple-600 dark:text-purple-400 font-bold">Faculty Ward Mentor</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-4 font-bold text-slate-600 dark:text-slate-300">{c.facultyDesignation || c.designation || 'Faculty Member'}</td>
+                  <td className="p-4 font-medium text-slate-900 dark:text-white">{c.facultyEmail || c.email}</td>
+                  <td className="p-4 font-mono text-slate-500">{c.facultyPhone || '9876543211'}</td>
+                  <td className="p-4 font-black text-purple-600 dark:text-purple-400">{c.department}</td>
+                  <td className="p-4 text-center font-black text-indigo-600">{c.wardStudentsCount || 181}</td>
+                  <td className="p-4 text-center">
+                    <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-full text-[10px] font-black">
+                      {c.status || 'Active'}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Ward Counsellor Details Modal */}
+      {selectedCounsellor && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-lg w-full p-6 space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div>
+                <span className="px-2.5 py-0.5 bg-purple-500/10 text-purple-600 text-[10px] font-black uppercase rounded-full">
+                  Ward Counsellor Profile
+                </span>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white mt-1">{selectedCounsellor.facultyName}</h3>
+              </div>
+              <button onClick={() => setSelectedCounsellor(null)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Profile Info */}
+            <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+              {selectedCounsellor.facultyPhoto ? (
+                <img src={selectedCounsellor.facultyPhoto} alt={selectedCounsellor.facultyName} className="w-16 h-16 rounded-2xl object-cover border-2 border-purple-500/30 shrink-0" />
+              ) : (
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white font-black text-xl flex items-center justify-center shadow-md shrink-0">
+                  {selectedCounsellor.facultyName?.substring(0, 2).toUpperCase()}
+                </div>
+              )}
+              <div>
+                <h4 className="text-sm font-black text-slate-900 dark:text-white">{selectedCounsellor.facultyName}</h4>
+                <p className="text-xs text-purple-600 font-bold">{selectedCounsellor.department} Ward Counsellor</p>
+                <p className="text-[11px] text-slate-400">{selectedCounsellor.facultyEmail || selectedCounsellor.email}</p>
+                <p className="text-[11px] text-slate-400 font-mono">📞 {selectedCounsellor.facultyPhone || '9876543211'}</p>
+              </div>
+            </div>
+
+            {/* Metrics */}
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                <span className="text-[9.5px] text-slate-400 font-bold block">Assigned Wards</span>
+                <span className="text-lg font-black text-purple-600">{selectedCounsellor.wardStudentsCount || 181}</span>
+              </div>
+              <div className="p-3 bg-emerald-500/10 text-emerald-600 rounded-2xl">
+                <span className="text-[9.5px] font-bold block">Attendance Avg</span>
+                <span className="text-lg font-black">84.2%</span>
+              </div>
+              <div className="p-3 bg-rose-500/10 text-rose-600 rounded-2xl">
+                <span className="text-[9.5px] font-bold block">Low Att (&lt;75%)</span>
+                <span className="text-lg font-black">12 Wards</span>
+              </div>
+            </div>
+
+            <div className="text-right border-t border-slate-100 dark:border-slate-800 pt-3">
+              <button onClick={() => setSelectedCounsellor(null)} className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-xs rounded-xl">
+                Close Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -796,7 +1191,7 @@ const PrincipalAttendanceAnalytics = () => {
         <h2 className="text-lg font-black text-slate-900 dark:text-white mb-1">Branch-wise Attendance Analytics</h2>
         <p className="text-xs text-slate-400 mb-6">Institutional attendance compliance and low attendance tracking across departments</p>
 
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto">
           <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
             <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
               <tr>
@@ -882,7 +1277,7 @@ const PrincipalPlacementAnalytics = () => {
         </div>
 
         {/* Branch Placement Table */}
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto">
           <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
             <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
               <tr>
@@ -935,7 +1330,7 @@ const PrincipalLeaves = () => {
           <p className="text-xs text-slate-400">Institutional leave applications and approval oversight</p>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto">
           <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
             <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
               <tr>
@@ -1025,7 +1420,7 @@ const PrincipalDocuments = () => {
     <div className="space-y-6 text-xs font-semibold">
       <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
         <h2 className="text-lg font-black text-slate-900 dark:text-white">Document Dispatch & Certification Track</h2>
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto">
           <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
             <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
               <tr>

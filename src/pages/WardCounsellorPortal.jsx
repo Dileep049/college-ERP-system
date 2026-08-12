@@ -33,6 +33,58 @@ import {
 export const WardCounsellorPortal = ({ subPage }) => {
   const { user } = useAuth();
 
+  // 1. Check URL Query Parameters Branch Access Guard
+  const searchParams = new URLSearchParams(window.location.search);
+  const reqDept = searchParams.get('department') || searchParams.get('branch');
+  const assignedDept = user?.wardCounsellorDepartment || user?.assignedBranch || user?.department || 'B.Sc. Computer Science (CS)';
+
+  if (reqDept) {
+    const normReq = reqDept.toUpperCase().trim();
+    const normAssigned = assignedDept.toUpperCase().trim();
+    const isDeptValid = normReq === normAssigned || normAssigned.includes(normReq) || normReq.includes(normAssigned) || (normReq.includes('AI') && normAssigned.includes('AI'));
+
+    if (!isDeptValid) {
+      return (
+        <div className="p-8 max-w-xl mx-auto my-12 bg-white dark:bg-slate-900 rounded-3xl border border-rose-500/30 shadow-2xl text-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-rose-500/10 text-rose-600 flex items-center justify-center mx-auto font-black text-2xl border border-rose-500/20">
+            🔒
+          </div>
+          <h2 className="text-xl font-black text-slate-900 dark:text-white">Branch Access Restricted</h2>
+          <p className="text-sm font-bold text-rose-600 dark:text-rose-400">
+            You are not assigned to this branch.
+          </p>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            Your account ({user?.email}) is strictly assigned to <strong>{assignedDept}</strong> by your Head of Department. Access to {reqDept} is blocked.
+          </p>
+          <button
+            onClick={() => window.location.href = '/counsellor'}
+            className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-2xl shadow-lg shadow-purple-500/20"
+          >
+            Return to Ward Counsellor Dashboard
+          </button>
+        </div>
+      );
+    }
+  }
+
+  // 2. Check Inactive Ward Counsellor Status
+  if (user?.wardCounsellorStatus === 'inactive') {
+    return (
+      <div className="p-8 max-w-xl mx-auto my-12 bg-white dark:bg-slate-900 rounded-3xl border border-amber-500/30 shadow-2xl text-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto font-black text-2xl border border-amber-500/20">
+          ⚠️
+        </div>
+        <h2 className="text-xl font-black text-slate-900 dark:text-white">No Active Branch Assignment</h2>
+        <p className="text-sm font-bold text-amber-600 dark:text-amber-400">
+          No active branch ward counsellor assignment has been provided by your HOD.
+        </p>
+        <p className="text-xs text-slate-400 leading-relaxed">
+          Please contact your Head of Department (HOD) to assign your ward branch.
+        </p>
+      </div>
+    );
+  }
+
   if (subPage === 'parent-meetings') return <ParentMeetingsManager counsellor={user} />;
   if (subPage === 'wards') return <WardsDirectory counsellor={user} />;
   if (subPage === 'reports') return <CounsellorReports counsellor={user} />;
@@ -496,7 +548,7 @@ const WardsDirectory = ({ counsellor }) => {
         </div>
 
         {/* Wards Table */}
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto">
           <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
             <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
               <tr>
@@ -724,7 +776,7 @@ const CounsellorReports = ({ counsellor }) => {
 
         {/* Ward Roster Summary Table */}
         <h3 className="text-sm font-black text-slate-900 dark:text-white">Ward Student Roster & Risk Summary</h3>
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto">
           <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
             <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
               <tr>
@@ -795,37 +847,224 @@ const ParentMeetingsManager = ({ counsellor }) => {
   );
 };
 
-// 5. COUNSELLOR LEAVES
+// 5. COUNSELLOR LEAVES (STUDENT LEAVE APPROVALS FOR ASSIGNED BRANCH)
 const CounsellorLeaves = ({ counsellor }) => {
   const [leaves, setLeaves] = useState([]);
-  useEffect(() => {
-    const fetchLeaves = async () => {
-      const res = await mockDB.getLeaves('counsellor', counsellor.uid);
+  const [loading, setLoading] = useState(true);
+  const [rejectionModalLeave, setRejectionModalLeave] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const { showToast } = useAuth();
+
+  const loadLeaves = async () => {
+    try {
+      setLoading(true);
+      const res = await mockDB.getLeaves('counsellor', counsellor.uid, counsellor.department || counsellor.branch || 'CSE');
       setLeaves(res);
-    };
-    fetchLeaves();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadLeaves();
   }, [counsellor]);
+
+  const handleApprove = async (leaveId) => {
+    try {
+      await mockDB.reviewLeave(leaveId, 'Approved', 'Approved by Ward Counsellor', counsellor);
+      showToast('Student leave approved successfully.', 'success');
+      loadLeaves();
+    } catch (err) {
+      console.error(err);
+      showToast('Action failed. Please try again.', 'error');
+    }
+  };
+
+  const handleRejectSubmit = async (e) => {
+    e.preventDefault();
+    if (!rejectionReason.trim()) {
+      showToast('Please enter a rejection reason.', 'warning');
+      return;
+    }
+    try {
+      await mockDB.reviewLeave(rejectionModalLeave.leaveId || rejectionModalLeave.id, 'Rejected', rejectionReason, counsellor);
+      showToast('Student leave request rejected.', 'success');
+      setRejectionModalLeave(null);
+      setRejectionReason('');
+      loadLeaves();
+    } catch (err) {
+      console.error(err);
+      showToast('Action failed. Please try again.', 'error');
+    }
+  };
+
+  const calculateDays = (start, end) => {
+    if (!start || !end) return 1;
+    const diffTime = Math.abs(new Date(end) - new Date(start));
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  };
 
   return (
     <div className="space-y-6 text-xs font-semibold">
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
-        <h2 className="text-lg font-black text-slate-900 dark:text-white">Counsellor Leave Applications</h2>
-        <div className="space-y-3">
-          {leaves.length === 0 ? (
-            <p className="text-slate-400 p-4 text-center">No leave applications submitted.</p>
-          ) : leaves.map((l) => (
-            <div key={l.id} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex items-center justify-between border border-slate-200/40 dark:border-slate-800">
-              <div>
-                <h4 className="text-xs font-black text-slate-900 dark:text-white">{l.reason}</h4>
-                <span className="text-[9.5px] text-slate-400 font-bold block mt-0.5">{l.startDate} to {l.endDate}</span>
-              </div>
-              <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 font-black text-[10px] rounded-full uppercase">
-                {l.status}
-              </span>
-            </div>
-          ))}
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-4">
+          <div>
+            <h2 className="text-lg font-black text-slate-900 dark:text-white">Student Leave Approvals</h2>
+            <p className="text-xs text-slate-400 font-normal mt-0.5">
+              Assigned Branch: <span className="font-extrabold text-purple-600 uppercase">{counsellor.department || counsellor.branch || 'CSE'}</span>
+            </p>
+          </div>
+          <button onClick={loadLeaves} className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl flex items-center gap-1 text-xs font-bold transition-all">
+            <RefreshCw size={13} />
+            <span>Refresh</span>
+          </button>
         </div>
+
+        {loading ? (
+          <div className="py-12 text-center text-slate-400 animate-pulse">Loading student leave requests...</div>
+        ) : leaves.length === 0 ? (
+          <div className="py-12 text-center text-slate-400 font-normal">No student leave requests found for branch {counsellor.department || counsellor.branch || 'CSE'}.</div>
+        ) : (
+          <div className="space-y-4">
+            {leaves.map((l) => {
+              const numDays = calculateDays(l.startDate, l.endDate);
+              const isPending = (l.status || '').toLowerCase() === 'pending';
+              const isApproved = (l.status || '').toLowerCase() === 'approved';
+              const isRejected = (l.status || '').toLowerCase() === 'rejected';
+
+              return (
+                <div key={l.leaveId || l.id} className="p-5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/60 dark:border-slate-800 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-purple-600/10 text-purple-600 flex items-center justify-center font-black text-sm uppercase">
+                        {l.studentName ? l.studentName.charAt(0) : 'S'}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-black text-slate-900 dark:text-white">{l.studentName || 'Student'}</h4>
+                        <div className="flex flex-wrap items-center gap-2 text-[10.5px] text-slate-500 font-semibold mt-0.5">
+                          <span>Roll: <strong className="text-slate-700 dark:text-slate-300">{l.rollNumber || 'N/A'}</strong></span>
+                          <span>•</span>
+                          <span>Dept: <strong className="text-slate-700 dark:text-slate-300">{l.department || 'CSE'}</strong></span>
+                          <span>•</span>
+                          <span>Sem: <strong className="text-slate-700 dark:text-slate-300">{l.semester || 'N/A'}</strong></span>
+                          <span>•</span>
+                          <span>Sec: <strong className="text-slate-700 dark:text-slate-300">{l.section || 'A'}</strong></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <span className={`self-start sm:self-center px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
+                      isApproved ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
+                      isRejected ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                    }`}>
+                      {l.status || 'Pending'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-[11px]">
+                    <div>
+                      <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Leave Type</span>
+                      <span className="font-extrabold text-slate-800 dark:text-slate-200">{l.leaveType || 'Casual Leave'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Duration</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-300">{l.startDate} to {l.endDate}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Number of Days</span>
+                      <span className="font-black text-purple-600">{numDays} {numDays === 1 ? 'Day' : 'Days'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Applied Date</span>
+                      <span className="font-semibold text-slate-500">{l.createdAt ? new Date(l.createdAt).toLocaleDateString() : 'Recent'}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Reason</span>
+                    <p className="text-xs text-slate-700 dark:text-slate-300 font-normal leading-relaxed bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800">{l.reason}</p>
+                  </div>
+
+                  {isApproved && (
+                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/20">
+                      Approved by: {l.approvedByName || counsellor.fullName || 'Ward Counsellor'} {l.approvedAt ? `on ${new Date(l.approvedAt).toLocaleDateString()}` : ''}
+                    </div>
+                  )}
+
+                  {isRejected && (
+                    <div className="text-[11px] text-rose-600 dark:text-rose-400 font-bold bg-rose-500/5 p-3 rounded-xl border border-rose-500/20 space-y-0.5">
+                      <div>Rejected by: {l.rejectedByName || counsellor.fullName || 'Ward Counsellor'} {l.rejectedAt ? `on ${new Date(l.rejectedAt).toLocaleDateString()}` : ''}</div>
+                      {(l.rejectionReason || l.remarks) && <div className="text-slate-600 dark:text-slate-300 font-normal">Reason: {l.rejectionReason || l.remarks}</div>}
+                    </div>
+                  )}
+
+                  {isPending && (
+                    <div className="flex items-center justify-end gap-3 pt-2">
+                      <button
+                        onClick={() => setRejectionModalLeave(l)}
+                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all"
+                      >
+                        Reject
+                      </button>
+                      <button
+                        onClick={() => handleApprove(l.leaveId || l.id)}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all"
+                      >
+                        Approve
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
+
+      {/* Rejection Modal */}
+      {rejectionModalLeave && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase">Reject Student Leave Application</h3>
+              <button onClick={() => setRejectionModalLeave(null)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+            </div>
+            <p className="text-xs text-slate-500 font-normal">
+              Student: <strong className="text-slate-800 dark:text-slate-200">{rejectionModalLeave.studentName}</strong> ({rejectionModalLeave.rollNumber})
+            </p>
+            <form onSubmit={handleRejectSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-2 uppercase">Rejection Reason</label>
+                <textarea
+                  rows="3"
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder="Provide explicit explanation for rejection..."
+                  required
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none dark:text-white font-medium resize-none text-xs"
+                ></textarea>
+              </div>
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRejectionModalLeave(null)}
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs shadow-md"
+                >
+                  Confirm Rejection
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

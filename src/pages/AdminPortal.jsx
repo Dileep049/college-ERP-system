@@ -1030,7 +1030,7 @@ export const AdminPortal = () => {
             {allocations.length === 0 ? (
               <div className="text-center py-20 text-slate-400">No subject allocations currently active.</div>
             ) : (
-              <div className="border border-slate-100 dark:border-slate-800/80 rounded-xl overflow-hidden">
+              <div className="border border-slate-100 dark:border-slate-800/80 rounded-xl overflow-hidden overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-455 border-b border-slate-100 dark:border-slate-800/80 uppercase font-bold tracking-wider">
@@ -1075,7 +1075,7 @@ export const AdminPortal = () => {
           {allLeaves.filter(l => l.applicant_role === 'principal' || l.applicantRole === 'principal').length === 0 ? (
             <div className="text-center py-20 text-slate-400">No Principal leave requests pending.</div>
           ) : (
-            <div className="border border-slate-105 dark:border-slate-800 rounded-xl overflow-hidden">
+            <div className="border border-slate-105 dark:border-slate-800 rounded-xl overflow-hidden overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-455 border-b border-slate-100 dark:border-slate-800/80 font-bold uppercase tracking-wider">
@@ -1142,7 +1142,7 @@ export const AdminPortal = () => {
             {allFees.length === 0 ? (
               <div className="text-center py-20 text-slate-400">No transaction records generated.</div>
             ) : (
-              <div className="border border-slate-100 dark:border-slate-800/80 rounded-xl overflow-hidden">
+              <div className="border border-slate-100 dark:border-slate-800/80 rounded-xl overflow-hidden overflow-x-auto">
                 <table className="w-full text-left border-collapse text-[11px]">
                   <thead>
                     <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-455 border-b border-slate-100 dark:border-slate-800/80 uppercase font-bold tracking-wider">

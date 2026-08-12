@@ -30,7 +30,9 @@ import {
   FileCheck,
   Clock,
   Upload,
-  TrendingUp
+  TrendingUp,
+  Activity,
+  ShieldCheck
 } from 'lucide-react';
 
 export const DashboardLayout = ({ children }) => {
@@ -96,25 +98,34 @@ export const DashboardLayout = ({ children }) => {
   const menuConfig = {
     student: [
       { label: 'Dashboard', path: '/student/dashboard', icon: LayoutDashboard },
-      { label: 'Apply Leave', path: '/student/leaves', icon: Calendar },
+      { label: 'My Profile', path: '/student/profile', icon: UserCheck },
+      { label: 'Academic Overview', path: '/student/academic-overview', icon: TrendingUp },
+      { label: 'Course Registration', path: '/student/course-registration', icon: BookOpen },
+      { label: 'Attendance', path: '/student/attendance', icon: CheckSquare },
       { label: 'Internal Marks', path: '/student/marks', icon: FileText },
       { label: 'Semester Results', path: '/student/results', icon: Award },
-      { label: 'Assignments', path: '/student/assignments', icon: CheckSquare },
-      { label: 'Study Notes', path: '/student/notes', icon: BookOpen },
-      { label: 'Document Requests', path: '/student/document-requests', icon: FileCheck },
-      { label: 'Counselling', path: '/student/counselling', icon: UserCheck },
+      { label: 'Assignments', path: '/student/assignments', icon: Briefcase },
+      { label: 'Study Notes', path: '/student/notes', icon: ClipboardList },
+      { label: 'Leave', path: '/student/leaves', icon: Calendar },
+      { label: 'My Ward Counsellor', path: '/student/counsellor', icon: UserCheck },
+      { label: 'Faculty', path: '/student/faculty', icon: Users },
       { label: 'Placements', path: '/student/placements', icon: Briefcase },
-      { label: 'Support Helpdesk', path: '/student/support-desk', icon: MessageSquare }
+      { label: 'Counselling', path: '/student/counselling', icon: Activity },
+      { label: 'Notifications', path: '/student/notifications', icon: Bell }
     ],
     faculty: [
       { label: 'Dashboard', path: '/faculty/dashboard', icon: LayoutDashboard },
-      { label: 'Ward Counselling', path: '/faculty/ward-counselling', icon: UserCheck },
-      { label: 'Mark Attendance', path: '/faculty/attendance', icon: CheckSquare },
-      { label: 'Analytics Reports', path: '/faculty/reports', icon: FileText },
+      { label: 'My Classes', path: '/faculty/classes', icon: BookOpen },
+      { label: 'My Students', path: '/faculty/students', icon: Users },
+      { label: 'Attendance', path: '/faculty/attendance', icon: CheckSquare },
       { label: 'Internal Marks', path: '/faculty/marks', icon: FileText },
-      { label: 'Upload Assignments', path: '/faculty/assignments', icon: Briefcase },
-      { label: 'Study Materials', path: '/faculty/notes', icon: BookOpen },
-      { label: 'Leave Applications', path: '/faculty/leaves', icon: Calendar }
+      { label: 'Assignments', path: '/faculty/assignments', icon: Briefcase },
+      { label: 'Study Notes', path: '/faculty/notes', icon: ClipboardList },
+      { label: 'Academic Performance', path: '/faculty/academic-performance', icon: TrendingUp },
+      { label: 'Student Progress', path: '/faculty/student-progress', icon: Activity },
+      { label: 'Leave', path: '/faculty/leaves', icon: Calendar },
+      { label: 'Reports', path: '/faculty/reports', icon: FileText },
+      { label: 'Profile', path: '/faculty/profile', icon: UserCheck }
     ],
     hod: [
       { label: 'Dashboard', path: '/hod/dashboard', icon: LayoutDashboard },
@@ -148,10 +159,19 @@ export const DashboardLayout = ({ children }) => {
     ],
     placement: [
       { label: 'Command Board', path: '/placement/dashboard', icon: LayoutDashboard },
-      { label: 'Manage Drives', path: '/placement/drives', icon: Briefcase },
+      { label: 'Placement Drives', path: '/placement/drives', icon: Briefcase },
+      { label: 'Upcoming Drives', path: '/placement/upcoming-drives', icon: Calendar },
+      { label: 'Applications', path: '/placement/applications', icon: ClipboardList },
       { label: 'Eligible Candidates', path: '/placement/students', icon: Users },
-      { label: 'Corporate Partners', path: '/placement/partners', icon: Building2 },
-      { label: 'Training & Mocks', path: '/placement/training', icon: BookOpen }
+      { label: 'Shortlisted Students', path: '/placement/shortlisted', icon: UserCheck },
+      { label: 'Interview Schedule', path: '/placement/interviews', icon: Clock },
+      { label: 'Selected Students', path: '/placement/selected', icon: ShieldCheck },
+      { label: 'Companies', path: '/placement/partners', icon: Building2 },
+      { label: 'Training & Mock Tests', path: '/placement/training', icon: BookOpen },
+      { label: 'Placement Analytics', path: '/placement/analytics', icon: TrendingUp },
+      { label: 'Placement Reports', path: '/placement/reports', icon: FileText },
+      { label: 'Notifications', path: '/placement/notifications', icon: Bell },
+      { label: 'Settings', path: '/placement/settings', icon: Settings }
     ],
     counsellor: [
       { label: 'Counsellor Panel', path: '/counsellor/dashboard', icon: LayoutDashboard },
@@ -198,15 +218,23 @@ export const DashboardLayout = ({ children }) => {
       { label: 'Transport & Fleet', path: '/admin/dashboard', icon: Home }
     ],
     parent: [
-      { label: 'Ward Dashboard', path: '/parent/dashboard', icon: LayoutDashboard },
-      { label: 'Ward Attendance', path: '/parent/attendance', icon: CheckSquare },
-      { label: 'Counsellor Remarks', path: '/parent/counselling', icon: UserCheck },
-      { label: 'Ward Leaves', path: '/parent/leaves', icon: Calendar },
-      { label: 'Ward Results', path: '/parent/results', icon: Award },
-      { label: 'Assignments Ledger', path: '/parent/assignments', icon: BookOpen },
-      { label: 'Fee Details', path: '/parent/fees', icon: CreditCard },
-      { label: 'Grievance Filing', path: '/parent/grievances', icon: MessageSquare },
-      { label: 'Notifications', path: '/parent/notifications', icon: Bell }
+      { label: 'Dashboard', path: '/parent/dashboard', icon: LayoutDashboard },
+      { label: 'My Ward', path: '/parent/my-ward', icon: UserCheck },
+      { label: 'Academic Overview', path: '/parent/academic-overview', icon: TrendingUp },
+      { label: 'Attendance', path: '/parent/attendance', icon: CheckSquare },
+      { label: 'Internal Marks', path: '/parent/marks', icon: FileText },
+      { label: 'Semester Results', path: '/parent/results', icon: Award },
+      { label: 'Assignments', path: '/parent/assignments', icon: Briefcase },
+      { label: 'Study Notes', path: '/parent/notes', icon: ClipboardList },
+      { label: 'Leave', path: '/parent/leaves', icon: Calendar },
+      { label: 'Ward Counsellor', path: '/parent/counsellor', icon: UserCheck },
+      { label: 'Faculty', path: '/parent/faculty', icon: Users },
+      { label: 'Counselling', path: '/parent/counselling', icon: Activity },
+      { label: 'Parent Meetings', path: '/parent/meetings', icon: MessageSquare },
+      { label: 'Placements', path: '/parent/placements', icon: Briefcase },
+      { label: 'Monthly Report', path: '/parent/monthly-report', icon: FileText },
+      { label: 'Notifications', path: '/parent/notifications', icon: Bell },
+      { label: 'Profile', path: '/parent/profile', icon: UserCheck }
     ]
   };
 
@@ -236,6 +264,14 @@ export const DashboardLayout = ({ children }) => {
   return (
     <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 transition-colors duration-250 font-sans">
       
+      {/* Mobile Drawer Backdrop Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-30 lg:hidden transition-opacity duration-300"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar for desktop */}
       <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800/80 transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:static lg:h-screen lg:flex lg:flex-col`}>
         
@@ -274,7 +310,7 @@ export const DashboardLayout = ({ children }) => {
             <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase ${getRoleBadgeStyle(user.role)}`}>
               {user.role}
             </span>
-            <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+            <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 truncate max-w-[90px]">
               {user.department && user.department !== 'N/A' ? user.department : ''}
             </span>
           </div>
@@ -319,15 +355,16 @@ export const DashboardLayout = ({ children }) => {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden lg:h-screen">
         
         {/* Top Navbar */}
-        <header className="h-16 flex items-center justify-between px-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800/80 shrink-0">
-          <div className="flex items-center gap-4">
+        <header className="h-16 flex items-center justify-between px-3 sm:px-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800/80 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-500"
+              className="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-500 shrink-0"
+              aria-label="Open Navigation Menu"
             >
               <Menu size={20} />
             </button>
-            <h1 className="text-lg font-bold font-display text-slate-800 dark:text-white capitalize">
+            <h1 className="text-sm sm:text-lg font-bold font-display text-slate-800 dark:text-white capitalize truncate max-w-[140px] xs:max-w-[200px] sm:max-w-none">
               {location.pathname.split('/').pop().replace('-', ' ')}
             </h1>
           </div>
@@ -444,8 +481,8 @@ export const DashboardLayout = ({ children }) => {
         </header>
 
         {/* Content Panel */}
-        <main className="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-slate-950/40">
-          <div className="max-w-7xl mx-auto animate-fade-in">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 bg-slate-50 dark:bg-slate-950/40 min-w-0 w-full">
+          <div className="max-w-7xl mx-auto animate-fade-in min-w-0 w-full">
             {children}
           </div>
         </main>

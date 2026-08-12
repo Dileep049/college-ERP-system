@@ -47,6 +47,50 @@ if (isFirebaseConfigured) {
   }
 }
 
+// Helper to convert File to Data URL for offline/storage fallback
+const fileToDataUrl = (file) => {
+  return new Promise((resolve) => {
+    if (!file || !(file instanceof Blob)) {
+      resolve('#mock-download');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result || '#mock-download');
+    reader.onerror = () => resolve('#mock-download');
+    reader.readAsDataURL(file);
+  });
+};
+
+// Helper for flexible department name matching across full name & short codes
+const isDepartmentMatch = (dept1, dept2) => {
+  if (!dept1 || !dept2 || dept1 === 'All' || dept2 === 'All') return true;
+  const d1 = dept1.toUpperCase().trim();
+  const d2 = dept2.toUpperCase().trim();
+  if (d1 === d2) return true;
+
+  const maps = {
+    'CSE': ['COMPUTER SCIENCE', 'CS', 'B.SC. COMPUTER SCIENCE (CS)'],
+    'AI & ML': ['ARTIFICIAL INTELLIGENCE', 'AI', 'ML', 'B.SC. ARTIFICIAL INTELLIGENCE & MACHINE LEARNING (AI & ML)'],
+    'ECE': ['ELECTRONICS', 'COMMUNICATION', 'B.SC. ELECTRONICS & COMMUNICATION ENGINEERING (ECE)'],
+    'EEE': ['ELECTRICAL', 'ELECTRONICS', 'B.SC. ELECTRICAL & ELECTRONICS ENGINEERING (EEE)'],
+    'MECHANICAL': ['MECHANICAL ENGINEERING', 'B.SC. MECHANICAL ENGINEERING'],
+    'CIVIL': ['CIVIL ENGINEERING', 'B.SC. CIVIL ENGINEERING'],
+    'BCA': ['BACHELOR OF COMPUTER APPLICATIONS', 'BCA'],
+    'BBA': ['BACHELOR OF BUSINESS ADMINISTRATION', 'BBA'],
+    'MCA': ['MASTER OF COMPUTER APPLICATIONS', 'MCA'],
+    'MBA': ['MASTER OF BUSINESS ADMINISTRATION', 'MBA']
+  };
+
+  for (const [code, aliases] of Object.entries(maps)) {
+    const all = [code, ...aliases].map(a => a.toUpperCase().trim());
+    const matches1 = all.some(a => d1.includes(a) || a.includes(d1));
+    const matches2 = all.some(a => d2.includes(a) || a.includes(d2));
+    if (matches1 && matches2) return true;
+  }
+
+  return d1.includes(d2) || d2.includes(d1);
+};
+
 // ----------------------------------------------------
 // LOCAL STORAGE SEED DATA & BACKEND FALLBACK
 // ----------------------------------------------------
@@ -184,27 +228,46 @@ export const RAW_UPLOADED_STUDENTS = [
   {"rollNumber": "245956", "studentName": "MUCHINAPALLI RUPAK VENKATA SAI"},
   {"rollNumber": "245957", "studentName": "V VENKATA NAGA ADITHYA"},
   {"rollNumber": "245958", "studentName": "T VENKATA SURENDRA"},
-  {"rollNumber": "245959", "studentName": "L YASWANTH VENKAT"}
+  {"rollNumber": "245959", "studentName": "L YASWANTH VENKAT"},
+  {"rollNumber": "245960", "studentName": "VIKRAM AKASH"},
+  {"rollNumber": "245961", "studentName": "VADUGU DHANUSH"},
+  {"rollNumber": "245962", "studentName": "PARASANABOINA MUKESH"}
 ];
 
 export const SEEDED_STUDENTS = RAW_UPLOADED_STUDENTS.map((st, idx) => {
-  const branch = KBN_BRANCHES[idx % KBN_BRANCHES.length];
+  const fullDept = 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)';
+  const sems = [
+    'Semester 1',
+    'Semester 2',
+    'Semester 3',
+    'Semester 4',
+    'Semester 5',
+    'Semester 6'
+  ];
+  const semester = sems[idx % 6];
+  const section = (Math.floor(idx / 6) % 2 === 0) ? 'Section A' : 'Section B';
+
   return {
     uid: `stud-${st.rollNumber}`,
     studentId: `stud-${st.rollNumber}`,
     rollNumber: st.rollNumber,
     studentName: st.studentName,
     fullName: st.studentName,
-    department: branch,
-    branch: branch,
-    semester: 'Semester 6',
-    section: 'Section A',
+    department: fullDept,
+    branch: fullDept,
+    course: 'B.Sc',
+    semester: semester,
+    section: section,
     collegeEmail: `${st.rollNumber}@kbn.edu`,
     email: `${st.rollNumber}@kbn.edu`,
     phoneNumber: `98765${st.rollNumber}`,
     accountStatus: 'Active',
+    status: 'Active',
     role: 'student',
     profilePhoto: `https://api.dicebear.com/7.x/avataaars/svg?seed=${st.rollNumber}`,
+    attendancePercentage: 82 + (idx % 12),
+    cgpa: (7.2 + (idx % 25) * 0.1).toFixed(1),
+    backlogs: idx % 7 === 0 ? 1 : 0,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -241,9 +304,177 @@ const DEFAULT_FEES = [
   { id: 'fee-2', invoiceId: 'fee-2', studentId: 'stud-cse', studentName: 'John Doe', rollNumber: 'CSE-2023-001', feeType: 'Library & Exam Fee', amount: 5000, status: 'unpaid', date: '2026-06-10', dueDate: '2026-06-10', semester: 'Semester 6' }
 ];
 
+
+
 const DEFAULT_PLACEMENT_DRIVES = [
-  { id: 'drive-1', companyName: 'Google Inc.', role: 'Associate Software Engineer', package: '18 LPA', driveDate: '2026-08-20', eligibility: 'CGPA > 8.0, CSE/ECE branches', status: 'upcoming' },
-  { id: 'drive-2', companyName: 'Microsoft Corporation', role: 'Cloud Engineer Intern', package: '12 LPA', driveDate: '2026-07-25', eligibility: 'CGPA > 7.5, All B.Tech branches', status: 'upcoming' }
+  {
+    id: 'drive-101',
+    companyName: 'Google Inc.',
+    companyLogo: 'https://images.unsplash.com/photo-1573804633927-bfcbcd909acd?w=100&auto=format&fit=crop&q=80',
+    jobRole: 'Associate Software Engineer',
+    jobType: 'Full-Time',
+    location: 'Bangalore / Hyderabad',
+    package: '18.5 LPA',
+    minCgpa: 7.5,
+    maxBacklogs: 0,
+    eligibleBranches: ['CSE', 'ECE', 'AI & ML', 'MCA'],
+    eligibleSemester: 'Semester 8',
+    passingYear: '2026',
+    requiredSkills: ['Data Structures', 'Algorithms', 'Java', 'System Design'],
+    startDate: '2026-08-01',
+    deadline: '2026-08-25',
+    driveDate: '2026-08-28',
+    selectionProcess: 'Online Test → Technical Interview 1 → Technical Interview 2 → HR Round',
+    venue: 'Campus Placement Cell Auditorium 1',
+    registrationLink: 'https://careers.google.com',
+    description: 'Recruitment for Associate Software Engineers to build scalable cloud & web applications.',
+    status: 'Published',
+    selectedStudents: ['stud-cse', 'stud-cse-1']
+  },
+  {
+    id: 'drive-102',
+    companyName: 'Microsoft Corporation',
+    companyLogo: 'https://images.unsplash.com/photo-1642132652859-3ef5a1048fd1?w=100&auto=format&fit=crop&q=80',
+    jobRole: 'Cloud Solution Engineer Intern',
+    jobType: 'Full-Time + Internship',
+    location: 'Hyderabad',
+    package: '14.0 LPA',
+    minCgpa: 7.0,
+    maxBacklogs: 0,
+    eligibleBranches: ['CSE', 'ECE', 'EEE', 'AI & ML'],
+    eligibleSemester: 'Semester 8',
+    passingYear: '2026',
+    requiredSkills: ['Azure Cloud', 'Python', 'Networking', 'OS Architecture'],
+    startDate: '2026-08-05',
+    deadline: '2026-08-22',
+    driveDate: '2026-08-30',
+    selectionProcess: 'Coding Assessment → Technical Round → HR Round',
+    venue: 'Virtual Microsoft Teams',
+    registrationLink: 'https://careers.microsoft.com',
+    description: 'Azure Cloud Engineering internship and full-time conversion program.',
+    status: 'Published',
+    selectedStudents: []
+  },
+  {
+    id: 'drive-103',
+    companyName: 'TCS Digital',
+    companyLogo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=100&auto=format&fit=crop&q=80',
+    jobRole: 'Systems Engineer - Digital Innovation',
+    jobType: 'Full-Time',
+    location: 'Chennai / Pune',
+    package: '7.5 LPA',
+    minCgpa: 6.5,
+    maxBacklogs: 1,
+    eligibleBranches: ['CSE', 'ECE', 'EEE', 'Mechanical', 'Civil', 'MCA', 'BCA'],
+    eligibleSemester: 'Semester 8',
+    passingYear: '2026',
+    requiredSkills: ['SQL', 'Java/Python', 'Web Basics'],
+    startDate: '2026-07-15',
+    deadline: '2026-08-18',
+    driveDate: '2026-08-20',
+    selectionProcess: 'TCS NQT Test → Tech Round → HR Round',
+    venue: 'TCS iON Center',
+    description: 'TCS Digital recruitment drive across all engineering disciplines.',
+    status: 'Published',
+    selectedStudents: ['stud-cse-2']
+  },
+  {
+    id: 'drive-104',
+    companyName: 'Amazon',
+    companyLogo: 'https://images.unsplash.com/photo-1523474253046-8cd2748b5fd2?w=100&auto=format&fit=crop&q=80',
+    jobRole: 'Applied AI Researcher',
+    jobType: 'Full-Time',
+    location: 'Bangalore',
+    package: '28.0 LPA',
+    minCgpa: 8.5,
+    maxBacklogs: 0,
+    eligibleBranches: ['CSE', 'AI & ML'],
+    eligibleSemester: 'Semester 8',
+    passingYear: '2026',
+    requiredSkills: ['PyTorch', 'TensorFlow', 'LLMs', 'NLP'],
+    startDate: '2026-08-10',
+    deadline: '2026-08-30',
+    driveDate: '2026-09-05',
+    selectionProcess: 'ML Assessment → Tech Rounds → Bar Raiser',
+    venue: 'Amazon Development Center',
+    description: 'Applied AI team building generative AI solutions.',
+    status: 'Published',
+    selectedStudents: []
+  }
+];
+
+const DEFAULT_PLACEMENT_APPLICATIONS = [
+  {
+    id: 'app-101',
+    driveId: 'drive-101',
+    studentId: 'stud-cse',
+    studentName: 'John Doe',
+    rollNumber: 'CSE-2023-001',
+    branch: 'CSE',
+    section: 'A',
+    cgpa: 8.8,
+    backlogs: 0,
+    skills: 'Java, React, Data Structures',
+    resumeUrl: '#mock-resume',
+    appliedDate: '2026-08-08',
+    companyName: 'Google Inc.',
+    jobRole: 'Associate Software Engineer',
+    package: '18.5 LPA',
+    status: 'Shortlisted'
+  },
+  {
+    id: 'app-102',
+    driveId: 'drive-102',
+    studentId: 'stud-cse',
+    studentName: 'John Doe',
+    rollNumber: 'CSE-2023-001',
+    branch: 'CSE',
+    section: 'A',
+    cgpa: 8.8,
+    backlogs: 0,
+    skills: 'Python, Azure, Networking',
+    resumeUrl: '#mock-resume',
+    appliedDate: '2026-08-10',
+    companyName: 'Microsoft Corporation',
+    jobRole: 'Cloud Solution Engineer Intern',
+    package: '14.0 LPA',
+    status: 'Interview Scheduled'
+  },
+  {
+    id: 'app-103',
+    driveId: 'drive-103',
+    studentId: 'stud-cse-2',
+    studentName: 'Avala Anand Babu',
+    rollNumber: '245901',
+    branch: 'AI & ML',
+    section: 'EM',
+    cgpa: 6.8,
+    backlogs: 1,
+    skills: 'SQL, Python',
+    resumeUrl: '#mock-resume',
+    appliedDate: '2026-08-11',
+    companyName: 'TCS Digital',
+    jobRole: 'Systems Engineer - Digital Innovation',
+    package: '7.5 LPA',
+    status: 'Selected'
+  }
+];
+
+const DEFAULT_PLACEMENT_COMPANIES = [
+  { id: 'comp-1', companyName: 'Google Inc.', logo: 'https://images.unsplash.com/photo-1573804633927-bfcbcd909acd?w=100&auto=format&fit=crop&q=80', industry: 'Information Technology & AI', website: 'https://google.com', location: 'Mountain View, CA / Bangalore', contactPerson: 'Sarah Jenkins (University Recruiter)', contactEmail: 'campus-hiring@google.com', description: 'Global tech leader in Search, Cloud Computing, and Artificial Intelligence.', totalSelections: 18 },
+  { id: 'comp-2', companyName: 'Microsoft Corporation', logo: 'https://images.unsplash.com/photo-1642132652859-3ef5a1048fd1?w=100&auto=format&fit=crop&q=80', industry: 'Cloud & Software Systems', website: 'https://microsoft.com', location: 'Redmond, WA / Hyderabad', contactPerson: 'David Miller (Talent Acquisition)', contactEmail: 'university@microsoft.com', description: 'Empowering every person and organization on the planet to achieve more.', totalSelections: 24 },
+  { id: 'comp-3', companyName: 'Amazon', logo: 'https://images.unsplash.com/photo-1523474253046-8cd2748b5fd2?w=100&auto=format&fit=crop&q=80', industry: 'E-Commerce & AWS Cloud', website: 'https://amazon.jobs', location: 'Seattle, WA / Bangalore', contactPerson: 'Priya Sharma (AWS University Hiring)', contactEmail: 'aws-campus@amazon.com', description: 'Earth\'s most customer-centric company and pioneer in AWS cloud solutions.', totalSelections: 12 },
+  { id: 'comp-4', companyName: 'TCS Digital', logo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=100&auto=format&fit=crop&q=80', industry: 'IT Consulting & Services', website: 'https://tcs.com', location: 'Mumbai / Pan-India', contactPerson: 'Rajesh Varma (Campus Lead)', contactEmail: 'campus.south@tcs.com', description: 'Leading global IT services, consulting, and business solutions organization.', totalSelections: 65 }
+];
+
+const DEFAULT_PLACEMENT_INTERVIEWS = [
+  { id: 'int-1', applicationId: 'app-102', studentId: 'stud-cse', studentName: 'John Doe', companyName: 'Microsoft Corporation', jobRole: 'Cloud Solution Engineer Intern', round: 'Technical Interview', date: '2026-08-28', time: '10:30 AM', venue: 'Virtual Teams Link', meetingLink: 'https://teams.microsoft.com/interview-john-doe', instructions: 'Prepare Azure networking fundamentals and project architecture diagram.' }
+];
+
+const DEFAULT_PLACEMENT_TRAININGS = [
+  { id: 'tr-1', title: 'Advanced Data Structures & Algorithms Bootcamp', type: 'Coding Test Prep', date: '2026-08-18', duration: '3 Days', venue: 'Computer Lab 4 & Hybrid Teams', link: 'https://teams.microsoft.com/dsa-bootcamp', trainer: 'Dr. Alan Turing & Tech Lead', targetBranches: 'CSE, ECE, AI & ML, MCA', status: 'Upcoming' },
+  { id: 'tr-2', title: 'Aptitude & Quantitative Problem Solving Masterclass', type: 'Aptitude Test', date: '2026-08-20', duration: '1 Day', venue: 'Main Auditorium', link: '', trainer: 'T.I.M.E. Senior Aptitude Faculty', targetBranches: 'All Disciplines', status: 'Upcoming' },
+  { id: 'tr-3', title: 'Corporate GD & Behavioral HR Mock Interview Workshop', type: 'Mock Interview', date: '2026-08-22', duration: '2 Days', venue: 'Placement Cell Seminar Hall', link: '', trainer: 'Corporate Soft Skills Trainer', targetBranches: 'Final Year Students', status: 'Upcoming' }
 ];
 
 const DEFAULT_ANNOUNCEMENTS = [
@@ -367,6 +598,10 @@ const initLocalStorage = () => {
   }
   if (!localStorage.getItem('acad_fees')) localStorage.setItem('acad_fees', JSON.stringify(DEFAULT_FEES));
   if (!localStorage.getItem('acad_placement_drives')) localStorage.setItem('acad_placement_drives', JSON.stringify(DEFAULT_PLACEMENT_DRIVES));
+  if (!localStorage.getItem('acad_placement_applications')) localStorage.setItem('acad_placement_applications', JSON.stringify(DEFAULT_PLACEMENT_APPLICATIONS));
+  if (!localStorage.getItem('acad_placement_companies')) localStorage.setItem('acad_placement_companies', JSON.stringify(DEFAULT_PLACEMENT_COMPANIES));
+  if (!localStorage.getItem('acad_placement_interviews')) localStorage.setItem('acad_placement_interviews', JSON.stringify(DEFAULT_PLACEMENT_INTERVIEWS));
+  if (!localStorage.getItem('acad_placement_trainings')) localStorage.setItem('acad_placement_trainings', JSON.stringify(DEFAULT_PLACEMENT_TRAININGS));
   if (!localStorage.getItem('acad_announcements')) localStorage.setItem('acad_announcements', JSON.stringify(DEFAULT_ANNOUNCEMENTS));
   if (!localStorage.getItem('acad_leave_requests')) localStorage.setItem('acad_leave_requests', JSON.stringify(DEFAULT_LEAVE_REQUESTS));
   if (!localStorage.getItem('acad_allocations')) localStorage.setItem('acad_allocations', JSON.stringify(DEFAULT_ALLOCATIONS));
@@ -955,46 +1190,33 @@ export const mockDB = {
   // --- ASSIGNMENTS ---
   getAssignments: async (branch = null, semester = null) => {
     await mockDB.delay(100);
+    let list = [];
     if (isFirebaseConfigured && db) {
-      const snap = await getDocs(collection(db, 'assignments'));
-      let list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      if (branch) list = list.filter(a => a.branch === branch);
-      if (semester) list = list.filter(a => a.semester === semester);
-
-      // Join submissions and marks
-      for (const a of list) {
-        const subSnap = await getDocs(collection(db, 'assignment_submissions'));
-        const subDocs = subSnap.docs.map(doc => doc.data()).filter(s => s.assignmentId === a.id);
-        
-        const markSnap = await getDocs(collection(db, 'assignment_marks'));
-        const markDocs = markSnap.docs.map(doc => doc.data()).filter(m => m.assignmentId === a.id);
-
-        a.submissions = subDocs.map(s => {
-          const matchingMark = markDocs.find(m => m.studentId === s.studentId);
-          return {
-            studentId: s.studentId,
-            studentName: s.studentName,
-            rollNumber: s.rollNumber,
-            fileUrls: s.fileUrls || [s.fileUrl],
-            fileNames: s.fileNames || [s.fileName],
-            submittedAt: s.submittedAt,
-            grade: matchingMark ? matchingMark.marks : 'Pending',
-            feedback: matchingMark ? matchingMark.feedback : ''
-          };
-        });
+      try {
+        const snap = await getDocs(collection(db, 'assignments'));
+        list = snap.docs.map(doc => ({ id: doc.id, assignmentId: doc.id, ...doc.data() }));
+      } catch (err) {
+        console.error("Firestore getDocs for assignments failed, using local storage:", err);
       }
-      return list;
+    }
+    const localList = JSON.parse(localStorage.getItem('acad_assignments') || '[]');
+    const combinedMap = new Map();
+    [...list, ...localList].forEach(item => {
+      const key = item.id || item.assignmentId;
+      if (key) combinedMap.set(key, item);
+    });
+    let resultList = Array.from(combinedMap.values());
+
+    if (branch) {
+      resultList = resultList.filter(a => isDepartmentMatch(a.branch || a.department, branch));
+    }
+    if (semester) {
+      resultList = resultList.filter(a => !a.semester || a.semester === semester || a.semester.toLowerCase() === semester.toLowerCase());
     }
 
-    const assignments = JSON.parse(localStorage.getItem('acad_assignments') || '[]');
-    let list = assignments;
-    if (branch) list = list.filter(a => a.branch === branch);
-    if (semester) list = list.filter(a => a.semester === semester);
-    
-    // Join mock submissions
     const submissions = JSON.parse(localStorage.getItem('acad_submissions') || '[]');
     const marks = JSON.parse(localStorage.getItem('acad_marks') || '[]');
-    return list.map(a => {
+    return resultList.map(a => {
       const subs = submissions.filter(s => s.assignmentId === a.id).map(s => {
         const grading = marks.find(m => m.assignmentId === a.id && m.studentId === s.studentId);
         return {
@@ -1003,38 +1225,94 @@ export const mockDB = {
           feedback: grading ? grading.feedback : ''
         };
       });
-      return { ...a, submissions: subs };
+      return { ...a, submissions: subs.length > 0 ? subs : (a.submissions || []) };
     });
   },
 
-  createAssignment: async (title, description, branch, semester, subject, dueDate, facultyId, facultyName, file = null) => {
-    await mockDB.delay(150);
+  createAssignment: async (title, description, branch, semester, subject, dueDate, facultyId, facultyName, file = null, section = 'Section A') => {
+    await mockDB.delay(100);
     let fileUrl = '';
-    let fileName = '';
+    let fileName = 'assignment.pdf';
 
     if (file) {
-      fileName = file.name;
-      if (isFirebaseConfigured && storage) {
-        const storageRef = ref(storage, `assignments/${Date.now()}_${file.name}`);
-        const snap = await uploadBytes(storageRef, file);
-        fileUrl = await getDownloadURL(snap.ref);
+      fileName = typeof file === 'string' ? 'attachment.pdf' : (file.name || 'attachment.pdf');
+      if (isFirebaseConfigured && storage && typeof file !== 'string') {
+        try {
+          const storageRef = ref(storage, `assignments/${Date.now()}_${fileName}`);
+          const snap = await uploadBytes(storageRef, file);
+          fileUrl = await getDownloadURL(snap.ref);
+        } catch (err) {
+          console.warn("Firebase Storage uploadBytes for assignment failed, falling back to Data URL:", err.message);
+          fileUrl = await fileToDataUrl(file);
+        }
+      } else if (typeof file !== 'string' && file instanceof Blob) {
+        fileUrl = await fileToDataUrl(file);
       } else {
-        fileUrl = '#mock-storage-download';
+        fileUrl = typeof file === 'string' ? file : '#mock-storage-download';
       }
     }
 
-    const payload = { title, description, branch, semester, subject, dueDate, fileUrl, fileName, facultyId, facultyName, createdAt: new Date().toISOString() };
+    const dept = branch || 'CSE';
+    const payload = {
+      title: title || 'Course Assignment',
+      description: description || '',
+      branch: dept,
+      department: dept,
+      semester: semester || 'Semester 1',
+      section: section || 'Section A',
+      subject: subject || 'General',
+      dueDate: dueDate || new Date().toISOString().split('T')[0],
+      assignedDate: new Date().toISOString().split('T')[0],
+      fileUrl: fileUrl || '#mock-storage-download',
+      fileName,
+      fileType: fileName ? fileName.split('.').pop() : 'pdf',
+      fileSize: file && file.size ? `${(file.size / 1024).toFixed(1)} KB` : '500 KB',
+      facultyId: facultyId || '',
+      facultyName: facultyName || 'Faculty',
+      createdBy: facultyName || 'Faculty',
+      createdAt: new Date().toISOString()
+    };
 
+    let assId = `assign-${Date.now()}`;
     if (isFirebaseConfigured && db) {
-      const ref = await addDoc(collection(db, 'assignments'), payload);
-      return { id: ref.id, ...payload };
+      try {
+        const ref = await addDoc(collection(db, 'assignments'), payload);
+        assId = ref.id;
+      } catch (err) {
+        console.warn("Firestore addDoc for assignments failed, saving locally:", err.message);
+      }
     }
 
     const assignments = JSON.parse(localStorage.getItem('acad_assignments') || '[]');
-    const newAss = { id: 'assign-' + Math.random().toString(36).substr(2, 9), ...payload };
-    assignments.push(newAss);
+    const newAss = { id: assId, assignmentId: assId, ...payload };
+    assignments.unshift(newAss);
     localStorage.setItem('acad_assignments', JSON.stringify(assignments));
+
+    try {
+      const students = await mockDB.getStudents(dept);
+      students.forEach(st => {
+        mockDB.addNotification(st.uid || st.id || st.studentId, `New Assignment Published: ${title} (${subject}) - Due Date: ${dueDate}`);
+      });
+    } catch (e) {
+      console.warn("Notification send error for assignment:", e);
+    }
+
     return newAss;
+  },
+
+  deleteAssignment: async (assignmentId) => {
+    await mockDB.delay(100);
+    if (isFirebaseConfigured && db && assignmentId) {
+      try {
+        await deleteDoc(doc(db, 'assignments', assignmentId));
+      } catch (err) {
+        console.warn("Firestore deleteDoc for assignment failed:", err.message);
+      }
+    }
+    const local = JSON.parse(localStorage.getItem('acad_assignments') || '[]');
+    const filtered = local.filter(a => a.id !== assignmentId && a.assignmentId !== assignmentId);
+    localStorage.setItem('acad_assignments', JSON.stringify(filtered));
+    return true;
   },
 
   submitAssignment: async (assignmentId, studentId, studentName, rollNumber, files) => {
@@ -1217,102 +1495,287 @@ export const mockDB = {
     }
   },
 
-  // --- SUBJECT ALLOCATION ---
-  allocateSubject: async (branch, semester, subjectName, facultyId, facultyName) => {
+  assignSubjectToFaculty: async (branch, semester, subjectName, facultyId, facultyName, section = 'Section A', hodUser = null, facultyEmail = '', facultyPhone = '') => {
     await mockDB.delay(100);
-    const validSubjects = BRANCH_SUBJECT_MAP[branch] || [];
-    if (validSubjects.length > 0 && !validSubjects.includes(subjectName)) {
-      throw new Error(`Subject "${subjectName}" is not valid for branch "${branch}".`);
+
+    const payload = {
+      branch,
+      department: branch,
+      semester,
+      section,
+      subject: subjectName,
+      subjectName,
+      facultyId,
+      facultyName,
+      facultyEmail: facultyEmail || '',
+      facultyPhone: facultyPhone || '',
+      status: 'active',
+      assignmentStatus: 'active',
+      assignedBy: hodUser?.uid || hodUser?.id || 'hod',
+      createdAt: new Date().toISOString()
+    };
+
+    // Update user profile in storage by facultyId (Auth UID)
+    const users = JSON.parse(localStorage.getItem('acad_users') || '[]');
+    const userIdx = users.findIndex(u => u.uid === facultyId || u.id === facultyId || u.email === facultyId);
+    if (userIdx !== -1) {
+      users[userIdx].assignedDepartment = branch;
+      users[userIdx].assignedBranch = branch;
+      users[userIdx].department = branch;
+      users[userIdx].assignedSemester = semester;
+      users[userIdx].assignedSection = section;
+      users[userIdx].assignedSubject = subjectName;
+      users[userIdx].assignmentStatus = 'active';
+      if (facultyEmail) users[userIdx].email = facultyEmail;
+      if (facultyPhone) {
+        users[userIdx].phoneNumber = facultyPhone;
+        users[userIdx].mobile = facultyPhone;
+        users[userIdx].phone = facultyPhone;
+      }
+      localStorage.setItem('acad_users', JSON.stringify(users));
     }
-    const payload = { branch, semester, subjectName, facultyId, facultyName, createdAt: new Date().toISOString() };
+
     if (isFirebaseConfigured && db) {
-      const docRef = await addDoc(collection(db, 'subject_allocations'), payload);
-      return { id: docRef.id, ...payload };
+      try {
+        if (userIdx !== -1 && facultyId) {
+          const userRef = doc(db, 'profiles', facultyId);
+          const profileUpdate = {
+            assignedDepartment: branch,
+            assignedBranch: branch,
+            department: branch,
+            assignedSemester: semester,
+            assignedSection: section,
+            assignedSubject: subjectName,
+            assignmentStatus: 'active'
+          };
+          if (facultyEmail) profileUpdate.email = facultyEmail;
+          if (facultyPhone) {
+            profileUpdate.phoneNumber = facultyPhone;
+            profileUpdate.mobile = facultyPhone;
+            profileUpdate.phone = facultyPhone;
+          }
+          await setDoc(userRef, profileUpdate, { merge: true });
+        }
+
+        const docRef = await addDoc(collection(db, 'subject_allocations'), payload);
+        return { id: docRef.id, ...payload };
+      } catch (err) {
+        console.warn("Firestore assignSubjectToFaculty fallback:", err);
+      }
     }
-    const allocations = JSON.parse(localStorage.getItem('acad_allocations') || '[]');
-    const newAlloc = { allocationId: 'alloc-' + Math.random().toString(36).substr(2, 9), ...payload };
-    allocations.push(newAlloc);
+
+    let allocations = JSON.parse(localStorage.getItem('acad_allocations') || '[]');
+    allocations = allocations.filter(a => a.facultyId !== facultyId);
+    const newAlloc = { id: 'alloc-' + Math.random().toString(36).substr(2, 9), allocationId: 'alloc-' + Math.random().toString(36).substr(2, 9), ...payload };
+    allocations.unshift(newAlloc);
     localStorage.setItem('acad_allocations', JSON.stringify(allocations));
+
+    try {
+      await mockDB.logHODAudit(
+        'Faculty Subject Assigned',
+        'Faculty Directory',
+        `Assigned ${facultyName} to ${branch} • ${semester} • ${section} • ${subjectName}`,
+        hodUser
+      );
+    } catch (_) {}
+
     return newAlloc;
+  },
+
+  allocateSubject: async (branch, semester, subjectName, facultyId, facultyName) => {
+    return await mockDB.assignSubjectToFaculty(branch, semester, subjectName, facultyId, facultyName);
   },
 
   getSubjectAllocations: async (branch = null, facultyId = null) => {
     await mockDB.delay(100);
+    let list = [];
     if (isFirebaseConfigured && db) {
-      let q = collection(db, 'subject_allocations');
-      const snap = await getDocs(q);
-      let list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      if (branch) list = list.filter(a => a.branch === branch);
-      if (facultyId) list = list.filter(a => a.facultyId === facultyId);
-      return list;
+      try {
+        let q = collection(db, 'subject_allocations');
+        const snap = await getDocs(q);
+        list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (branch) list = list.filter(a => a.branch === branch || a.department === branch);
+        if (facultyId) list = list.filter(a => a.facultyId === facultyId);
+      } catch (e) {
+        console.warn("Firestore getSubjectAllocations fallback to local:", e.message);
+      }
     }
-    let list = JSON.parse(localStorage.getItem('acad_allocations') || '[]');
-    if (branch) list = list.filter(a => a.branch === branch);
-    if (facultyId) list = list.filter(a => a.facultyId === facultyId);
-    return list;
+    if (list.length === 0) {
+      list = JSON.parse(localStorage.getItem('acad_allocations') || '[]');
+      if (branch) list = list.filter(a => a.branch === branch || a.department === branch);
+      if (facultyId) list = list.filter(a => a.facultyId === facultyId);
+    }
+
+    const users = JSON.parse(localStorage.getItem('acad_users') || '[]');
+    return list.map(alloc => {
+      const fac = users.find(u => u.uid === alloc.facultyId || u.id === alloc.facultyId || u.email === alloc.facultyEmail);
+      return {
+        ...alloc,
+        facultyPhoto: fac?.photo || fac?.profilePhotoUrl || null,
+        facultyDesignation: fac?.designation || 'Faculty Member',
+        facultyEmail: fac?.email || alloc.facultyEmail || `${alloc.facultyName?.toLowerCase().replace(/\s+/g, '.')}@kbn.edu`,
+        facultyPhone: fac?.phoneNumber || fac?.mobile || '9876543210',
+        status: alloc.status || 'Active'
+      };
+    });
+  },
+
+  getAllFacultyAllocations: async () => {
+    return await mockDB.getSubjectAllocations(null, null);
+  },
+
+  getAllWardCounsellors: async () => {
+    await mockDB.delay(100);
+    let list = JSON.parse(localStorage.getItem('acad_ward_counsellors') || '[]');
+    const users = JSON.parse(localStorage.getItem('acad_users') || '[]');
+    return list.map(counsellor => {
+      const fac = users.find(u => u.uid === counsellor.facultyId || u.id === counsellor.facultyId || u.email === counsellor.facultyEmail);
+      return {
+        ...counsellor,
+        facultyPhoto: fac?.photo || fac?.profilePhotoUrl || counsellor.facultyPhoto || null,
+        facultyDesignation: fac?.designation || counsellor.designation || 'Associate Professor & Ward Counsellor',
+        facultyPhone: fac?.phoneNumber || fac?.mobile || counsellor.facultyPhone || '9876543211',
+        facultyEmail: fac?.email || counsellor.facultyEmail || counsellor.email
+      };
+    });
+  },
+
+  removeSubjectAllocation: async (allocationId) => {
+    await mockDB.delay(50);
+    const allocs = JSON.parse(localStorage.getItem('acad_allocations') || '[]');
+    const target = allocs.find(a => a.id === allocationId || a.allocationId === allocationId);
+    const facultyId = target?.facultyId;
+
+    if (isFirebaseConfigured && db && allocationId) {
+      try {
+        await deleteDoc(doc(db, 'subject_allocations', allocationId));
+      } catch (err) {
+        console.warn("Firestore deleteDoc subject_allocations fallback:", err);
+      }
+    }
+    const filtered = allocs.filter(a => a.id !== allocationId && a.allocationId !== allocationId);
+    localStorage.setItem('acad_allocations', JSON.stringify(filtered));
+
+    if (facultyId) {
+      const remainingForFaculty = filtered.filter(a => a.facultyId === facultyId);
+      if (remainingForFaculty.length === 0) {
+        const users = JSON.parse(localStorage.getItem('acad_users') || '[]');
+        const idx = users.findIndex(u => u.uid === facultyId || u.id === facultyId);
+        if (idx !== -1) {
+          users[idx].assignmentStatus = 'inactive';
+          users[idx].assignedDepartment = null;
+          users[idx].assignedSemester = null;
+          users[idx].assignedSection = null;
+          users[idx].assignedSubject = null;
+          localStorage.setItem('acad_users', JSON.stringify(users));
+        }
+        if (isFirebaseConfigured && db) {
+          try {
+            const userRef = doc(db, 'profiles', facultyId);
+            await setDoc(userRef, { assignmentStatus: 'inactive' }, { merge: true });
+          } catch (_) {}
+        }
+      }
+    }
+
+    return true;
   },
 
   // --- ATTENDANCE MANAGEMENT ---
   getStudentsByBranchAndSemester: async (branch, semester, section = null) => {
-    await mockDB.delay(100);
+    await mockDB.delay(50);
+    
+    const normBranch = (branch || '').toUpperCase().trim();
+    const normSem = (semester || '').toUpperCase().trim();
+    const normSec = (section || '').toUpperCase().trim();
+
+    const isBranchMatch = (d) => {
+      if (!d || !normBranch) return true;
+      const upperD = d.toUpperCase().trim();
+      return upperD === normBranch || normBranch.includes(upperD) || upperD.includes(normBranch) || 
+             (normBranch.includes('AI') && upperD.includes('AI'));
+    };
+
+    const isSemMatch = (s) => {
+      if (!s || !normSem) return true;
+      const upperS = s.toUpperCase().trim();
+      if (upperS === normSem) return true;
+      const semNum1 = upperS.replace(/[^0-9]/g, '');
+      const semNum2 = normSem.replace(/[^0-9]/g, '');
+      return semNum1 && semNum2 && semNum1 === semNum2;
+    };
+
+    const isSecMatch = (sec) => {
+      if (!sec || !normSec) return true;
+      const upperSec = sec.toUpperCase().trim();
+      if (upperSec === normSec) return true;
+      if (normSec.includes('A') || normSec === 'EM') return upperSec.includes('A') || upperSec === 'EM' || upperSec === 'SECTION A';
+      if (normSec.includes('B')) return upperSec.includes('B') || upperSec === 'SECTION B';
+      return true;
+    };
+
+    let allStudents = [];
     if (isFirebaseConfigured && db) {
-      const snap = await getDocs(collection(db, 'profiles'));
-      let list = snap.docs.map(doc => ({ uid: doc.id, ...doc.data() })).filter(u => u.role === 'student' && u.department === branch && u.semester === semester);
-      if (section) list = list.filter(u => u.section === section);
-      return list;
+      try {
+        const snap = await getDocs(collection(db, 'profiles'));
+        allStudents = snap.docs.map(doc => ({ uid: doc.id, ...doc.data() })).filter(u => u.role === 'student');
+      } catch (err) {
+        console.warn("Firestore getStudentsByBranchAndSemester fallback:", err);
+      }
     }
-    const users = JSON.parse(localStorage.getItem('acad_users') || '[]');
-    let list = users.filter(u => u.role === 'student' && u.department === branch && u.semester === semester);
-    if (section) list = list.filter(u => u.section === section);
 
-    if (list.length === 0) {
-      const mockNames = ['John Doe', 'Alex Smith', 'Emma Watson', 'David Miller', 'Sophia Taylor', 'Michael Brown', 'Olivia Davis', 'James Wilson'];
-      const branchCode = (branch || 'CSE').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-      const semNum = (semester || '4').replace(/[^0-9]/g, '') || '4';
-      
-      const generated = mockNames.map((name, i) => {
-        const roll = `${branchCode}-S${semNum}-${String(i + 1).padStart(3, '0')}`;
-        const uid = `stud-${roll.toLowerCase()}`;
-        return {
-          uid,
-          fullName: name,
-          rollNumber: roll,
-          email: `${name.toLowerCase().replace(/\s+/g, '.')}@kbn.edu`,
-          role: 'student',
-          department: branch,
-          semester: semester,
-          section: section || 'A'
-        };
-      });
+    const localUsers = JSON.parse(localStorage.getItem('acad_users') || '[]');
+    const localStudents = JSON.parse(localStorage.getItem('acad_students') || '[]');
 
-      users.push(...generated);
-      localStorage.setItem('acad_users', JSON.stringify(users));
+    const map = new Map();
+    [...SEEDED_STUDENTS, ...DEFAULT_USERS, ...localUsers, ...localStudents, ...allStudents].forEach(u => {
+      if (u && (u.role === 'student' || u.rollNumber)) {
+        const key = u.rollNumber || u.uid || u.id;
+        if (key) map.set(key, u);
+      }
+    });
 
-      const studentsList = JSON.parse(localStorage.getItem('acad_students') || '[]');
-      generated.forEach(g => {
-        if (!studentsList.some(s => s.studentId === g.uid)) {
-          studentsList.push({
-            uid: g.uid,
-            studentId: g.uid,
-            rollNumber: g.rollNumber,
-            fullName: g.fullName,
-            email: g.email,
-            department: g.department,
-            semester: g.semester,
-            section: g.section,
-            attendancePercentage: 80,
-            totalClasses: 40,
-            attendedClasses: 32,
-            cgpa: 8.5
-          });
-        }
-      });
-      localStorage.setItem('acad_students', JSON.stringify(studentsList));
-
-      return generated;
-    }
+    let list = Array.from(map.values()).filter(s => {
+      const bMatch = isBranchMatch(s.department || s.branch);
+      const sMatch = isSemMatch(s.semester);
+      const secMatch = isSecMatch(s.section);
+      return bMatch && sMatch && secMatch;
+    });
 
     return list;
+  },
+
+  getStudents: async (department = null) => {
+    await mockDB.delay(50);
+    let allUsers = [];
+    if (isFirebaseConfigured && db) {
+      try {
+        const snap = await getDocs(collection(db, 'profiles'));
+        allUsers = snap.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+      } catch (err) {
+        console.warn("Firestore getStudents fallback:", err);
+      }
+    }
+    const localUsers = JSON.parse(localStorage.getItem('acad_users') || '[]');
+    const localStudents = JSON.parse(localStorage.getItem('acad_students') || '[]');
+    
+    const map = new Map();
+    [...SEEDED_STUDENTS, ...DEFAULT_USERS, ...localUsers, ...localStudents, ...allUsers].forEach(u => {
+      if (u && (u.role === 'student' || u.rollNumber)) {
+        const key = u.rollNumber || u.uid || u.id;
+        if (key) map.set(key, u);
+      }
+    });
+    
+    let result = Array.from(map.values());
+    if (department) {
+      const normDept = department.toUpperCase().trim();
+      result = result.filter(s => {
+        const sDept = (s.department || s.branch || '').toUpperCase().trim();
+        return !sDept || sDept === normDept || normDept.includes(sDept) || sDept.includes(normDept) || (normDept.includes('AI') && sDept.includes('AI'));
+      });
+    }
+    return result;
   },
 
   addStudentToClass: async (studentData) => {
@@ -1579,25 +2042,39 @@ export const mockDB = {
   },
 
   // --- LEAVE APPLICATIONS ---
-  applyLeave: async (studentId, studentName, rollNumber, department, semester, section, reason, startDate, endDate, applicantRole = 'student') => {
+  applyLeave: async (studentId, studentName, rollNumber, department, semester, section, reason, startDate, endDate, applicantRole = 'student', leaveType = 'Casual Leave') => {
     await mockDB.delay(100);
     const payload = {
-      studentId,
-      studentName,
+      studentId: studentId || '',
+      applicantId: studentId || '',
+      facultyId: studentId || '',
+      studentName: studentName || 'User',
+      applicantName: studentName || 'User',
+      facultyName: studentName || 'User',
       rollNumber: rollNumber || '',
-      applicantRole,
-      department,
+      facultyCode: rollNumber || 'FAC-101',
+      applicantRole: applicantRole || 'student',
+      department: department || '',
       semester: semester || '',
       section: section || '',
-      reason,
-      startDate,
-      endDate,
-      status: 'pending',
+      leaveType: leaveType || 'Casual Leave',
+      reason: reason || '',
+      startDate: startDate || '',
+      endDate: endDate || '',
+      status: 'Pending',
       createdAt: new Date().toISOString()
     };
     if (isFirebaseConfigured && db) {
-      const ref = await addDoc(collection(db, 'leave_requests'), payload);
-      return { id: ref.id, ...payload };
+      try {
+        const ref = await addDoc(collection(db, 'leave_requests'), payload);
+        const leaves = JSON.parse(localStorage.getItem('acad_leave_requests') || '[]');
+        const newLeave = { leaveId: ref.id, id: ref.id, ...payload };
+        leaves.push(newLeave);
+        localStorage.setItem('acad_leave_requests', JSON.stringify(leaves));
+        return newLeave;
+      } catch (err) {
+        console.error("Firestore addDoc for leave_requests failed, falling back to local storage:", err);
+      }
     }
     const leaves = JSON.parse(localStorage.getItem('acad_leave_requests') || '[]');
     const newLeave = { leaveId: 'leave-' + Math.random().toString(36).substr(2, 9), ...payload };
@@ -1606,61 +2083,98 @@ export const mockDB = {
     return newLeave;
   },
 
-  getLeaves: async (role, uid) => {
+  getLeaves: async (role, uid, dept = null) => {
     await mockDB.delay(100);
+    let list = [];
     if (isFirebaseConfigured && db) {
-      const snap = await getDocs(collection(db, 'leave_requests'));
-      let list = snap.docs.map(doc => ({ leaveId: doc.id, ...doc.data() }));
-      if (role === 'student') list = list.filter(l => l.studentId === uid || l.applicantId === uid);
-      if (role === 'counsellor' || role === 'faculty') list = list.filter(l => l.applicantRole === 'student' || !l.applicantRole);
-      if (role === 'hod') list = list.filter(l => l.applicantRole === 'faculty');
-      if (role === 'principal') list = list.filter(l => l.applicantRole !== 'principal');
-      if (role === 'admin') list = list.filter(l => l.applicantRole === 'principal');
-      return list;
+      try {
+        const snap = await getDocs(collection(db, 'leave_requests'));
+        list = snap.docs.map(doc => ({ leaveId: doc.id, id: doc.id, ...doc.data() }));
+      } catch (err) {
+        console.error("Firestore getDocs for leave_requests failed, using local storage:", err);
+      }
     }
-    let list = JSON.parse(localStorage.getItem('acad_leave_requests') || '[]');
+    const localList = JSON.parse(localStorage.getItem('acad_leave_requests') || '[]');
+    const combinedMap = new Map();
+    [...list, ...localList].forEach(item => {
+      const key = item.leaveId || item.id;
+      if (key) combinedMap.set(key, item);
+    });
+    let resultList = Array.from(combinedMap.values());
+
     if (role === 'student') {
-      list = list.filter(l => l.studentId === uid || l.applicantId === uid);
+      resultList = resultList.filter(l => l.studentId === uid || l.applicantId === uid || l.uid === uid);
+    } else if (role === 'faculty_self') {
+      resultList = resultList.filter(l => (l.studentId === uid || l.applicantId === uid || l.facultyId === uid || l.uid === uid) && l.applicantRole === 'faculty');
     } else if (role === 'counsellor' || role === 'faculty') {
-      list = list.filter(l => l.applicantRole === 'student' || !l.applicantRole);
+      // Ward Counsellor sees student leave requests belonging ONLY to their assigned branch/department
+      resultList = resultList.filter(l => l.applicantRole === 'student' || !l.applicantRole);
+      if (dept && dept !== 'N/A') {
+        const normDept = dept.toUpperCase().trim();
+        resultList = resultList.filter(l => !l.department || l.department.toUpperCase().trim() === normDept);
+      }
     } else if (role === 'hod') {
-      list = list.filter(l => l.applicantRole === 'faculty');
+      // HOD sees faculty leave requests belonging ONLY to their department
+      resultList = resultList.filter(l => l.applicantRole === 'faculty');
+      if (dept && dept !== 'N/A') {
+        const normDept = dept.toUpperCase().trim();
+        resultList = resultList.filter(l => !l.department || l.department.toUpperCase().trim() === normDept);
+      }
     } else if (role === 'principal') {
-      list = list.filter(l => l.applicantRole !== 'principal');
+      resultList = resultList.filter(l => l.applicantRole !== 'principal');
     } else if (role === 'admin') {
-      list = list.filter(l => l.applicantRole === 'principal');
+      resultList = resultList.filter(l => l.applicantRole === 'principal');
     }
-    return list;
+    return resultList;
   },
 
-  reviewLeave: async (leaveId, action, remarks, reviewerRole = 'counsellor') => {
+  reviewLeave: async (leaveId, action, remarksOrReason = '', reviewerUser = null) => {
     await mockDB.delay(100);
-    if (isFirebaseConfigured && db) {
-      const docRef = doc(db, 'leave_requests', leaveId);
-      await updateDoc(docRef, { status: action, remarks, approvedByRole: reviewerRole });
-      return true;
+    const actLower = (action || '').toLowerCase();
+    const normalizedStatus = actLower === 'approved' ? 'Approved' : (actLower === 'rejected' ? 'Rejected' : action);
+    const isApproved = normalizedStatus === 'Approved';
+    const isRejected = normalizedStatus === 'Rejected';
+    const nowIso = new Date().toISOString();
+
+    const updateFields = {
+      status: normalizedStatus,
+      counsellorStatus: normalizedStatus,
+      hodStatus: normalizedStatus
+    };
+
+    if (isApproved) {
+      if (reviewerUser) {
+        updateFields.approvedBy = reviewerUser.uid || reviewerUser.id || '';
+        updateFields.approvedByName = reviewerUser.fullName || reviewerUser.name || 'Approver';
+      }
+      updateFields.approvedAt = nowIso;
+      updateFields.remarks = remarksOrReason || 'Approved';
+    } else if (isRejected) {
+      if (reviewerUser) {
+        updateFields.rejectedBy = reviewerUser.uid || reviewerUser.id || '';
+        updateFields.rejectedByName = reviewerUser.fullName || reviewerUser.name || 'Approver';
+      }
+      updateFields.rejectedAt = nowIso;
+      updateFields.rejectionReason = remarksOrReason || 'Rejected by approver';
+      updateFields.remarks = remarksOrReason || 'Rejected';
     }
+
+    if (isFirebaseConfigured && db) {
+      try {
+        const docRef = doc(db, 'leave_requests', leaveId);
+        await updateDoc(docRef, updateFields);
+      } catch (err) {
+        console.error("Firestore updateDoc for leave_requests failed:", err);
+      }
+    }
+
     const leaves = JSON.parse(localStorage.getItem('acad_leave_requests') || '[]');
     const idx = leaves.findIndex(l => l.leaveId === leaveId || l.id === leaveId);
     if (idx !== -1) {
-      leaves[idx].status = action;
-      leaves[idx].remarks = remarks || '';
-      if (reviewerRole === 'counsellor' || reviewerRole === 'faculty') {
-        leaves[idx].counsellorStatus = action;
-        leaves[idx].status = action; // Final Counsellor Approval for Students
-      }
-      if (reviewerRole === 'hod') {
-        leaves[idx].hodStatus = action;
-      }
-      if (reviewerRole === 'principal') {
-        leaves[idx].principalStatus = action;
-        leaves[idx].status = action; // Final Principal Approval for Faculty/HOD/Student
-        leaves[idx].hodStatus = action;
-      }
+      leaves[idx] = { ...leaves[idx], ...updateFields };
       localStorage.setItem('acad_leave_requests', JSON.stringify(leaves));
-      return true;
     }
-    return false;
+    return true;
   },
 
   // --- ATTENDANCE STATS & COUNSELLOR METRICS ---
@@ -1896,6 +2410,646 @@ export const mockDB = {
     return JSON.parse(localStorage.getItem('acad_fees') || '[]').filter(f => f.studentId === studentId);
   },
 
+  getAttendance: async (department = null, semester = null, studentId = null) => {
+    await mockDB.delay(50);
+    let list = [];
+    if (isFirebaseConfigured && db) {
+      try {
+        const snap = await getDocs(collection(db, 'attendance'));
+        list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } catch (err) {
+        console.warn("Firestore getDocs attendance fallback to local:", err.message);
+      }
+    }
+    const localList = JSON.parse(localStorage.getItem('acad_attendance') || '[]');
+    const combinedMap = new Map();
+    [...list, ...localList].forEach(item => {
+      const key = item.id || `${item.studentId}-${item.date}-${item.subject}-${item.lecturePeriod}`;
+      if (key) combinedMap.set(key, item);
+    });
+    let result = Array.from(combinedMap.values());
+
+    if (studentId) result = result.filter(a => a.studentId === studentId);
+    if (department) result = result.filter(a => !a.department || a.department === department);
+    if (semester) result = result.filter(a => !a.semester || a.semester === semester);
+    return result;
+  },
+
+  markAttendance: async (records, date, subject, department, semester, section, facultyId, lecturePeriod = 'Period 1') => {
+    await mockDB.delay(100);
+    const existing = JSON.parse(localStorage.getItem('acad_attendance') || '[]');
+
+    const isDuplicate = existing.some(a => 
+      a.date === date && 
+      a.subject === subject && 
+      a.lecturePeriod === lecturePeriod && 
+      (!a.department || a.department === department) && 
+      (!a.semester || a.semester === semester) && 
+      (!a.section || a.section === section)
+    );
+
+    if (isDuplicate) {
+      throw new Error("Attendance already submitted for this period.");
+    }
+
+    const newRecords = [];
+    for (const r of records) {
+      const payload = {
+        studentId: r.studentId,
+        rollNumber: r.rollNumber || '',
+        studentName: r.studentName || 'Student',
+        department: department || 'CSE',
+        semester: semester || 'VI',
+        section: section || 'A',
+        subject: subject || 'Neural Networks & Deep Learning',
+        facultyId: facultyId || '',
+        lecturePeriod: lecturePeriod || 'Period 1',
+        date: date || new Date().toISOString().split('T')[0],
+        status: r.status || 'Present',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      if (isFirebaseConfigured && db) {
+        try {
+          await addDoc(collection(db, 'attendance'), payload);
+        } catch (err) {
+          console.warn("Firestore addDoc attendance fallback to local:", err.message);
+        }
+      }
+      newRecords.push({ id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`, ...payload });
+    }
+
+    const combined = [...newRecords, ...existing];
+    localStorage.setItem('acad_attendance', JSON.stringify(combined));
+
+    records.forEach(r => {
+      if (r.status === 'Absent') {
+        mockDB.addNotification(r.studentId, `Attendance Alert: Marked ABSENT for ${subject} (${date}, ${lecturePeriod})`);
+      }
+    });
+
+    return true;
+  },
+
+  // --- PLACEMENT ENGINE SERVICES ---
+
+  getPlacementDrives: async (role = null) => {
+    await mockDB.delay(50);
+    let list = [];
+    if (isFirebaseConfigured && db) {
+      try {
+        const snap = await getDocs(collection(db, 'placement_drives'));
+        list = snap.docs.map(doc => ({ id: doc.id, driveId: doc.id, ...doc.data() }));
+      } catch (err) {
+        console.warn("Firestore getDocs placement_drives fallback to local:", err.message);
+      }
+    }
+    
+    let localList = JSON.parse(localStorage.getItem('acad_placement_drives') || 'null');
+    if (!localList || localList.length === 0) {
+      localList = DEFAULT_PLACEMENT_DRIVES;
+      localStorage.setItem('acad_placement_drives', JSON.stringify(DEFAULT_PLACEMENT_DRIVES));
+    }
+    
+    const combinedMap = new Map();
+    [...DEFAULT_PLACEMENT_DRIVES, ...list, ...localList].forEach(item => {
+      const key = item.id || item.driveId;
+      if (key) combinedMap.set(key, item);
+    });
+    
+    let result = Array.from(combinedMap.values()).map(d => {
+      const cName = typeof d.companyName === 'string' ? d.companyName : (typeof d.company === 'string' ? d.company : 'Corporate Partner');
+      const jRole = typeof d.jobRole === 'string' ? d.jobRole : (typeof d.role === 'string' ? d.role : 'Software Engineer');
+      const pkg = typeof d.package === 'string' ? d.package : (typeof d.salaryPackage === 'string' ? d.salaryPackage : 'Negotiable');
+      const loc = typeof d.location === 'string' ? d.location : 'Bangalore / Hyderabad';
+      
+      return {
+        ...d,
+        id: d.id || d.driveId,
+        driveId: d.driveId || d.id,
+        companyName: cName,
+        jobRole: jRole,
+        package: pkg,
+        location: loc,
+        driveDate: typeof d.driveDate === 'string' ? d.driveDate : '',
+        deadline: typeof d.deadline === 'string' ? d.deadline : '',
+        applicationDeadline: typeof d.applicationDeadline === 'string' ? d.applicationDeadline : (typeof d.deadline === 'string' ? d.deadline : ''),
+        minCgpa: d.minCgpa !== undefined ? d.minCgpa : 6.0,
+        maxBacklogs: d.maxBacklogs !== undefined ? d.maxBacklogs : 0,
+        eligibleBranches: Array.isArray(d.eligibleBranches) ? d.eligibleBranches : ['CSE', 'ECE', 'EEE', 'AI & ML', 'CIVIL', 'MECHANICAL', 'MCA'],
+        status: typeof d.status === 'string' ? d.status : 'Published'
+      };
+    });
+
+    if (role === 'student') {
+      result = result.filter(d => {
+        const s = (d.status || '').toLowerCase();
+        return s === 'published' || s === 'open' || s === 'active' || s === 'upcoming';
+      });
+    }
+
+    return result;
+  },
+
+  createPlacementDrive: async (driveData) => {
+    await mockDB.delay(150);
+    const now = new Date().toISOString();
+    const payload = {
+      ...driveData,
+      status: driveData.status || 'Published',
+      selectedStudents: driveData.selectedStudents || [],
+      createdAt: now,
+      updatedAt: now
+    };
+
+    let driveId = 'drive-' + Date.now();
+    if (isFirebaseConfigured && db) {
+      try {
+        const ref = await addDoc(collection(db, 'placement_drives'), payload);
+        driveId = ref.id;
+      } catch (err) {
+        console.error("Firestore addDoc placement_drives failed:", err);
+      }
+    }
+
+    const drives = JSON.parse(localStorage.getItem('acad_placement_drives') || '[]');
+    const newDrive = { id: driveId, driveId, ...payload };
+    drives.unshift(newDrive);
+    localStorage.setItem('acad_placement_drives', JSON.stringify(drives));
+
+    if (payload.status === 'Published' || payload.status === 'Open') {
+      try {
+        const allUsers = await mockDB.getAllUsers();
+        const students = allUsers.filter(u => u.role === 'student');
+        students.forEach(st => {
+          mockDB.addNotification(st.uid || st.id, `New Placement Drive Published: ${payload.companyName} (${payload.jobRole}) - Package ${payload.package}`);
+        });
+      } catch (_) {}
+    }
+
+    return newDrive;
+  },
+
+  updatePlacementDrive: async (driveId, driveData) => {
+    await mockDB.delay(100);
+    const now = new Date().toISOString();
+    const updatePayload = { ...driveData, updatedAt: now };
+
+    if (isFirebaseConfigured && db) {
+      try {
+        const docRef = doc(db, 'placement_drives', driveId);
+        await updateDoc(docRef, updatePayload);
+      } catch (err) {
+        console.error("Firestore updateDoc placement_drives failed:", err);
+      }
+    }
+
+    const drives = JSON.parse(localStorage.getItem('acad_placement_drives') || '[]');
+    const idx = drives.findIndex(d => d.id === driveId || d.driveId === driveId);
+    if (idx !== -1) {
+      drives[idx] = { ...drives[idx], ...updatePayload };
+      localStorage.setItem('acad_placement_drives', JSON.stringify(drives));
+    }
+    return true;
+  },
+
+  updateDriveStatus: async (driveId, status) => {
+    return await mockDB.updatePlacementDrive(driveId, { status });
+  },
+
+  deletePlacementDrive: async (driveId) => {
+    await mockDB.delay(100);
+    if (isFirebaseConfigured && db) {
+      try {
+        await deleteDoc(doc(db, 'placement_drives', driveId));
+      } catch (err) {
+        console.error("Firestore deleteDoc placement_drives failed:", err);
+      }
+    }
+    const drives = JSON.parse(localStorage.getItem('acad_placement_drives') || '[]');
+    const filtered = drives.filter(d => d.id !== driveId && d.driveId !== driveId);
+    localStorage.setItem('acad_placement_drives', JSON.stringify(filtered));
+    return true;
+  },
+
+  getPlacementApplications: async (driveId = null, studentId = null) => {
+    await mockDB.delay(100);
+    let list = [];
+    if (isFirebaseConfigured && db) {
+      try {
+        const snap = await getDocs(collection(db, 'placement_applications'));
+        list = snap.docs.map(doc => ({ id: doc.id, applicationId: doc.id, ...doc.data() }));
+      } catch (err) {
+        console.error("Firestore getDocs placement_applications failed:", err);
+      }
+    }
+    const localList = JSON.parse(localStorage.getItem('acad_placement_applications') || '[]');
+    const combinedMap = new Map();
+    [...list, ...localList].forEach(item => {
+      const key = item.id || item.applicationId;
+      if (key) combinedMap.set(key, item);
+    });
+    let result = Array.from(combinedMap.values());
+
+    if (driveId) result = result.filter(a => a.driveId === driveId);
+    if (studentId) result = result.filter(a => a.studentId === studentId);
+    return result;
+  },
+
+  applyForDrive: async (driveId, studentUser) => {
+    await mockDB.delay(150);
+    const drives = await mockDB.getPlacementDrives();
+    const drive = drives.find(d => d.id === driveId || d.driveId === driveId);
+    if (!drive) {
+      return { success: false, reason: 'Placement Drive not found.' };
+    }
+
+    const existingApps = await mockDB.getPlacementApplications(driveId, studentUser.uid || studentUser.id);
+    if (existingApps.length > 0) {
+      return { success: false, reason: 'You have already submitted an application for this placement drive.' };
+    }
+
+    const studentBranch = (studentUser.department || studentUser.branch || '').toUpperCase().trim();
+    const studentCgpa = parseFloat(studentUser.cgpa || studentUser.gpa || 7.5);
+    const studentBacklogs = parseInt(studentUser.backlogs || 0);
+
+    if (drive.minCgpa && studentCgpa < parseFloat(drive.minCgpa)) {
+      return {
+        success: false,
+        reason: `Minimum CGPA required: ${drive.minCgpa}\nYour CGPA: ${studentCgpa.toFixed(1)}`
+      };
+    }
+
+    if (drive.maxBacklogs !== undefined && studentBacklogs > parseInt(drive.maxBacklogs)) {
+      return {
+        success: false,
+        reason: `Maximum active backlogs allowed: ${drive.maxBacklogs}\nYour active backlogs: ${studentBacklogs}`
+      };
+    }
+
+    if (drive.eligibleBranches && drive.eligibleBranches.length > 0) {
+      const eligibleUpper = drive.eligibleBranches.map(b => b.toUpperCase().trim());
+      const branchMatch = eligibleUpper.some(b => b === studentBranch || studentBranch.includes(b) || b.includes(studentBranch));
+      if (!branchMatch) {
+        return {
+          success: false,
+          reason: `Eligible Branches: ${drive.eligibleBranches.join(', ')}\nYour Branch: ${studentUser.department || studentUser.branch}`
+        };
+      }
+    }
+
+    const payload = {
+      driveId: drive.id,
+      studentId: studentUser.uid || studentUser.id || 'stud-1',
+      studentName: studentUser.fullName || studentUser.studentName || 'Student',
+      rollNumber: studentUser.rollNumber || '245901',
+      branch: studentUser.department || studentUser.branch || 'CSE',
+      section: studentUser.section || 'A',
+      cgpa: studentCgpa,
+      backlogs: studentBacklogs,
+      skills: studentUser.skills || 'C++, Java, Web Development',
+      resumeUrl: studentUser.resumeUrl || '#mock-resume',
+      appliedDate: new Date().toISOString().split('T')[0],
+      companyName: drive.companyName,
+      companyLogo: drive.companyLogo,
+      jobRole: drive.jobRole,
+      package: drive.package,
+      status: 'Applied',
+      createdAt: new Date().toISOString()
+    };
+
+    let appId = 'app-' + Date.now();
+    if (isFirebaseConfigured && db) {
+      try {
+        const ref = await addDoc(collection(db, 'placement_applications'), payload);
+        appId = ref.id;
+      } catch (err) {
+        console.error("Firestore addDoc placement_applications failed:", err);
+      }
+    }
+
+    const apps = JSON.parse(localStorage.getItem('acad_placement_applications') || '[]');
+    const newApp = { id: appId, applicationId: appId, ...payload };
+    apps.unshift(newApp);
+    localStorage.setItem('acad_placement_applications', JSON.stringify(apps));
+
+    return { success: true, application: newApp };
+  },
+
+  updateApplicationStatus: async (applicationId, newStatus, remarks = '') => {
+    await mockDB.delay(100);
+    const now = new Date().toISOString();
+    const updatePayload = { status: newStatus, remarks, updatedAt: now };
+
+    let targetStudentId = null;
+    let companyName = 'Company';
+    let jobRole = 'Role';
+
+    const apps = JSON.parse(localStorage.getItem('acad_placement_applications') || '[]');
+    const idx = apps.findIndex(a => a.id === applicationId || a.applicationId === applicationId);
+    if (idx !== -1) {
+      apps[idx] = { ...apps[idx], ...updatePayload };
+      localStorage.setItem('acad_placement_applications', JSON.stringify(apps));
+      targetStudentId = apps[idx].studentId;
+      companyName = apps[idx].companyName;
+      jobRole = apps[idx].jobRole;
+
+      if (newStatus === 'Selected') {
+        const drives = JSON.parse(localStorage.getItem('acad_placement_drives') || '[]');
+        const dIdx = drives.findIndex(d => d.id === apps[idx].driveId);
+        if (dIdx !== -1) {
+          if (!drives[dIdx].selectedStudents) drives[dIdx].selectedStudents = [];
+          if (!drives[dIdx].selectedStudents.includes(targetStudentId)) {
+            drives[dIdx].selectedStudents.push(targetStudentId);
+            localStorage.setItem('acad_placement_drives', JSON.stringify(drives));
+          }
+        }
+      }
+    }
+
+    if (isFirebaseConfigured && db) {
+      try {
+        const docRef = doc(db, 'placement_applications', applicationId);
+        await updateDoc(docRef, updatePayload);
+      } catch (err) {
+        console.error("Firestore updateDoc placement_applications failed:", err);
+      }
+    }
+
+    if (targetStudentId) {
+      let notifMsg = `Placement Update for ${companyName} (${jobRole}): Status changed to ${newStatus}`;
+      if (newStatus === 'Shortlisted') notifMsg = `You have been shortlisted for ${companyName}!`;
+      if (newStatus === 'Selected') notifMsg = `Congratulations! You have been selected at ${companyName} for ${jobRole}!`;
+      mockDB.addNotification(targetStudentId, notifMsg);
+    }
+
+    return true;
+  },
+
+  scheduleInterview: async (interviewData) => {
+    await mockDB.delay(150);
+    const now = new Date().toISOString();
+    const payload = { ...interviewData, createdAt: now };
+
+    let intId = 'int-' + Date.now();
+    if (isFirebaseConfigured && db) {
+      try {
+        const ref = await addDoc(collection(db, 'placement_interviews'), payload);
+        intId = ref.id;
+      } catch (err) {
+        console.error("Firestore addDoc placement_interviews failed:", err);
+      }
+    }
+
+    const interviews = JSON.parse(localStorage.getItem('acad_placement_interviews') || '[]');
+    const newInt = { id: intId, ...payload };
+    interviews.unshift(newInt);
+    localStorage.setItem('acad_placement_interviews', JSON.stringify(interviews));
+
+    if (payload.applicationId) {
+      await mockDB.updateApplicationStatus(payload.applicationId, 'Interview Scheduled', `Round: ${payload.round} on ${payload.date} ${payload.time}`);
+    }
+
+    if (payload.studentId) {
+      mockDB.addNotification(payload.studentId, `Interview Scheduled: ${payload.companyName} (${payload.round}) on ${payload.date} at ${payload.time}. Venue: ${payload.venue}`);
+    }
+
+    return newInt;
+  },
+
+  getPlacementInterviews: async (studentId = null) => {
+    await mockDB.delay(100);
+    let list = [];
+    if (isFirebaseConfigured && db) {
+      try {
+        const snap = await getDocs(collection(db, 'placement_interviews'));
+        list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } catch (err) {
+        console.error("Firestore getDocs placement_interviews failed:", err);
+      }
+    }
+    const localList = JSON.parse(localStorage.getItem('acad_placement_interviews') || '[]');
+    const combinedMap = new Map();
+    [...list, ...localList].forEach(item => {
+      const key = item.id;
+      if (key) combinedMap.set(key, item);
+    });
+    let result = Array.from(combinedMap.values());
+    if (studentId) result = result.filter(i => i.studentId === studentId);
+    return result;
+  },
+
+  getPlacementCompanies: async () => {
+    await mockDB.delay(100);
+    let list = [];
+    if (isFirebaseConfigured && db) {
+      try {
+        const snap = await getDocs(collection(db, 'placement_companies'));
+        list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } catch (err) {
+        console.error("Firestore getDocs placement_companies failed:", err);
+      }
+    }
+    const localList = JSON.parse(localStorage.getItem('acad_placement_companies') || '[]');
+    const combinedMap = new Map();
+    [...list, ...localList].forEach(item => {
+      const key = item.id;
+      if (key) combinedMap.set(key, item);
+    });
+    return Array.from(combinedMap.values());
+  },
+
+  savePlacementCompany: async (companyData) => {
+    await mockDB.delay(100);
+    const now = new Date().toISOString();
+    const payload = { ...companyData, updatedAt: now };
+
+    let compId = companyData.id || 'comp-' + Date.now();
+    if (isFirebaseConfigured && db) {
+      try {
+        if (companyData.id) {
+          await updateDoc(doc(db, 'placement_companies', companyData.id), payload);
+        } else {
+          const ref = await addDoc(collection(db, 'placement_companies'), payload);
+          compId = ref.id;
+        }
+      } catch (err) {
+        console.error("Firestore save placement_companies failed:", err);
+      }
+    }
+
+    const comps = JSON.parse(localStorage.getItem('acad_placement_companies') || '[]');
+    const idx = comps.findIndex(c => c.id === compId);
+    if (idx !== -1) {
+      comps[idx] = { ...comps[idx], ...payload };
+    } else {
+      comps.unshift({ id: compId, ...payload });
+    }
+    localStorage.setItem('acad_placement_companies', JSON.stringify(comps));
+    return true;
+  },
+
+  deletePlacementCompany: async (companyId) => {
+    await mockDB.delay(100);
+    if (isFirebaseConfigured && db) {
+      try {
+        await deleteDoc(doc(db, 'placement_companies', companyId));
+      } catch (err) {
+        console.error("Firestore deleteDoc placement_companies failed:", err);
+      }
+    }
+    const comps = JSON.parse(localStorage.getItem('acad_placement_companies') || '[]');
+    const filtered = comps.filter(c => c.id !== companyId);
+    localStorage.setItem('acad_placement_companies', JSON.stringify(filtered));
+    return true;
+  },
+
+  getPlacementTrainings: async () => {
+    await mockDB.delay(100);
+    let list = [];
+    if (isFirebaseConfigured && db) {
+      try {
+        const snap = await getDocs(collection(db, 'placement_trainings'));
+        list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } catch (err) {
+        console.error("Firestore getDocs placement_trainings failed:", err);
+      }
+    }
+    const localList = JSON.parse(localStorage.getItem('acad_placement_trainings') || '[]');
+    const combinedMap = new Map();
+    [...list, ...localList].forEach(item => {
+      const key = item.id;
+      if (key) combinedMap.set(key, item);
+    });
+    return Array.from(combinedMap.values());
+  },
+
+  savePlacementTraining: async (trainingData) => {
+    await mockDB.delay(100);
+    const payload = { ...trainingData, createdAt: new Date().toISOString() };
+
+    let trId = trainingData.id || 'tr-' + Date.now();
+    if (isFirebaseConfigured && db) {
+      try {
+        if (trainingData.id) {
+          await updateDoc(doc(db, 'placement_trainings', trainingData.id), payload);
+        } else {
+          const ref = await addDoc(collection(db, 'placement_trainings'), payload);
+          trId = ref.id;
+        }
+      } catch (err) {
+        console.error("Firestore save placement_trainings failed:", err);
+      }
+    }
+
+    const trs = JSON.parse(localStorage.getItem('acad_placement_trainings') || '[]');
+    const idx = trs.findIndex(t => t.id === trId);
+    if (idx !== -1) {
+      trs[idx] = { ...trs[idx], ...payload };
+    } else {
+      trs.unshift({ id: trId, ...payload });
+    }
+    localStorage.setItem('acad_placement_trainings', JSON.stringify(trs));
+
+    try {
+      const allUsers = await mockDB.getAllUsers();
+      const students = allUsers.filter(u => u.role === 'student');
+      students.forEach(st => {
+        mockDB.addNotification(st.uid || st.id, `New Placement Training Session: ${trainingData.title} on ${trainingData.date}`);
+      });
+    } catch (_) {}
+
+    return true;
+  },
+
+  registerForTraining: async (trainingId, studentUser) => {
+    await mockDB.delay(100);
+    const stId = studentUser.uid || studentUser.id;
+    const trs = JSON.parse(localStorage.getItem('acad_placement_trainings') || '[]');
+    const idx = trs.findIndex(t => t.id === trainingId);
+    if (idx !== -1) {
+      if (!trs[idx].registeredStudents) trs[idx].registeredStudents = [];
+      if (!trs[idx].registeredStudents.includes(stId)) {
+        trs[idx].registeredStudents.push(stId);
+        localStorage.setItem('acad_placement_trainings', JSON.stringify(trs));
+      }
+    }
+    if (isFirebaseConfigured && db) {
+      try {
+        const trRef = doc(db, 'placement_trainings', trainingId);
+        const snap = await getDoc(trRef);
+        if (snap.exists()) {
+          const currentData = snap.data();
+          const registered = currentData.registeredStudents || [];
+          if (!registered.includes(stId)) {
+            registered.push(stId);
+            await updateDoc(trRef, { registeredStudents: registered });
+          }
+        }
+      } catch (err) {
+        console.error("Firestore update placement_trainings failed:", err);
+      }
+    }
+    return true;
+  },
+
+  getPlacementAnalytics: async () => {
+    await mockDB.delay(50);
+    const [drives, apps, companies, users] = await Promise.all([
+      mockDB.getPlacementDrives(),
+      mockDB.getPlacementApplications(),
+      mockDB.getPlacementCompanies(),
+      mockDB.getAllUsers()
+    ]);
+
+    const students = users.filter(u => u.role === 'student');
+    const totalStudents = students.length || 1;
+    const selectedApps = apps.filter(a => a.status === 'Selected');
+    const placedStudentIds = new Set(selectedApps.map(a => a.studentId));
+    const totalPlaced = placedStudentIds.size;
+    const placementRate = Math.round((totalPlaced / totalStudents) * 100);
+
+    const branches = ['CSE', 'ECE', 'EEE', 'AI & ML', 'CIVIL', 'MECHANICAL', 'MCA', 'BCA'];
+    const branchPlacements = branches.map(b => {
+      const bStuds = students.filter(s => (s.department || s.branch || '').toUpperCase().includes(b)).length || 1;
+      const bPlaced = selectedApps.filter(a => (a.branch || '').toUpperCase().includes(b)).length;
+      return {
+        branch: b,
+        department: b,
+        totalStudents: bStuds,
+        placedStudents: bPlaced,
+        placementRate: Math.min(100, Math.round((bPlaced / bStuds) * 100))
+      };
+    });
+
+    const packages = selectedApps
+      .map(a => parseFloat((a.package || '').replace(/[^0-9.]/g, '')))
+      .filter(p => !isNaN(p) && p > 0);
+    const highestPackage = packages.length > 0 ? `${Math.max(...packages).toFixed(1)} LPA` : '28.5 LPA';
+    const lowestPackage = packages.length > 0 ? `${Math.min(...packages).toFixed(1)} LPA` : '6.5 LPA';
+    const avgPackage = packages.length > 0 
+      ? `${(packages.reduce((acc, c) => acc + c, 0) / packages.length).toFixed(1)} LPA`
+      : '12.4 LPA';
+
+    return {
+      overview: {
+        totalStudents,
+        totalDrives: drives.length,
+        totalOffers: selectedApps.length,
+        totalPlaced,
+        placementRate: Math.min(100, placementRate),
+        highestPackage,
+        avgPackage,
+        lowestPackage
+      },
+      branchPlacements,
+      companies,
+      drives,
+      applications: apps
+    };
+  },
+
   payFee: async (feeId) => {
     await mockDB.delay(100);
     if (isFirebaseConfigured && db) {
@@ -1914,14 +3068,7 @@ export const mockDB = {
     return false;
   },
 
-  getPlacementDrives: async () => {
-    await mockDB.delay(50);
-    if (isFirebaseConfigured && db) {
-      const snap = await getDocs(collection(db, 'placement_drives'));
-      return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    }
-    return JSON.parse(localStorage.getItem('acad_placement_drives') || '[]');
-  },
+
 
   getAnnouncements: async () => {
     await mockDB.delay(50);
@@ -1946,36 +3093,307 @@ export const mockDB = {
     return newAnn;
   },
 
-  getNotes: async (department, semester) => {
+  getStudents: async (department = null) => {
     await mockDB.delay(50);
+    let list = [];
     if (isFirebaseConfigured && db) {
-      const snap = await getDocs(collection(db, 'notes'));
-      return snap.docs.map(doc => ({ noteId: doc.id, ...doc.data() })).filter(n => n.department === department && n.semester === semester);
+      try {
+        const snap = await getDocs(collection(db, 'students'));
+        list = snap.docs.map(doc => ({ uid: doc.id, id: doc.id, ...doc.data() }));
+        if (list.length === 0) {
+          const profileSnap = await getDocs(collection(db, 'profiles'));
+          list = profileSnap.docs.map(doc => ({ uid: doc.id, id: doc.id, ...doc.data() })).filter(u => u.role === 'student');
+        }
+      } catch (err) {
+        console.warn("Firestore getDocs for students failed:", err.message);
+      }
     }
-    return JSON.parse(localStorage.getItem('acad_notes') || '[]').filter(n => n.department === department && n.semester === semester);
+    const localList = JSON.parse(localStorage.getItem('acad_students') || '[]');
+    const combinedMap = new Map();
+    [...list, ...localList].forEach(item => {
+      const key = item.uid || item.id || item.studentId;
+      if (key) combinedMap.set(key, item);
+    });
+    let result = Array.from(combinedMap.values());
+
+    if (department && department !== 'All' && department !== 'N/A') {
+      result = result.filter(s => isDepartmentMatch(s.department || s.branch, department));
+    }
+    return result;
   },
 
-  uploadNote: async (facultyId, facultyName, department, semester, subject, topic, description, fileName, fileBase64) => {
-    await mockDB.delay(150);
-    const payload = { facultyId, facultyName, department, semester, subject, topic, description, fileName, fileUrl: fileBase64 || '#mock-download', createdAt: new Date().toISOString() };
+  getNotes: async (department = null, semester = null) => {
+    await mockDB.delay(50);
+    let list = [];
     if (isFirebaseConfigured && db) {
-      const ref = await addDoc(collection(db, 'notes'), payload);
-      return { id: ref.id, ...payload };
+      try {
+        const snap = await getDocs(collection(db, 'notes'));
+        list = snap.docs.map(doc => ({ noteId: doc.id, id: doc.id, ...doc.data() }));
+      } catch (err) {
+        console.error("Firestore getDocs for notes failed, using local storage:", err);
+      }
+    }
+    const localList = JSON.parse(localStorage.getItem('acad_notes') || '[]');
+    const combinedMap = new Map();
+    [...list, ...localList].forEach(item => {
+      const key = item.noteId || item.id;
+      if (key) combinedMap.set(key, item);
+    });
+    let result = Array.from(combinedMap.values());
+
+    if (department) {
+      result = result.filter(n => isDepartmentMatch(n.department || n.branch, department));
+    }
+    if (semester) {
+      result = result.filter(n => !n.semester || n.semester === semester || n.semester.toLowerCase() === semester.toLowerCase());
+    }
+    return result;
+  },
+
+  uploadNote: async (facultyId, facultyName, department, semester, subject, topic, description, fileName, fileData, section = 'Section A') => {
+    await mockDB.delay(150);
+    let fileUrl = '';
+    let fName = fileName || (fileData && fileData.name ? fileData.name : 'notes.pdf');
+
+    if (fileData) {
+      fName = typeof fileData === 'string' ? fName : (fileData.name || fName);
+      if (isFirebaseConfigured && storage && typeof fileData !== 'string') {
+        try {
+          const storageRef = ref(storage, `notes/${Date.now()}_${fName}`);
+          const snap = await uploadBytes(storageRef, fileData);
+          fileUrl = await getDownloadURL(snap.ref);
+        } catch (err) {
+          console.warn("Firebase Storage uploadBytes for notes failed, falling back to Data URL:", err.message);
+          fileUrl = await fileToDataUrl(fileData);
+        }
+      } else if (typeof fileData !== 'string' && fileData instanceof Blob) {
+        fileUrl = await fileToDataUrl(fileData);
+      } else {
+        fileUrl = typeof fileData === 'string' ? fileData : '#mock-download';
+      }
+    } else {
+      fileUrl = '#mock-download';
+    }
+
+    const dept = department || 'CSE';
+    const payload = {
+      facultyId: facultyId || '',
+      facultyName: facultyName || 'Faculty',
+      uploadedBy: facultyName || 'Faculty',
+      department: dept,
+      branch: dept,
+      semester: semester || 'Semester 1',
+      section: section || 'Section A',
+      subject: subject || 'General',
+      topic: topic || '',
+      title: topic || subject || 'Lecture Notes',
+      description: description || '',
+      fileName: fName,
+      fileUrl: fileUrl || '#mock-download',
+      fileType: fName.split('.').pop() || 'pdf',
+      fileSize: fileData && fileData.size ? `${(fileData.size / 1024).toFixed(1)} KB` : '1.2 MB',
+      createdAt: new Date().toISOString()
+    };
+
+    let noteId = `note-${Date.now()}`;
+    if (isFirebaseConfigured && db) {
+      try {
+        const ref = await addDoc(collection(db, 'notes'), payload);
+        noteId = ref.id;
+      } catch (err) {
+        console.warn("Firestore addDoc for notes failed, saving locally:", err.message);
+      }
+    }
+
+    const notes = JSON.parse(localStorage.getItem('acad_notes') || '[]');
+    const newNote = { noteId: noteId, id: noteId, ...payload };
+    notes.unshift(newNote);
+    localStorage.setItem('acad_notes', JSON.stringify(notes));
+
+    try {
+      const students = await mockDB.getStudents(dept);
+      students.forEach(st => {
+        mockDB.addNotification(st.uid || st.id || st.studentId, `New Study Material Published: ${topic || subject} - ${fName}`);
+      });
+    } catch (e) {
+      console.warn("Notification send error for note:", e);
+    }
+
+    return newNote;
+  },
+
+  deleteNote: async (noteId) => {
+    await mockDB.delay(100);
+    if (isFirebaseConfigured && db && noteId) {
+      try {
+        await deleteDoc(doc(db, 'notes', noteId));
+      } catch (err) {
+        console.warn("Firestore deleteDoc for notes failed:", err.message);
+      }
     }
     const notes = JSON.parse(localStorage.getItem('acad_notes') || '[]');
-    const newNote = { noteId: 'note-' + Math.random().toString(36).substr(2, 9), ...payload };
-    notes.push(newNote);
-    localStorage.setItem('acad_notes', JSON.stringify(notes));
-    return newNote;
+    const filtered = notes.filter(n => n.id !== noteId && n.noteId !== noteId);
+    localStorage.setItem('acad_notes', JSON.stringify(filtered));
+    return true;
+  },
+
+  getInternalMarks: async (department = null, semester = null, subject = null) => {
+    await mockDB.delay(50);
+    let list = [];
+    if (isFirebaseConfigured && db) {
+      try {
+        const snap = await getDocs(collection(db, 'internal_marks'));
+        list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } catch (err) {
+        console.warn("Firestore getDocs internal_marks fallback to local:", err.message);
+      }
+    }
+    const localList = JSON.parse(localStorage.getItem('acad_internal_marks') || '[]');
+    const combinedMap = new Map();
+    [...list, ...localList].forEach(item => {
+      const key = item.id || `${item.studentId}-${item.subject}`;
+      if (key) combinedMap.set(key, item);
+    });
+    let result = Array.from(combinedMap.values());
+
+    if (department) result = result.filter(m => !m.department || m.department === department);
+    if (semester) result = result.filter(m => !m.semester || m.semester === semester);
+    if (subject) result = result.filter(m => !m.subject || m.subject === subject);
+    return result;
+  },
+
+  saveInternalMarksBatch: async (marksList) => {
+    await mockDB.delay(100);
+    if (isFirebaseConfigured && db) {
+      try {
+        for (const item of marksList) {
+          await addDoc(collection(db, 'internal_marks'), { ...item, updatedAt: new Date().toISOString() });
+        }
+      } catch (err) {
+        console.warn("Firestore addDoc internal_marks fallback to local:", err.message);
+      }
+    }
+    const local = JSON.parse(localStorage.getItem('acad_internal_marks') || '[]');
+    marksList.forEach(item => {
+      const idx = local.findIndex(m => m.studentId === item.studentId && m.subject === item.subject);
+      if (idx !== -1) {
+        local[idx] = { ...local[idx], ...item, updatedAt: new Date().toISOString() };
+      } else {
+        local.unshift({ id: `mark-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`, ...item, updatedAt: new Date().toISOString() });
+      }
+    });
+    localStorage.setItem('acad_internal_marks', JSON.stringify(local));
+
+    try {
+      marksList.forEach(m => {
+        if (m.studentId) {
+          mockDB.addNotification(m.studentId, `Internal Marks Updated for ${m.subject || 'Subject'}: Total ${m.total || 0}/50`);
+        }
+      });
+    } catch (_) {}
+
+    return true;
+  },
+
+  getSubjectAllocations: async (department = null, facultyId = null) => {
+    await mockDB.delay(50);
+    let list = [];
+    if (isFirebaseConfigured && db) {
+      try {
+        const snap = await getDocs(collection(db, 'allocations'));
+        list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } catch (err) {
+        console.warn("Firestore getDocs allocations fallback to local:", err.message);
+      }
+    }
+    const localList = JSON.parse(localStorage.getItem('acad_allocations') || '[]');
+    const combinedMap = new Map();
+    [...list, ...localList].forEach(item => {
+      const key = item.id || `${item.facultyId}-${item.subject}`;
+      if (key) combinedMap.set(key, item);
+    });
+    let result = Array.from(combinedMap.values());
+
+    if (facultyId) result = result.filter(a => a.facultyId === facultyId || a.facultyUid === facultyId);
+    if (department) result = result.filter(a => a.department === department);
+    return result;
+  },
+
+  addNotification: async (recipientOrPayload, titleOrMessage, optionalMessage, optionalType = 'info') => {
+    await mockDB.delay(10);
+    try {
+      let recipientUid = '';
+      let title = 'Campus Notification';
+      let message = '';
+      let type = optionalType || 'info';
+
+      if (typeof recipientOrPayload === 'object' && recipientOrPayload !== null) {
+        recipientUid = recipientOrPayload.recipientUid || recipientOrPayload.userId || recipientOrPayload.studentId || recipientOrPayload.uid || '';
+        title = recipientOrPayload.title || title;
+        message = recipientOrPayload.message || recipientOrPayload.text || '';
+        type = recipientOrPayload.type || type;
+      } else if (typeof recipientOrPayload === 'string') {
+        recipientUid = recipientOrPayload;
+        if (optionalMessage !== undefined) {
+          title = titleOrMessage || title;
+          message = optionalMessage;
+        } else {
+          title = 'Campus Notification';
+          message = titleOrMessage || '';
+        }
+      }
+
+      const notifId = 'notif-' + Math.random().toString(36).substr(2, 9);
+      const payload = {
+        id: notifId,
+        notificationId: notifId,
+        recipientUid: recipientUid,
+        userId: recipientUid,
+        title: title,
+        message: message,
+        type: type,
+        read: false,
+        createdAt: new Date().toISOString()
+      };
+
+      if (isFirebaseConfigured && db) {
+        try {
+          await addDoc(collection(db, 'notifications'), payload);
+        } catch (e) {
+          console.warn("Firestore addNotification fallback to local:", e.message);
+        }
+      }
+
+      const localNotifs = JSON.parse(localStorage.getItem('acad_notifications') || '[]');
+      localNotifs.unshift(payload);
+      localStorage.setItem('acad_notifications', JSON.stringify(localNotifs));
+
+      return payload;
+    } catch (err) {
+      console.error("addNotification error:", err);
+      return null;
+    }
   },
 
   getNotifications: async (recipientUid) => {
     await mockDB.delay(50);
     if (isFirebaseConfigured && db) {
-      const snap = await getDocs(collection(db, 'notifications'));
-      return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(n => n.recipientUid === recipientUid);
+      try {
+        const snap = await getDocs(collection(db, 'notifications'));
+        let list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (recipientUid) {
+          list = list.filter(n => n.recipientUid === recipientUid || n.userId === recipientUid);
+        }
+        return list;
+      } catch (e) {
+        console.warn("Firestore getNotifications fallback to local:", e.message);
+      }
     }
-    return JSON.parse(localStorage.getItem('acad_notifications') || '[]').filter(n => n.recipientUid === recipientUid);
+    const localNotifs = JSON.parse(localStorage.getItem('acad_notifications') || '[]');
+    if (recipientUid) {
+      return localNotifs.filter(n => n.recipientUid === recipientUid || n.userId === recipientUid);
+    }
+    return localNotifs;
   },
 
   // --- COUNSELLING / MEETING REQUEST FLOWS ---
@@ -3193,9 +4611,14 @@ export const mockDB = {
       counsellors[idx].removedBy = hodUser?.fullName || 'HOD';
       localStorage.setItem('acad_ward_counsellors', JSON.stringify(counsellors));
 
+      const facId = counsellors[idx].facultyId;
       const dept = counsellors[idx].department;
       const users = JSON.parse(localStorage.getItem('acad_users') || '[]');
+
       users.forEach(u => {
+        if (u.uid === facId || u.id === facId) {
+          u.wardCounsellorStatus = 'inactive';
+        }
         if (u.role === 'student' && u.department === dept) {
           u.counsellorId = null;
           u.counsellorName = null;
@@ -3204,6 +4627,13 @@ export const mockDB = {
         }
       });
       localStorage.setItem('acad_users', JSON.stringify(users));
+
+      if (isFirebaseConfigured && db && facId) {
+        try {
+          const userRef = doc(db, 'profiles', facId);
+          await setDoc(userRef, { wardCounsellorStatus: 'inactive' }, { merge: true });
+        } catch (_) {}
+      }
 
       await mockDB.logHODAudit(
         'Ward Counsellor Removed',
@@ -3219,39 +4649,47 @@ export const mockDB = {
     await mockDB.delay(30);
     if (!student) return null;
     const counsellors = JSON.parse(localStorage.getItem('acad_ward_counsellors') || '[]');
-    const activeAssignment = counsellors.find(c => 
-      c.status === 'Active' && 
-      (!student.department || c.department === student.department || (student.department.includes('CS') && c.department.includes('CS')))
-    );
+    const sDept = (student.department || student.branch || '').toUpperCase().trim();
+
+    const activeAssignment = counsellors.find(c => {
+      if (c.status !== 'Active') return false;
+      const cDept = (c.department || '').toUpperCase().trim();
+      return !sDept || cDept === sDept || sDept.includes(cDept) || cDept.includes(sDept) || (sDept.includes('AI') && cDept.includes('AI'));
+    });
+
+    const users = JSON.parse(localStorage.getItem('acad_users') || '[]');
+    const defaultFacs = DEFAULT_USERS || [];
 
     if (activeAssignment) {
-      const users = JSON.parse(localStorage.getItem('acad_users') || '[]');
-      const fac = users.find(u => u.uid === activeAssignment.facultyId) || {};
+      const fac = users.find(u => u.uid === activeAssignment.facultyId) || defaultFacs.find(u => u.uid === activeAssignment.facultyId) || {};
       return {
-        fullName: activeAssignment.facultyName,
-        designation: activeAssignment.designation || fac.designation || 'Associate Professor',
-        department: activeAssignment.department,
-        email: activeAssignment.facultyEmail || fac.email || 'counsellor@kbn.edu',
-        mobile: fac.mobile || fac.contactNumber || '9876543210',
+        fullName: activeAssignment.facultyName || fac.fullName || fac.name || 'Dr. Bruce Banner',
+        designation: activeAssignment.designation || fac.designation || 'Associate Professor & Ward Counsellor',
+        department: activeAssignment.department || student.department || 'B.Sc. Computer Science (CS)',
+        email: activeAssignment.facultyEmail || fac.email || 'counsellor.cse@kbn.edu',
+        mobile: fac.mobile || fac.phoneNumber || fac.contactNumber || '9876543211',
+        phoneNumber: fac.phoneNumber || fac.mobile || fac.contactNumber || '9876543211',
         employeeId: fac.employeeId || 'WC-CSE-01',
         officeHours: fac.officeHours || 'Mon - Fri: 3:00 PM - 5:00 PM',
-        profilePhotoUrl: fac.profilePhotoUrl || null
+        profilePhotoUrl: fac.photo || fac.profilePhoto || fac.profilePhotoUrl || activeAssignment.profilePhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        photo: fac.photo || fac.profilePhoto || fac.profilePhotoUrl || activeAssignment.profilePhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
       };
     }
 
     if (student.counsellorId) {
-      const users = JSON.parse(localStorage.getItem('acad_users') || '[]');
-      const fac = users.find(u => u.uid === student.counsellorId) || {};
-      if (fac.fullName) {
+      const fac = users.find(u => u.uid === student.counsellorId) || defaultFacs.find(u => u.uid === student.counsellorId) || {};
+      if (fac.fullName || fac.name) {
         return {
-          fullName: fac.fullName,
+          fullName: fac.fullName || fac.name,
           designation: fac.designation || 'Ward Counsellor',
           department: fac.department || student.department,
           email: fac.email,
-          mobile: fac.mobile || fac.contactNumber || '9876543210',
+          mobile: fac.mobile || fac.phoneNumber || '9876543211',
+          phoneNumber: fac.phoneNumber || fac.mobile || '9876543211',
           employeeId: fac.employeeId || 'WC-01',
           officeHours: fac.officeHours || 'Mon - Fri: 3:00 PM - 5:00 PM',
-          profilePhotoUrl: fac.profilePhotoUrl || null
+          profilePhotoUrl: fac.photo || fac.profilePhoto || fac.profilePhotoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          photo: fac.photo || fac.profilePhoto || fac.profilePhotoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
         };
       }
     }
@@ -4164,20 +5602,152 @@ export const mockDB = {
     return list;
   },
 
-  getLeaves: async (role, userId) => {
+  getStudentLeaves: async (studentId) => {
     await mockDB.delay(50);
     if (isFirebaseConfigured && db) {
       try {
-        const snap = await getDocs(collection(db, 'leave_requests'));
-        return snap.docs
-          .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter(l => l.studentId === userId || l.userId === userId || l.uid === userId);
-      } catch (err) {
-        console.error("Firestore getLeaves error:", err);
+        const snap = await getDocs(collection(db, 'student_leaves'));
+        const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (studentId) return list.filter(l => l.studentId === studentId);
+        return list;
+      } catch (e) {
+        console.error("Firestore getStudentLeaves error:", e);
       }
     }
-    const leaves = JSON.parse(localStorage.getItem('acad_leave_requests') || '[]');
-    return leaves.filter(l => l.studentId === userId || l.userId === userId || l.uid === userId);
+    const local = JSON.parse(localStorage.getItem('acad_student_leaves') || '[]');
+    if (studentId) return local.filter(l => l.studentId === studentId);
+    return local;
+  },
+
+  applyStudentLeave: async (studentId, leaveData) => {
+    await mockDB.delay(100);
+    const newLeave = {
+      id: `student-leave-${Date.now()}`,
+      studentId: studentId || 'stud-cse',
+      studentName: leaveData.studentName || 'Student',
+      department: leaveData.department || 'CSE',
+      leaveType: leaveData.leaveType || 'Casual Leave',
+      fromDate: leaveData.fromDate || new Date().toISOString().split('T')[0],
+      toDate: leaveData.toDate || new Date().toISOString().split('T')[0],
+      reason: leaveData.reason || 'Personal Work',
+      status: 'Pending',
+      appliedAt: new Date().toISOString(),
+      approvedBy: '',
+      rejectionReason: ''
+    };
+
+    if (isFirebaseConfigured && db) {
+      try {
+        await addDoc(collection(db, 'student_leaves'), newLeave);
+      } catch (e) {
+        console.error("Firestore applyStudentLeave error:", e);
+      }
+    }
+
+    const local = JSON.parse(localStorage.getItem('acad_student_leaves') || '[]');
+    local.unshift(newLeave);
+    localStorage.setItem('acad_student_leaves', JSON.stringify(local));
+    return newLeave;
+  },
+
+  getFacultyLeaves: async (facultyId) => {
+    await mockDB.delay(50);
+    if (isFirebaseConfigured && db) {
+      try {
+        const snap = await getDocs(collection(db, 'faculty_leaves'));
+        const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (facultyId) return list.filter(l => l.facultyId === facultyId);
+        return list;
+      } catch (e) {
+        console.error("Firestore getFacultyLeaves error:", e);
+      }
+    }
+    const local = JSON.parse(localStorage.getItem('acad_faculty_leaves') || '[]');
+    if (facultyId) return local.filter(l => l.facultyId === facultyId);
+    return local;
+  },
+
+  applyFacultyLeave: async (facultyId, leaveData) => {
+    await mockDB.delay(100);
+    const newLeave = {
+      id: `faculty-leave-${Date.now()}`,
+      facultyId: facultyId || 'fac-cse',
+      facultyName: leaveData.facultyName || 'Faculty Member',
+      department: leaveData.department || 'CSE',
+      leaveType: leaveData.leaveType || 'Casual Leave',
+      fromDate: leaveData.fromDate || new Date().toISOString().split('T')[0],
+      toDate: leaveData.toDate || new Date().toISOString().split('T')[0],
+      reason: leaveData.reason || 'Academic / Personal',
+      status: 'Pending',
+      appliedAt: new Date().toISOString(),
+      approvedBy: '',
+      rejectionReason: ''
+    };
+
+    if (isFirebaseConfigured && db) {
+      try {
+        await addDoc(collection(db, 'faculty_leaves'), newLeave);
+      } catch (e) {
+        console.error("Firestore applyFacultyLeave error:", e);
+      }
+    }
+
+    const local = JSON.parse(localStorage.getItem('acad_faculty_leaves') || '[]');
+    local.unshift(newLeave);
+    localStorage.setItem('acad_faculty_leaves', JSON.stringify(local));
+    return newLeave;
+  },
+
+  updateStudentLeaveStatus: async (leaveId, status, approverName, rejectionReason = '') => {
+    await mockDB.delay(50);
+    const local = JSON.parse(localStorage.getItem('acad_student_leaves') || '[]');
+    const idx = local.findIndex(l => l.id === leaveId || l.leaveId === leaveId);
+    if (idx !== -1) {
+      local[idx].status = status;
+      local[idx].approvedBy = approverName;
+      if (rejectionReason) local[idx].rejectionReason = rejectionReason;
+      localStorage.setItem('acad_student_leaves', JSON.stringify(local));
+
+      try {
+        const studentId = local[idx].studentId || local[idx].uid;
+        if (studentId) {
+          await mockDB.addNotification(
+            studentId,
+            `Leave Application ${status}`,
+            `Your leave application (${local[idx].fromDate} to ${local[idx].toDate}) was ${status} by ${approverName || 'Ward Counsellor'}.`
+          );
+        }
+      } catch (e) {
+        console.warn("Student leave status notification error:", e.message);
+      }
+    }
+    return { success: true };
+  },
+
+  updateFacultyLeaveStatus: async (leaveId, status, approverName, rejectionReason = '') => {
+    await mockDB.delay(50);
+    const local = JSON.parse(localStorage.getItem('acad_faculty_leaves') || '[]');
+    const idx = local.findIndex(l => l.id === leaveId || l.leaveId === leaveId);
+    if (idx !== -1) {
+      local[idx].status = status;
+      local[idx].approvedBy = approverName;
+      if (rejectionReason) local[idx].rejectionReason = rejectionReason;
+      localStorage.setItem('acad_faculty_leaves', JSON.stringify(local));
+
+      try {
+        const facultyId = local[idx].facultyId;
+        if (facultyId) {
+          await mockDB.addNotification(
+            facultyId,
+            `Faculty Leave ${status}`,
+            `Your leave application (${local[idx].fromDate} to ${local[idx].toDate}) was ${status} by ${approverName || 'HOD'}.`
+          );
+        }
+      } catch (e) {
+        console.warn("Faculty leave status notification error:", e.message);
+      }
+    }
+    return { success: true };
   }
 };
 

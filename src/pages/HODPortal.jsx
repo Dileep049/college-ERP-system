@@ -483,7 +483,467 @@ const DepartmentOverview = ({ hod }) => {
 };
 
 // -------------------------------------------------------------
-// 3. BRANCH-LEVEL WARD COUNSELLOR MANAGEMENT VIEW (1 BRANCH = 1 ACTIVE COUNSELLOR)
+// 3. HOD - FACULTY DIRECTORY & ASSIGNMENT SYSTEM
+// -------------------------------------------------------------
+const FacultyDirectory = ({ hod }) => {
+  const [facultyMembers, setFacultyMembers] = useState([]);
+  const [allocations, setAllocations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('directory'); // 'directory' | 'assignments'
+
+  const deptName = hod?.department || 'B.Sc. Computer Science (CS)';
+
+  const emptyFormData = {
+    facultyId: '',
+    facultyEmail: '',
+    facultyPhone: '',
+    department: '',
+    semester: '',
+    section: '',
+    subject: ''
+  };
+
+  const [formData, setFormData] = useState(emptyFormData);
+  const [selectedFaculty, setSelectedFaculty] = useState(null);
+
+  const loadData = async () => {
+    setLoading(true);
+    const facs = await mockDB.getFacultyByDepartment(deptName);
+    const allocs = await mockDB.getSubjectAllocations(deptName);
+    setFacultyMembers(facs);
+    setAllocations(allocs);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [hod]);
+
+  useEffect(() => {
+    const fac = facultyMembers.find(f => f.uid === formData.facultyId);
+    setSelectedFaculty(fac || null);
+  }, [formData.facultyId, facultyMembers]);
+
+  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((email || '').trim());
+  const isValidPhone = (phone) => /^\+?[0-9]{10,15}$/.test((phone || '').trim().replace(/[\s-]/g, ''));
+
+  const isFormValid =
+    formData.facultyId !== '' &&
+    isValidEmail(formData.facultyEmail) &&
+    isValidPhone(formData.facultyPhone) &&
+    formData.department !== '' &&
+    formData.semester !== '' &&
+    formData.section !== '' &&
+    formData.subject !== '';
+
+  const handleAssignSubmit = async (e) => {
+    e.preventDefault();
+    if (!isFormValid) return;
+
+    const fac = facultyMembers.find(f => f.uid === formData.facultyId);
+    await mockDB.assignSubjectToFaculty(
+      formData.department,
+      formData.semester,
+      formData.subject,
+      formData.facultyId,
+      fac?.fullName || 'Faculty Member',
+      formData.section,
+      hod,
+      formData.facultyEmail,
+      formData.facultyPhone
+    );
+
+    setShowAssignModal(false);
+    setFormData(emptyFormData);
+    loadData();
+  };
+
+  const handleRemoveAssignment = async (alloc) => {
+    if (confirm(`Are you sure you want to remove assignment for ${alloc.facultyName} (${alloc.subjectName || alloc.subject})?`)) {
+      await mockDB.removeSubjectAllocation(alloc.id || alloc.allocationId);
+      loadData();
+    }
+  };
+
+  const subjectsForDept = formData.department 
+    ? (BRANCH_SUBJECT_MAP[formData.department] || BRANCH_SUBJECT_MAP['CSE'] || ['Neural Networks & Deep Learning', 'Machine Learning', 'Artificial Intelligence', 'Data Mining', 'Compiler Design', 'Software Engineering'])
+    : ['Neural Networks & Deep Learning', 'Machine Learning', 'Artificial Intelligence', 'Data Mining', 'Compiler Design', 'Software Engineering'];
+
+  const openNewAssignModal = () => {
+    setFormData(emptyFormData);
+    setShowAssignModal(true);
+  };
+
+  const openAssignModalForFaculty = (fac, alloc) => {
+    setFormData({
+      facultyId: fac.uid,
+      facultyEmail: '',
+      facultyPhone: '',
+      department: '',
+      semester: '',
+      section: '',
+      subject: ''
+    });
+    setShowAssignModal(true);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
+        <div>
+          <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+            <Users className="text-purple-600" size={20} />
+            Faculty Directory & Course Allocations
+          </h2>
+          <p className="text-xs text-slate-400">Manage department faculty profiles, academic workload, and class subject assignments</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl text-xs font-bold mr-2">
+            <button
+              onClick={() => setActiveTab('directory')}
+              className={`px-3 py-1.5 rounded-xl uppercase text-[10px] tracking-wider transition-all ${activeTab === 'directory' ? 'bg-white dark:bg-slate-900 text-purple-600 shadow-sm' : 'text-slate-500'}`}
+            >
+              Faculty Directory ({facultyMembers.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('assignments')}
+              className={`px-3 py-1.5 rounded-xl uppercase text-[10px] tracking-wider transition-all ${activeTab === 'assignments' ? 'bg-white dark:bg-slate-900 text-purple-600 shadow-sm' : 'text-slate-500'}`}
+            >
+              Subject Allocations ({allocations.length})
+            </button>
+          </div>
+          <button
+            onClick={openNewAssignModal}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-2xl shadow-lg shadow-purple-500/20 flex items-center gap-2"
+          >
+            <Plus size={16} />
+            <span>Assign Faculty</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Directory Grid View */}
+      {activeTab === 'directory' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {facultyMembers.map((fac) => {
+            const facAlloc = allocations.find(a => a.facultyId === fac.uid);
+            const isAssigned = !!facAlloc;
+
+            return (
+              <div key={fac.uid} className="p-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md hover:shadow-xl transition-all space-y-4 flex flex-col justify-between">
+                <div className="flex items-start gap-4">
+                  {fac.photo || fac.profilePhotoUrl ? (
+                    <img src={fac.photo || fac.profilePhotoUrl} alt={fac.fullName} className="w-14 h-14 rounded-2xl object-cover border-2 border-purple-500/30 shrink-0" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white font-black text-lg flex items-center justify-center shadow-lg shrink-0">
+                      {fac.fullName?.split(' ').map(n => n[0]).slice(0, 2).join('') || 'FC'}
+                    </div>
+                  )}
+                  <div className="overflow-hidden">
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${isAssigned ? 'bg-emerald-500/10 text-emerald-600' : 'bg-slate-100 text-slate-500 dark:bg-slate-800'}`}>
+                        {isAssigned ? 'Assigned' : 'Unassigned'}
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white mt-1 truncate">{fac.fullName}</h3>
+                    <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold">{fac.designation || 'Faculty Member'}</p>
+                    <p className="text-[11px] text-slate-400 truncate">{facAlloc?.facultyEmail || fac.email}</p>
+                    <p className="text-[11px] text-slate-400 font-mono">📞 {facAlloc?.facultyPhone || fac.phoneNumber || fac.mobile || '9876543210'}</p>
+                  </div>
+                </div>
+
+                {/* Assignment Scope Box */}
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800/80 text-xs space-y-1.5">
+                  <div className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Academic Scope</div>
+                  {facAlloc ? (
+                    <>
+                      <div className="font-extrabold text-slate-900 dark:text-white">{facAlloc.subjectName || facAlloc.subject}</div>
+                      <div className="flex items-center gap-3 text-[11px] text-purple-600 dark:text-purple-400 font-bold">
+                        <span>{facAlloc.branch || facAlloc.department}</span>
+                        <span>•</span>
+                        <span>{facAlloc.semester || 'Semester 1'}</span>
+                        <span>•</span>
+                        <span>{facAlloc.section || 'Section A'}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-slate-400 italic text-[11px]">No class / subject currently assigned</div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                  {facAlloc && (
+                    <button
+                      onClick={() => handleRemoveAssignment(facAlloc)}
+                      className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 rounded-xl text-xs font-bold"
+                    >
+                      Remove
+                    </button>
+                  )}
+                  <button
+                    onClick={() => openAssignModalForFaculty(fac, facAlloc)}
+                    className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-md"
+                  >
+                    {facAlloc ? 'Edit Assignment' : 'Assign Faculty'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Assignments Table View */}
+      {activeTab === 'assignments' && (
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden overflow-x-auto">
+          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+              <tr>
+                <th className="p-4">Faculty Name</th>
+                <th className="p-4">Email</th>
+                <th className="p-4">Phone</th>
+                <th className="p-4">Department</th>
+                <th className="p-4">Assigned Subject</th>
+                <th className="p-4 text-center">Semester</th>
+                <th className="p-4 text-center">Section</th>
+                <th className="p-4">Status</th>
+                <th className="p-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {allocations.length === 0 ? (
+                <tr>
+                  <td colSpan="9" className="p-8 text-center text-slate-400">No subject allocations found for {deptName}. Click "Assign Faculty" to create one.</td>
+                </tr>
+              ) : (
+                allocations.map((alloc) => (
+                  <tr key={alloc.id || alloc.allocationId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                    <td className="p-4 font-bold text-slate-900 dark:text-white">{alloc.facultyName}</td>
+                    <td className="p-4 font-medium text-slate-600 dark:text-slate-300">{alloc.facultyEmail || 'N/A'}</td>
+                    <td className="p-4 font-mono text-slate-500">{alloc.facultyPhone || 'N/A'}</td>
+                    <td className="p-4 font-bold text-purple-600">{alloc.branch || alloc.department || deptName}</td>
+                    <td className="p-4 font-black text-slate-800 dark:text-slate-200">{alloc.subjectName || alloc.subject}</td>
+                    <td className="p-4 text-center font-bold text-purple-600">{alloc.semester || 'Semester 1'}</td>
+                    <td className="p-4 text-center font-bold text-indigo-600">{alloc.section || 'Section A'}</td>
+                    <td className="p-4">
+                      <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-full text-[10px] font-bold">
+                        Assigned
+                      </span>
+                    </td>
+                    <td className="p-4 text-right">
+                      <button
+                        onClick={() => handleRemoveAssignment(alloc)}
+                        className="px-2.5 py-1 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 rounded-lg text-[11px] font-bold"
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Assign Faculty Form Modal (MANUAL ENTRY) */}
+      {showAssignModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleAssignSubmit} className="bg-white dark:bg-slate-900 max-w-lg w-full rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <h3 className="text-base font-black text-slate-900 dark:text-white">Assign Faculty Academic Scope</h3>
+                <p className="text-xs text-slate-400">All assignment details must be entered / selected manually by HOD</p>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => {
+                  setShowAssignModal(false);
+                  setFormData(emptyFormData);
+                }} 
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-3.5 text-xs font-semibold">
+              {/* 1. Select Faculty Member */}
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  1. Select Faculty Member <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={formData.facultyId}
+                  onChange={(e) => setFormData({ ...formData, facultyId: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold"
+                >
+                  <option value="">Choose Faculty Member</option>
+                  {facultyMembers.map((f) => (
+                    <option key={f.uid} value={f.uid}>
+                      {f.fullName} — {f.designation || 'Faculty'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 2. Faculty Email - MANUAL */}
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  2. Faculty Email <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. ravi.kumar@kbn.edu"
+                  value={formData.facultyEmail}
+                  onChange={(e) => setFormData({ ...formData, facultyEmail: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold"
+                />
+                {formData.facultyEmail && !isValidEmail(formData.facultyEmail) && (
+                  <p className="text-[10px] text-rose-500 font-bold mt-1">Please enter a valid email format (e.g. name@kbn.edu)</p>
+                )}
+              </div>
+
+              {/* 3. Faculty Phone - MANUAL */}
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  3. Faculty Phone <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. 9876543211"
+                  value={formData.facultyPhone}
+                  onChange={(e) => setFormData({ ...formData, facultyPhone: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold"
+                />
+                {formData.facultyPhone && !isValidPhone(formData.facultyPhone) && (
+                  <p className="text-[10px] text-rose-500 font-bold mt-1">Please enter a valid 10-digit phone number</p>
+                )}
+              </div>
+
+              {/* 4. Department - MANUAL */}
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  4. Department <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={formData.department}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value, subject: '' })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold"
+                >
+                  <option value="">Choose Department</option>
+                  {KBN_BRANCHES.map((b) => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 5 & 6. Semester & Section Grid - MANUAL */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    5. Semester <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={formData.semester}
+                    onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold"
+                  >
+                    <option value="">Choose Semester</option>
+                    {KBN_SEMESTERS.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    6. Section <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={formData.section}
+                    onChange={(e) => setFormData({ ...formData, section: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold"
+                  >
+                    <option value="">Choose Section</option>
+                    <option value="Section A">Section A</option>
+                    <option value="Section B">Section B</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 7. Subject Assignment - MANUAL */}
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  7. Subject Assignment <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={formData.subject}
+                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold"
+                >
+                  <option value="">Choose Subject</option>
+                  {subjectsForDept.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 8. Assignment Preview - Rendered ONLY after all required fields are manually filled */}
+              {isFormValid && selectedFaculty && (
+                <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-2xl text-xs space-y-1.5 animate-in fade-in duration-150">
+                  <div className="font-black text-purple-700 dark:text-purple-300 uppercase tracking-wider text-[9.5px]">
+                    Assignment Preview
+                  </div>
+                  <div className="space-y-0.5 text-slate-800 dark:text-slate-200 font-semibold">
+                    <p><span className="text-slate-400 font-normal">Faculty:</span> <strong className="font-black text-slate-900 dark:text-white">{selectedFaculty.fullName}</strong></p>
+                    <p><span className="text-slate-400 font-normal">Email:</span> <strong className="font-black text-slate-900 dark:text-white">{formData.facultyEmail}</strong></p>
+                    <p><span className="text-slate-400 font-normal">Phone:</span> <strong className="font-black text-slate-900 dark:text-white">{formData.facultyPhone}</strong></p>
+                    <p><span className="text-slate-400 font-normal">Department:</span> <strong className="font-black text-purple-600 dark:text-purple-400">{formData.department}</strong></p>
+                    <p><span className="text-slate-400 font-normal">Semester:</span> <strong className="font-black text-indigo-600">{formData.semester}</strong></p>
+                    <p><span className="text-slate-400 font-normal">Section:</span> <strong className="font-black text-indigo-600">{formData.section}</strong></p>
+                    <p><span className="text-slate-400 font-normal">Subject:</span> <strong className="font-black text-slate-900 dark:text-white">{formData.subject}</strong></p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 9. Buttons */}
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAssignModal(false);
+                  setFormData(emptyFormData);
+                }}
+                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!isFormValid}
+                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all shadow-lg ${
+                  isFormValid
+                    ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-purple-500/20 cursor-pointer'
+                    : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed shadow-none'
+                }`}
+              >
+                Confirm Assignment
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// -------------------------------------------------------------
+// 4. BRANCH-LEVEL WARD COUNSELLOR MANAGEMENT VIEW (1 BRANCH = 1 ACTIVE COUNSELLOR)
 // -------------------------------------------------------------
 const WardCounsellorManagement = ({ hod }) => {
   const [counsellors, setCounsellors] = useState([]);
@@ -662,7 +1122,7 @@ const WardCounsellorManagement = ({ hod }) => {
 
       {/* Active Branch Ward Counsellors Table */}
       {activeTab === 'active' && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden overflow-x-auto">
           <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
             <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
               <tr>
@@ -728,7 +1188,7 @@ const WardCounsellorManagement = ({ hod }) => {
 
       {/* Assignment History Table */}
       {activeTab === 'history' && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden overflow-x-auto">
           {historyList.length === 0 ? (
             <div className="p-8 text-center text-slate-400 text-xs">No historical ward counsellor assignments found.</div>
           ) : (
@@ -956,7 +1416,7 @@ const FacultyLeaveReview = ({ hod }) => {
   const [rejectionReason, setRejectionReason] = useState('');
 
   const loadLeaves = async () => {
-    const list = await mockDB.getFacultyLeavesForHOD(hod?.department);
+    const list = await mockDB.getLeaves('hod', hod?.uid, hod?.department || 'CSE');
     setLeaves(list);
   };
 
@@ -971,7 +1431,7 @@ const FacultyLeaveReview = ({ hod }) => {
   };
 
   const handleApprove = async (leaveId) => {
-    await mockDB.reviewFacultyLeave(leaveId, 'approved', '', hod);
+    await mockDB.reviewLeave(leaveId, 'Approved', 'Approved by HOD', hod);
     setSelectedLeave(null);
     loadLeaves();
   };
@@ -979,7 +1439,7 @@ const FacultyLeaveReview = ({ hod }) => {
   const handleRejectSubmit = async (e) => {
     e.preventDefault();
     if (!rejectionReason.trim()) return alert('Please enter rejection reason.');
-    await mockDB.reviewFacultyLeave(rejectionModalLeave.leaveId, 'rejected', rejectionReason, hod);
+    await mockDB.reviewLeave(rejectionModalLeave.leaveId || rejectionModalLeave.id, 'Rejected', rejectionReason, hod);
     setRejectionModalLeave(null);
     setRejectionReason('');
     setSelectedLeave(null);
@@ -1012,7 +1472,7 @@ const FacultyLeaveReview = ({ hod }) => {
       </div>
 
       {/* Leaves List Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden overflow-x-auto">
         {filteredLeaves.length === 0 ? (
           <div className="p-8 text-center text-slate-400 text-xs">No leave requests found under "{tab}" category.</div>
         ) : (
@@ -1278,7 +1738,7 @@ const HODReports = ({ hod }) => {
       </div>
 
       {/* Report Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden overflow-x-auto">
         <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
           <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
             <tr>
@@ -1329,7 +1789,7 @@ const FacultyWorkloadManagement = ({ hod }) => {
         <p className="text-xs text-slate-400">Monitor teaching hours, assigned subjects, and workload statuses</p>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden overflow-x-auto">
         <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
           <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
             <tr>
@@ -1383,7 +1843,7 @@ const AttendanceMonitoring = ({ hod }) => {
         <h3 className="text-sm font-extrabold text-rose-600 flex items-center gap-2">
           <AlertCircle size={16} /> Students Below 75% Attendance Threshold
         </h3>
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 overflow-hidden overflow-x-auto">
           <table className="w-full text-left text-xs font-semibold">
             <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[9px] text-slate-400">
               <tr>
@@ -1505,45 +1965,8 @@ const HODCurriculum = ({ hod }) => {
 };
 
 // -------------------------------------------------------------
-// 9. OTHER SECTIONS (Faculty Directory, Announcements, Audit Logs, Settings, Unlocks)
+// 9. OTHER SECTIONS (Announcements, Audit Logs, Settings, Unlocks)
 // -------------------------------------------------------------
-const FacultyDirectory = ({ hod }) => {
-  const [faculty, setFaculty] = useState([]);
-
-  useEffect(() => {
-    const users = JSON.parse(localStorage.getItem('acad_users') || '[]');
-    setFaculty(users.filter(u => u.role === 'faculty'));
-  }, [hod]);
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
-        <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">Department Faculty Directory</h2>
-        <p className="text-xs text-slate-400">Complete listing of faculty members and their profiles</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {faculty.map((f) => (
-          <div key={f.uid} className="p-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-purple-500/10 text-purple-600 flex items-center justify-center font-black">
-                {f.fullName[0]}
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">{f.fullName}</h3>
-                <span className="text-[10px] text-slate-400 block">{f.designation || 'Faculty Member'}</span>
-              </div>
-            </div>
-            <div className="text-xs text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <p>Email: {f.email}</p>
-              <p>ID: {f.employeeId || f.uid}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
 
 const DepartmentAnnouncements = ({ hod }) => {
   const [announcements, setAnnouncements] = useState([]);
@@ -1694,7 +2117,7 @@ const HODAuditLogs = ({ hod }) => {
         <p className="text-xs text-slate-400">Security audit trail of all HOD actions and authorization events</p>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden overflow-x-auto">
         <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
           <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
             <tr>

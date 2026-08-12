@@ -140,7 +140,7 @@ const LandingPage = () => {
               <Link
                 key={portal.title}
                 to={portal.link}
-                className="group relative p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/85 hover:border-blue-500 dark:hover:border-blue-500 shadow-xl shadow-slate-100/50 dark:shadow-none hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-56"
+                className="group relative p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/85 hover:border-blue-500 dark:hover:border-blue-500 shadow-xl shadow-slate-100/50 dark:shadow-none hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between min-h-[14rem] h-auto"
               >
                 <div>
                   <div className={`w-11 h-11 rounded-2xl bg-gradient-to-tr ${portal.color} text-white flex items-center justify-center shadow-lg`}>
@@ -180,202 +180,39 @@ function AppContent() {
 
         {/* --- STUDENT PORTAL ROUTES --- */}
         <Route path="/student/login" element={<StudentLogin />} />
-        <Route path="/student/dashboard" element={
-          <ProtectedRoute allowedRole="student">
-            <DashboardLayout>
-              <StudentPortal subPage="dashboard" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/student/marks" element={
-          <ProtectedRoute allowedRole="student">
-            <DashboardLayout>
-              <StudentPortal subPage="marks" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/student/results" element={
-          <ProtectedRoute allowedRole="student">
-            <DashboardLayout>
-              <StudentPortal subPage="results" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/student/assignments" element={
-          <ProtectedRoute allowedRole="student">
-            <DashboardLayout>
-              <StudentPortal subPage="assignments" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/student/leaves" element={
-          <ProtectedRoute allowedRole="student">
-            <DashboardLayout>
-              <StudentPortal subPage="leaves" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/student/notes" element={
-          <ProtectedRoute allowedRole="student">
-            <DashboardLayout>
-              <StudentPortal subPage="notes" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/student/placements" element={
-          <ProtectedRoute allowedRole="student">
-            <DashboardLayout>
-              <StudentPortal subPage="placements" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/student/counselling" element={
-          <ProtectedRoute allowedRole="student">
-            <DashboardLayout>
-              <StudentPortal subPage="counselling" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/student/document-requests" element={
-          <ProtectedRoute allowedRole="student">
-            <DashboardLayout>
-              <StudentPortal subPage="document-requests" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/student/support-desk" element={
-          <ProtectedRoute allowedRole="student">
-            <DashboardLayout>
-              <StudentPortal subPage="support-desk" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
+        {['dashboard', 'profile', 'academic-overview', 'course-registration', 'attendance', 'marks', 'results', 'assignments', 'notes', 'leaves', 'counsellor', 'faculty', 'placements', 'counselling', 'notifications', 'document-requests', 'support-desk', 'performance'].map((subPage) => (
+          <Route key={subPage} path={`/student/${subPage}`} element={
+            <ProtectedRoute allowedRole="student">
+              <DashboardLayout>
+                <StudentPortal subPage={subPage} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } />
+        ))}
 
         {/* --- PARENT PORTAL ROUTES --- */}
         <Route path="/parent/login" element={<ParentLogin />} />
-        <Route path="/parent/dashboard" element={
-          <ProtectedRoute allowedRole="parent">
-            <DashboardLayout>
-              <ParentPortal subPage="dashboard" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/parent/attendance" element={
-          <ProtectedRoute allowedRole="parent">
-            <DashboardLayout>
-              <ParentPortal subPage="attendance" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/parent/leaves" element={
-          <ProtectedRoute allowedRole="parent">
-            <DashboardLayout>
-              <ParentPortal subPage="leaves" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/parent/results" element={
-          <ProtectedRoute allowedRole="parent">
-            <DashboardLayout>
-              <ParentPortal subPage="results" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/parent/assignments" element={
-          <ProtectedRoute allowedRole="parent">
-            <DashboardLayout>
-              <ParentPortal subPage="assignments" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/parent/fees" element={
-          <ProtectedRoute allowedRole="parent">
-            <DashboardLayout>
-              <ParentPortal subPage="fees" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/parent/notifications" element={
-          <ProtectedRoute allowedRole="parent">
-            <DashboardLayout>
-              <ParentPortal subPage="notifications" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/parent/counselling" element={
-          <ProtectedRoute allowedRole="parent">
-            <DashboardLayout>
-              <ParentPortal subPage="counselling" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/parent/grievances" element={
-          <ProtectedRoute allowedRole="parent">
-            <DashboardLayout>
-              <ParentPortal subPage="grievances" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
+        {['dashboard', 'my-ward', 'academic-overview', 'attendance', 'marks', 'results', 'assignments', 'notes', 'leaves', 'counsellor', 'faculty', 'counselling', 'meetings', 'placements', 'monthly-report', 'notifications', 'profile', 'fees', 'grievances'].map((subPage) => (
+          <Route key={subPage} path={`/parent/${subPage}`} element={
+            <ProtectedRoute allowedRole="parent">
+              <DashboardLayout>
+                <ParentPortal subPage={subPage} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } />
+        ))}
 
         {/* --- FACULTY PORTAL ROUTES --- */}
         <Route path="/faculty/login" element={<FacultyLogin />} />
-        <Route path="/faculty/dashboard" element={
-          <ProtectedRoute allowedRole="faculty">
-            <DashboardLayout>
-              <FacultyPortal subPage="dashboard" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/faculty/attendance" element={
-          <ProtectedRoute allowedRole="faculty">
-            <DashboardLayout>
-              <FacultyPortal subPage="attendance" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-
-        <Route path="/faculty/notes" element={
-          <ProtectedRoute allowedRole="faculty">
-            <DashboardLayout>
-              <FacultyPortal subPage="notes" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/faculty/marks" element={
-          <ProtectedRoute allowedRole="faculty">
-            <DashboardLayout>
-              <FacultyPortal subPage="marks" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/faculty/assignments" element={
-          <ProtectedRoute allowedRole="faculty">
-            <DashboardLayout>
-              <FacultyPortal subPage="assignments" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/faculty/leaves" element={
-          <ProtectedRoute allowedRole="faculty">
-            <DashboardLayout>
-              <FacultyPortal subPage="leaves" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/faculty/ward-counselling" element={
-          <ProtectedRoute allowedRole="faculty">
-            <DashboardLayout>
-              <FacultyPortal subPage="ward-counselling" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/faculty/wards" element={
-          <ProtectedRoute allowedRole="faculty">
-            <DashboardLayout>
-              <FacultyPortal subPage="ward-counselling" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
+        {['dashboard', 'classes', 'students', 'attendance', 'marks', 'assignments', 'notes', 'academic-performance', 'student-progress', 'leaves', 'reports', 'profile', 'ward-counselling', 'wards'].map((subPage) => (
+          <Route key={subPage} path={`/faculty/${subPage}`} element={
+            <ProtectedRoute allowedRole="faculty">
+              <DashboardLayout>
+                <FacultyPortal subPage={subPage} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } />
+        ))}
 
         {/* --- HOD PORTAL ROUTES --- */}
         <Route path="/hod/login" element={<HODLogin />} />
@@ -581,41 +418,15 @@ function AppContent() {
 
         {/* --- PLACEMENT PORTAL ROUTES --- */}
         <Route path="/placement/login" element={<PlacementLogin />} />
-        <Route path="/placement/dashboard" element={
-          <ProtectedRoute allowedRole="placement">
-            <DashboardLayout>
-              <PlacementPortal subPage="dashboard" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/placement/drives" element={
-          <ProtectedRoute allowedRole="placement">
-            <DashboardLayout>
-              <PlacementPortal subPage="drives" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/placement/students" element={
-          <ProtectedRoute allowedRole="placement">
-            <DashboardLayout>
-              <PlacementPortal subPage="students" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/placement/partners" element={
-          <ProtectedRoute allowedRole="placement">
-            <DashboardLayout>
-              <PlacementPortal subPage="partners" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/placement/training" element={
-          <ProtectedRoute allowedRole="placement">
-            <DashboardLayout>
-              <PlacementPortal subPage="training" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
+        {['dashboard', 'drives', 'upcoming-drives', 'applications', 'students', 'candidates', 'shortlisted', 'interviews', 'selected', 'partners', 'training', 'analytics', 'reports', 'notifications', 'settings'].map((subPage) => (
+          <Route key={subPage} path={`/placement/${subPage}`} element={
+            <ProtectedRoute allowedRole="placement">
+              <DashboardLayout>
+                <PlacementPortal subPage={subPage} />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } />
+        ))}
 
         {/* --- WARD COUNSELLOR PORTAL ROUTES --- */}
         <Route path="/counsellor/login" element={<CounsellorLogin />} />
