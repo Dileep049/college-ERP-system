@@ -20,7 +20,6 @@ import {
   Trash2, 
   X, 
   RefreshCw, 
-  Sparkles, 
   UserCheck,
   Check,
   AlertTriangle,
@@ -50,65 +49,94 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [modeFilter, setModeFilter] = useState('ALL');
 
-  // 1. AUTOMATIC STUDENT FETCHING FROM FIRESTORE & SCOPE
+  // 1. AUTOMATIC STUDENT FETCHING (Dynamic Scope Query from Firestore)
   const fetchScopeStudents = async () => {
     try {
       let fetched = [];
-      const counsellorDept = counsellor?.assignedBranch || counsellor?.assignedDepartment || counsellor?.department || '';
+      const assignedDept = counsellor?.assignedDepartment || counsellor?.assignedBranch || counsellor?.wardCounsellorDepartment || counsellor?.department || counsellor?.branch || '';
 
       if (isFirebaseConfigured && db) {
         try {
           const usersRef = collection(db, 'users');
-          // Query users collection for role === 'student'
-          const q = query(usersRef, where('role', '==', 'student'));
-          const snap = await getDocs(q);
-          snap.forEach(docSnap => {
-            const data = docSnap.data();
-            fetched.push({ id: docSnap.id, uid: docSnap.id, ...data });
-          });
+          let q;
+
+          // Query Firestore `users` collection matching role === "student" and branch === assignedDepartment
+          if (assignedDept && assignedDept !== 'All' && assignedDept !== 'N/A') {
+            try {
+              q = query(usersRef, where('role', '==', 'student'), where('branch', '==', assignedDept));
+              const snap = await getDocs(q);
+              snap.forEach(docSnap => {
+                fetched.push({ id: docSnap.id, uid: docSnap.id, ...docSnap.data() });
+              });
+            } catch (errBranch) {
+              // Fallback to role == student if compound index isn't created yet
+              q = query(usersRef, where('role', '==', 'student'));
+              const snap = await getDocs(q);
+              snap.forEach(docSnap => {
+                fetched.push({ id: docSnap.id, uid: docSnap.id, ...docSnap.data() });
+              });
+            }
+          } else {
+            q = query(usersRef, where('role', '==', 'student'));
+            const snap = await getDocs(q);
+            snap.forEach(docSnap => {
+              fetched.push({ id: docSnap.id, uid: docSnap.id, ...docSnap.data() });
+            });
+          }
         } catch (fsErr) {
           console.error('[Firestore] Error fetching students:', fsErr);
         }
       }
 
-      // Fallback / Merge mockDB users
+      // Merge mockDB users as fallback for offline/demo environments
       try {
-        const mockUsers = (await mockDB.getAllUsers?.()) || [];
-        const mockStuds = mockUsers.filter(u => u.role === 'student');
-        const seen = new Set(fetched.map(s => s.uid || s.id || s.email));
-        mockStuds.forEach(s => {
-          const key = s.uid || s.id || s.email;
-          if (key && !seen.has(key)) {
-            seen.add(key);
-            fetched.push(s);
-          }
-        });
+        if (mockDB?.getAllUsers) {
+          const mockUsers = await mockDB.getAllUsers();
+          const mockStuds = mockUsers.filter(u => u.role === 'student');
+          const seen = new Set(fetched.map(s => s.uid || s.id || s.email));
+          mockStuds.forEach(s => {
+            const key = s.uid || s.id || s.email;
+            if (key && !seen.has(key)) {
+              seen.add(key);
+              fetched.push(s);
+            }
+          });
+        }
       } catch (e) {
         console.warn('Mock users merge warning:', e);
       }
 
       // Filter by Counsellor Branch/Department Scope if defined
-      if (counsellorDept && counsellorDept !== 'All' && counsellorDept !== 'N/A') {
-        const normDept = counsellorDept.toUpperCase().trim();
-        fetched = fetched.filter(s => {
-          const sDept = (s.department || s.branch || s.assignedBranch || '').toUpperCase().trim();
+      if (assignedDept && assignedDept !== 'All' && assignedDept !== 'N/A') {
+        const normDept = assignedDept.toUpperCase().trim();
+        const filtered = fetched.filter(s => {
+          const sDept = (s.department || s.branch || s.assignedBranch || s.assignedDepartment || '').toUpperCase().trim();
           if (!sDept) return true;
           return (
             sDept === normDept ||
             sDept.includes(normDept) ||
             normDept.includes(sDept) ||
-            (normDept.includes('AI') && sDept.includes('AI'))
+            (normDept.includes('AI') && sDept.includes('AI')) ||
+            (normDept.includes('CS') && (sDept.includes('CS') || sDept.includes('COMPUTER')))
           );
         });
+        if (filtered.length > 0) {
+          fetched = filtered;
+        }
       }
 
       setStudents(fetched);
+
+      // Default select first student if available
+      if (fetched.length > 0 && !selectedStudentId) {
+        setSelectedStudentId(fetched[0].uid || fetched[0].id || '');
+      }
     } catch (err) {
       console.error('Error in fetchScopeStudents:', err);
     }
   };
 
-  // 2. FETCH PARENT MEETINGS FROM FIRESTORE & LOCAL STORAGE
+  // 2. FETCH PARENT MEETINGS FROM FIRESTORE `parentMeetings` COLLECTION
   const fetchParentMeetings = async () => {
     setLoading(true);
     try {
@@ -119,31 +147,52 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
       if (isFirebaseConfigured && db) {
         try {
           const colRef = collection(db, 'parentMeetings');
-          const snap = await getDocs(colRef);
+          let q;
+          if (counsellorId) {
+            q = query(colRef, where('counsellorId', '==', counsellorId));
+          } else {
+            q = colRef;
+          }
+          const snap = await getDocs(q);
           snap.forEach(docSnap => {
             const d = docSnap.data();
             const id = docSnap.id;
             if (!seenIds.has(id)) {
-              if (!counsellorId || !d.counsellorId || d.counsellorId === counsellorId) {
-                seenIds.add(id);
-                list.push({ id, meetingId: id, ...d });
-              }
+              seenIds.add(id);
+              list.push({ id, meetingId: id, ...d });
             }
           });
         } catch (fsErr) {
-          console.error('[Firestore] Error querying parentMeetings:', fsErr);
-          showToast?.(`Firebase Query Error: ${fsErr.message}`, 'error');
+          console.warn('[Firestore] Querying parentMeetings without filter fallback:', fsErr);
+          // Fallback fetch all parentMeetings if index or counsellorId filter fails
+          try {
+            const snap = await getDocs(collection(db, 'parentMeetings'));
+            snap.forEach(docSnap => {
+              const d = docSnap.data();
+              const id = docSnap.id;
+              if (!seenIds.has(id)) {
+                if (!counsellorId || !d.counsellorId || d.counsellorId === counsellorId) {
+                  seenIds.add(id);
+                  list.push({ id, meetingId: id, ...d });
+                }
+              }
+            });
+          } catch (err2) {
+            console.error('Error fetching parentMeetings fallback:', err2);
+          }
         }
       }
 
-      // Local storage fallback
+      // Local storage fallback for seamless local persistence
       try {
         const localData = JSON.parse(localStorage.getItem('acad_parent_meetings') || '[]');
         localData.forEach(m => {
           const id = m.id || m.meetingId;
           if (id && !seenIds.has(id)) {
-            seenIds.add(id);
-            list.push(m);
+            if (!counsellorId || !m.counsellorId || m.counsellorId === counsellorId) {
+              seenIds.add(id);
+              list.push(m);
+            }
           }
         });
       } catch (_) {}
@@ -158,10 +207,8 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
   };
 
   useEffect(() => {
-    if (counsellor) {
-      fetchScopeStudents();
-      fetchParentMeetings();
-    }
+    fetchScopeStudents();
+    fetchParentMeetings();
   }, [counsellor]);
 
   // Set default meeting date to tomorrow
@@ -171,7 +218,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
     setMeetingDate(tomorrow.toISOString().split('T')[0]);
   }, []);
 
-  // 3. SUBMIT SCHEDULED MEETING FORM
+  // 3. SUBMIT SCHEDULED MEETING FORM TO FIRESTORE
   const handleScheduleMeeting = async (e) => {
     e.preventDefault();
 
@@ -191,13 +238,14 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
     setSubmitting(true);
 
     try {
+      // Required schema: counsellorId, studentId, studentName, date, time, mode, reason, notes, status: "Scheduled"
       const payload = {
         counsellorId: counsellor?.uid || counsellor?.id || '',
         counsellorName: counsellor?.fullName || counsellor?.name || 'Ward Counsellor',
         studentId: selectedStudentId,
         studentName: studentName,
         studentRoll: studentRoll,
-        department: selectedStudent?.department || counsellor?.assignedBranch || counsellor?.department || '',
+        department: selectedStudent?.department || selectedStudent?.branch || counsellor?.assignedDepartment || counsellor?.assignedBranch || '',
         date: meetingDate,
         time: meetingTime,
         mode: meetingMode,
@@ -210,7 +258,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
 
       let newId = `meeting-${Date.now()}`;
 
-      // Save to Firestore 'parentMeetings' collection
+      // Save to Firestore `parentMeetings` collection
       if (isFirebaseConfigured && db) {
         try {
           const docRef = await addDoc(collection(db, 'parentMeetings'), {
@@ -222,7 +270,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
           payload.meetingId = newId;
         } catch (fsErr) {
           console.error('[Firestore] addDoc on parentMeetings failed:', fsErr);
-          showToast?.(`Firestore error: ${fsErr.message}`, 'error');
+          showToast?.(`Firestore notice: ${fsErr.message}`, 'warning');
         }
       }
 
@@ -236,8 +284,10 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
       // Reset form & close modal
       setIsModalOpen(false);
       setNotes('');
-      if (students.length > 0) setSelectedStudentId(students[0].uid || students[0].id || '');
-      
+      if (students.length > 0) {
+        setSelectedStudentId(students[0].uid || students[0].id || '');
+      }
+
       fetchParentMeetings();
     } catch (err) {
       console.error('Error scheduling meeting:', err);
@@ -247,7 +297,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
     }
   };
 
-  // 4. UPDATE MEETING STATUS (Completed / No-Show / Cancelled)
+  // 4. UPDATE MEETING STATUS (Completed / No-Show)
   const handleUpdateStatus = async (meetingId, newStatus) => {
     try {
       setSubmitting(true);
@@ -265,7 +315,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
         }
       }
 
-      // Update Local Storage
+      // Update Local Storage fallback
       const localData = JSON.parse(localStorage.getItem('acad_parent_meetings') || '[]');
       const idx = localData.findIndex(m => m.id === meetingId || m.meetingId === meetingId);
       if (idx !== -1) {
@@ -307,7 +357,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
     }
   };
 
-  // Filter Helper Logic
+  // Filter & Dashboard Table Data Logic
   const filteredMeetings = meetings.filter(m => {
     const sName = (m.studentName || '').toLowerCase();
     const reason = (m.reason || '').toLowerCase();
@@ -317,10 +367,12 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
     return matchesSearch && matchesMode;
   });
 
+  // Upcoming Meetings: Filtered where status === "Scheduled", sorted by date (ascending)
   const upcomingMeetings = filteredMeetings
     .filter(m => (m.status || 'Scheduled') === 'Scheduled')
     .sort((a, b) => new Date(`${a.date} ${a.time || '00:00'}`) - new Date(`${b.date} ${b.time || '00:00'}`));
 
+  // Meeting History / Completed Meetings: Filtered where status !== "Scheduled", sorted by date (descending)
   const pastMeetings = filteredMeetings
     .filter(m => (m.status || '') !== 'Scheduled')
     .sort((a, b) => new Date(`${b.date} ${b.time || '00:00'}`) - new Date(`${a.date} ${a.time || '00:00'}`));
@@ -336,11 +388,11 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/15 backdrop-blur-md rounded-full text-xs font-bold border border-white/20">
             <Users size={14} className="text-amber-300" />
-            <span>Parent-Teacher Counselling Portal</span>
+            <span>Parent-Teacher Counselling Module</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Parent & Student Meetings</h1>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Parent Meetings Desk</h1>
           <p className="text-xs sm:text-sm font-medium text-purple-100/90 max-w-xl">
-            Schedule, track, and record official academic counselling sessions with parents for your ward branch.
+            Schedule, track, and manage official parent-teacher counselling sessions for your assigned ward students.
           </p>
         </div>
 
@@ -393,7 +445,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
         </div>
       </div>
 
-      {/* Filter & Search Toolbar */}
+      {/* Toolbar: Search & Filter */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
         <div className="relative w-full sm:w-80">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -401,7 +453,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search student or reason..."
+            placeholder="Search by student name or reason..."
             className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-xs font-semibold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500/30"
           />
         </div>
@@ -423,20 +475,20 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
         </div>
       </div>
 
-      {/* SECTION 1: UPCOMING MEETINGS */}
+      {/* DASHBOARD TABLE 1: UPCOMING MEETINGS (status === "Scheduled") */}
       <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl space-y-6">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
           <div>
             <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
               <Calendar size={18} className="text-purple-600 dark:text-purple-400" />
-              <span>Upcoming Scheduled Meetings</span>
+              <span>Upcoming Meetings</span>
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Active sessions waiting for completion or verification
+              Scheduled parent meetings requiring completion or status update
             </p>
           </div>
           <span className="px-3 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold rounded-xl border border-purple-500/20 text-xs">
-            {upcomingMeetings.length} Pending
+            {upcomingMeetings.length} Scheduled
           </span>
         </div>
 
@@ -450,12 +502,12 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
             <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto text-xl font-bold">
               📅
             </div>
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">No upcoming meetings scheduled.</p>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">No meetings currently scheduled.</p>
             <button
               onClick={() => setIsModalOpen(true)}
               className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow"
             >
-              Schedule First Meeting
+              Schedule New Meeting
             </button>
           </div>
         ) : (
@@ -472,8 +524,8 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                {upcomingMeetings.map((m) => (
-                  <tr key={m.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                {upcomingMeetings.map((m, idx) => (
+                  <tr key={`${m.id || m.meetingId || 'up'}-${idx}`} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center font-bold text-xs">
@@ -481,7 +533,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
                         </div>
                         <div>
                           <p className="font-bold text-slate-900 dark:text-white">{m.studentName}</p>
-                          <p className="text-[10px] text-slate-400">{m.studentRoll || 'Roll N/A'}</p>
+                          <p className="text-[10px] text-slate-400">{m.studentRoll || m.department || 'Student'}</p>
                         </div>
                       </div>
                     </td>
@@ -503,7 +555,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
                       </span>
                     </td>
                     <td className="py-3.5 px-4 max-w-xs truncate text-slate-500 dark:text-slate-400">
-                      {m.notes || 'No notes added'}
+                      {m.notes || '—'}
                     </td>
                     <td className="py-3.5 px-4 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">
@@ -542,7 +594,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
         )}
       </div>
 
-      {/* SECTION 2: MEETING HISTORY / COMPLETED SESSIONS */}
+      {/* DASHBOARD TABLE 2: MEETING HISTORY / COMPLETED MEETINGS */}
       <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl space-y-6">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
           <div>
@@ -551,7 +603,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
               <span>Meeting History & Logged Records</span>
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Completed, No-Show, or archived counselling meetings
+              Completed, No-Show, or archived parent counselling logs
             </p>
           </div>
           <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold rounded-xl border border-emerald-500/20 text-xs">
@@ -571,14 +623,14 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
                   <th className="py-3 px-4">Student</th>
                   <th className="py-3 px-4">Date & Time</th>
                   <th className="py-3 px-4">Mode</th>
-                  <th className="py-3 px-4">Reason</th>
+                  <th className="py-3 px-4">Primary Reason</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4">Notes</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                {pastMeetings.map((m) => (
-                  <tr key={m.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                {pastMeetings.map((m, idx) => (
+                  <tr key={`${m.id || m.meetingId || 'past'}-${idx}`} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                     <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
                       {m.studentName}
                     </td>
@@ -613,7 +665,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
         )}
       </div>
 
-      {/* SCHEDULE MEETING MODAL */}
+      {/* SCHEDULE MEETING MODAL FORM */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200">
@@ -622,7 +674,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
             <div className="p-6 bg-gradient-to-r from-purple-700 to-indigo-700 text-white flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-black tracking-tight">Schedule Parent Meeting</h3>
-                <p className="text-xs text-purple-100/90 mt-0.5">Select a student and set meeting details</p>
+                <p className="text-xs text-purple-100/90 mt-0.5">Fill in session details to schedule</p>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -638,7 +690,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
               {/* 1. Dynamic Student Selector Dropdown */}
               <div>
                 <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1.5">
-                  Select Student (From Assigned Ward Scope) *
+                  Select Student (From Assigned Scope) *
                 </label>
                 <select
                   value={selectedStudentId}
@@ -647,15 +699,15 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-purple-500/30"
                 >
                   {students.length === 0 ? (
-                    <option value="">No students found in scope</option>
+                    <option value="">No students found in assigned scope</option>
                   ) : (
-                    students.map(s => {
+                    students.map((s, idx) => {
                       const uidKey = s.uid || s.id || s.email;
                       const sName = s.fullName || s.name || s.studentName || 'Student';
-                      const sRoll = s.rollNumber ? ` (${s.rollNumber})` : '';
+                      const sRoll = s.rollNumber || s.roll || s.studentId ? ` (${s.rollNumber || s.roll || s.studentId})` : '';
                       const sBranch = s.department || s.branch ? ` - ${s.department || s.branch}` : '';
                       return (
-                        <option key={uidKey} value={uidKey}>
+                        <option key={`${uidKey}-${idx}`} value={uidKey}>
                           {sName}{sRoll}{sBranch}
                         </option>
                       );
@@ -675,7 +727,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
                     value={meetingDate}
                     onChange={(e) => setMeetingDate(e.target.value)}
                     required
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500/30"
                   />
                 </div>
 
@@ -688,7 +740,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
                     value={meetingTime}
                     onChange={(e) => setMeetingTime(e.target.value)}
                     required
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500/30"
                   />
                 </div>
               </div>
@@ -701,7 +753,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
                 <select
                   value={meetingMode}
                   onChange={(e) => setMeetingMode(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold outline-none"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-purple-500/30"
                 >
                   <option value="Campus Visit">Campus Visit</option>
                   <option value="Phone Call">Phone Call</option>
@@ -717,7 +769,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
                 <select
                   value={primaryReason}
                   onChange={(e) => setPrimaryReason(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold outline-none"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-purple-500/30"
                 >
                   <option value="Low Attendance">Low Attendance</option>
                   <option value="Poor Academic Performance">Poor Academic Performance</option>
@@ -735,8 +787,8 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
                   rows={3}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Enter agenda details or notes for parent discussion..."
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none resize-none leading-relaxed"
+                  placeholder="Enter agenda points or notes for parent discussion..."
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none resize-none leading-relaxed focus:ring-2 focus:ring-purple-500/30"
                 />
               </div>
 

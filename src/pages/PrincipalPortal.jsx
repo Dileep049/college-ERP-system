@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { mockDB, KBN_BRANCHES, KBN_SEMESTERS } from '../services/firebase';
+import { COLLEGE_DEPARTMENTS } from '../utils/constants';
 import {
   ResponsiveContainer,
   BarChart,
@@ -42,7 +43,8 @@ import {
   AlertCircle,
   Camera,
   Upload,
-  RotateCcw
+  RotateCcw,
+  Search
 } from 'lucide-react';
 
 export const PrincipalPortal = ({ subPage }) => {
@@ -312,8 +314,8 @@ const PrincipalBranchAnalytics = () => {
         </div>
 
         {/* Branch Bar Chart */}
-        <div className="h-64 mb-8">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="h-64 min-h-[250px] mb-8">
+          <ResponsiveContainer width="100%" height="100%" minHeight={250}>
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
               <XAxis dataKey="branch" stroke="#94A3B8" />
@@ -559,9 +561,9 @@ const PrincipalSemesterResults = () => {
         <div className="flex flex-wrap items-center gap-2">
           <select value={dept} onChange={e => setDept(e.target.value)} className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold">
             <option value="All Departments">All Departments</option>
-            <option value="B.Sc. Computer Science (CS)">CSE</option>
-            <option value="B.Sc. Electronics (ECE)">ECE</option>
-            <option value="B.Sc. Electrical (EEE)">EEE</option>
+            {COLLEGE_DEPARTMENTS.map((d, idx) => (
+              <option key={`${d}-${idx}`} value={d}>{d}</option>
+            ))}
           </select>
           <select value={year} onChange={e => setYear(e.target.value)} className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold">
             <option value="2025-26">2025-26</option>
@@ -622,8 +624,8 @@ const PrincipalSemesterResults = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
           <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-4">Semester-wise Performance Trend</h3>
-          <div className="h-60">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-60 min-h-[240px]">
+            <ResponsiveContainer width="100%" height="100%" minHeight={240}>
               <LineChart data={data.semesterTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
                 <XAxis dataKey="semester" stroke="#94A3B8" />
@@ -637,8 +639,8 @@ const PrincipalSemesterResults = () => {
 
         <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
           <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-4">Branch-wise Semester Performance ({semester})</h3>
-          <div className="h-60">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-60 min-h-[240px]">
+            <ResponsiveContainer width="100%" height="100%" minHeight={240}>
               <BarChart data={data.branchComparison}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
                 <XAxis dataKey="branch" stroke="#94A3B8" />
@@ -736,8 +738,8 @@ const PrincipalAcademicPerformance = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {data.atRiskStudents.map((st) => (
-                <tr key={st.rollNumber} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+              {data.atRiskStudents.map((st, index) => (
+                <tr key={`${st.rollNumber || st.id || 'st'}-${index}`} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                   <td className="p-3 font-mono font-bold">{st.rollNumber}</td>
                   <td className="p-3 font-extrabold text-slate-900 dark:text-white">{st.name}</td>
                   <td className="p-3 font-bold text-purple-600">{st.department}</td>
@@ -761,7 +763,7 @@ const PrincipalAcademicPerformance = () => {
 
 // 5. FACULTY OVERVIEW & HOD COURSE ALLOCATIONS (VIEW ONLY)
 const PrincipalFacultyOverview = ({ principal }) => {
-  const [allocations, setAllocations] = useState([]);
+  const [facultyAllocations, setFacultyAllocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [branchFilter, setBranchFilter] = useState('All Branches');
@@ -771,20 +773,169 @@ const PrincipalFacultyOverview = ({ principal }) => {
 
   const loadData = async () => {
     setLoading(true);
-    const data = await mockDB.getAllFacultyAllocations();
-    setAllocations(data);
-    setLoading(false);
+    try {
+      let facultyList = [];
+      const seenEmails = new Set();
+      const seenUids = new Set();
+
+      // 1. PRIMARY QUERY: Fetch ALL users from Firestore `users` collection where role === 'faculty'
+      if (isFirebaseConfigured && db) {
+        try {
+          const usersRef = collection(db, 'users');
+          const q = query(usersRef, where('role', '==', 'faculty'));
+          const snap = await getDocs(q);
+          snap.forEach(docSnap => {
+            const data = docSnap.data();
+            const uid = docSnap.id;
+            const email = (data.email || '').toLowerCase();
+            if (email) seenEmails.add(email);
+            seenUids.add(uid);
+            facultyList.push({
+              uid,
+              id: uid,
+              facultyId: data.employeeId || data.facultyId || uid,
+              facultyName: data.fullName || data.name || data.facultyName || 'Faculty Member',
+              facultyEmail: data.email || 'N/A',
+              facultyPhone: data.mobile || data.phone || data.contactNumber || 'N/A',
+              facultyDesignation: data.designation || data.facultyDesignation || 'Faculty Member',
+              facultyPhoto: data.photoURL || data.profileImage || data.facultyPhoto || null,
+              department: data.department || data.branch || data.assignedBranch || 'N/A',
+              branch: data.department || data.branch || data.assignedBranch || 'N/A',
+              status: data.status || 'Active',
+              ...data
+            });
+          });
+        } catch (fsErr) {
+          console.error('[Firestore] Error fetching faculty users:', fsErr);
+        }
+      }
+
+      // Fallback/Merge mockDB faculty users for offline/demo environments
+      try {
+        if (mockDB?.getAllUsers) {
+          const allMock = await mockDB.getAllUsers();
+          const mockFaculty = allMock.filter(u => u.role === 'faculty');
+          mockFaculty.forEach(f => {
+            const email = (f.email || '').toLowerCase();
+            const key = f.uid || f.id || email;
+            if ((!email || !seenEmails.has(email)) && (!seenUids.has(key))) {
+              if (email) seenEmails.add(email);
+              seenUids.add(key);
+              facultyList.push({
+                uid: f.uid || f.id,
+                id: f.uid || f.id,
+                facultyId: f.employeeId || f.facultyId || f.uid || f.id,
+                facultyName: f.fullName || f.name || f.facultyName || 'Faculty Member',
+                facultyEmail: f.email || 'N/A',
+                facultyPhone: f.mobile || f.phone || f.contactNumber || 'N/A',
+                facultyDesignation: f.designation || f.facultyDesignation || 'Faculty Member',
+                facultyPhoto: f.photoURL || f.profileImage || f.facultyPhoto || null,
+                department: f.department || f.branch || 'N/A',
+                branch: f.department || f.branch || 'N/A',
+                status: f.status || 'Active',
+                ...f
+              });
+            }
+          });
+        }
+      } catch (mockErr) {
+        console.warn('Mock faculty fetch warning:', mockErr);
+      }
+
+      // 2. SECONDARY DATA: Fetch course allocations separately and map to faculty
+      let allocations = [];
+      if (isFirebaseConfigured && db) {
+        try {
+          const allocSnap = await getDocs(collection(db, 'courseAllocations'));
+          allocSnap.forEach(docSnap => {
+            allocations.push({ id: docSnap.id, allocationId: docSnap.id, ...docSnap.data() });
+          });
+        } catch (allocErr) {
+          console.warn('[Firestore] Error fetching courseAllocations:', allocErr);
+        }
+      }
+
+      // Merge mock course allocations
+      try {
+        if (mockDB?.getAllFacultyAllocations) {
+          const mockAllocs = await mockDB.getAllFacultyAllocations();
+          const seenAllocIds = new Set(allocations.map(a => a.id || a.allocationId));
+          mockAllocs.forEach(ma => {
+            const id = ma.id || ma.allocationId;
+            if (id && !seenAllocIds.has(id)) {
+              seenAllocIds.add(id);
+              allocations.push(ma);
+            }
+          });
+        }
+      } catch (_) {}
+
+      // 3. COMBINE FACULTY WITH ALLOCATIONS OR RENDER UNASSIGNED FALLBACK
+      const combinedRecords = [];
+
+      facultyList.forEach(fac => {
+        const facId = fac.uid || fac.id || fac.employeeId;
+        const facEmail = (fac.facultyEmail || fac.email || '').toLowerCase();
+
+        // Match allocations by faculty UID/ID or Email
+        const matchedAllocations = allocations.filter(a => {
+          const aFacId = a.facultyId || a.uid;
+          const aEmail = (a.facultyEmail || a.email || '').toLowerCase();
+          return (aFacId && (aFacId === facId || aFacId === fac.uid || aFacId === fac.employeeId)) ||
+                 (facEmail && aEmail === facEmail);
+        });
+
+        if (matchedAllocations.length > 0) {
+          matchedAllocations.forEach(alloc => {
+            combinedRecords.push({
+              ...fac,
+              ...alloc,
+              recordKey: `${fac.uid || fac.id}-${alloc.id || alloc.allocationId}`,
+              isAllocated: true,
+              facultyName: fac.facultyName || alloc.facultyName,
+              facultyDesignation: fac.facultyDesignation || alloc.facultyDesignation,
+              facultyEmail: fac.facultyEmail || alloc.facultyEmail,
+              facultyPhone: fac.facultyPhone || alloc.facultyPhone,
+              branch: alloc.branch || alloc.department || fac.department || fac.branch || 'N/A',
+              semester: alloc.semester || 'N/A',
+              section: alloc.section || 'N/A',
+              subjectName: alloc.subjectName || alloc.subject || 'Not Assigned',
+              status: alloc.status || fac.status || 'Active'
+            });
+          });
+        } else {
+          // Rule 3: GRACEFUL FALLBACK - If no subject assignment yet, keep faculty visible with "Not Assigned"
+          combinedRecords.push({
+            ...fac,
+            recordKey: `${fac.uid || fac.id}-unassigned`,
+            isAllocated: false,
+            branch: fac.department || fac.branch || 'N/A',
+            semester: 'Not Assigned',
+            section: 'Not Assigned',
+            subjectName: 'Not Assigned',
+            status: fac.status || 'Active'
+          });
+        }
+      });
+
+      setFacultyAllocations(combinedRecords);
+    } catch (err) {
+      console.error('Error loading faculty overview:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadData();
   }, [principal]);
 
-  const filteredAllocations = allocations.filter((a) => {
+  const filteredAllocations = facultyAllocations.filter((a) => {
     const matchesSearch =
       (a.facultyName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (a.facultyEmail || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (a.subjectName || a.subject || '').toLowerCase().includes(searchTerm.toLowerCase());
+      (a.subjectName || a.subject || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (a.facultyDesignation || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesBranch =
       branchFilter === 'All Branches' ||
@@ -801,10 +952,11 @@ const PrincipalFacultyOverview = ({ principal }) => {
   });
 
   const facultyAllAssignments = selectedFaculty
-    ? allocations.filter(
+    ? facultyAllocations.filter(
         (a) =>
-          a.facultyId === selectedFaculty.facultyId ||
-          a.facultyEmail === selectedFaculty.facultyEmail
+          a.isAllocated &&
+          ((a.uid && a.uid === selectedFaculty.uid) ||
+           (a.facultyEmail && a.facultyEmail === selectedFaculty.facultyEmail))
       )
     : [];
 
@@ -821,8 +973,8 @@ const PrincipalFacultyOverview = ({ principal }) => {
               View Only
             </span>
           </div>
-          <h2 className="text-xl font-black text-slate-900 dark:text-white mt-1">Faculty & Subject Course Allocations</h2>
-          <p className="text-xs text-slate-400 mt-0.5">Real-time breakdown of WHO teaches WHAT subject for WHICH branch, semester & section</p>
+          <h1 className="text-xl font-black text-slate-900 dark:text-white mt-1">Faculty & Subject Course Allocations</h1>
+          <p className="text-xs text-slate-400 mt-0.5">Real-time breakdown of ALL registered faculty members and their subject course allocations</p>
         </div>
       </div>
 
@@ -846,8 +998,8 @@ const PrincipalFacultyOverview = ({ principal }) => {
             className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold"
           >
             <option value="All Branches">All Branches</option>
-            {KBN_BRANCHES.map(b => (
-              <option key={b} value={b}>{b}</option>
+            {KBN_BRANCHES.map((b, idx) => (
+              <option key={`${b}-${idx}`} value={b}>{b}</option>
             ))}
           </select>
 
@@ -878,7 +1030,7 @@ const PrincipalFacultyOverview = ({ principal }) => {
         </div>
 
         <span className="text-[11px] font-bold text-slate-400">
-          Showing {filteredAllocations.length} Faculty Assignments
+          Showing {filteredAllocations.length} Faculty Members & Allocations
         </span>
       </div>
 
@@ -900,16 +1052,16 @@ const PrincipalFacultyOverview = ({ principal }) => {
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {loading ? (
               <tr>
-                <td colSpan="8" className="p-8 text-center text-slate-400 animate-pulse">Loading faculty course allocations...</td>
+                <td colSpan="8" className="p-8 text-center text-slate-400 animate-pulse">Loading faculty user directory...</td>
               </tr>
             ) : filteredAllocations.length === 0 ? (
               <tr>
-                <td colSpan="8" className="p-8 text-center text-slate-400">No faculty assignments match the selected filters.</td>
+                <td colSpan="8" className="p-8 text-center text-slate-400">No faculty accounts match the selected filters.</td>
               </tr>
             ) : (
-              filteredAllocations.map((alloc) => (
+              filteredAllocations.map((alloc, idx) => (
                 <tr
-                  key={alloc.id || alloc.allocationId}
+                  key={alloc.recordKey || `${alloc.uid}-${idx}`}
                   onClick={() => setSelectedFaculty(alloc)}
                   className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 cursor-pointer transition-all"
                 >
@@ -924,19 +1076,55 @@ const PrincipalFacultyOverview = ({ principal }) => {
                       )}
                       <div>
                         <strong className="text-slate-900 dark:text-white font-extrabold text-xs block">{alloc.facultyName}</strong>
-                        <span className="text-[10px] text-slate-400 font-mono">ID: {alloc.facultyId}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">ID: {alloc.facultyId || alloc.uid || 'N/A'}</span>
                       </div>
                     </div>
                   </td>
-                  <td className="p-4 font-bold text-slate-600 dark:text-slate-300">{alloc.facultyDesignation}</td>
+
+                  <td className="p-4 font-bold text-slate-600 dark:text-slate-300">
+                    {alloc.facultyDesignation}
+                  </td>
+
                   <td className="p-4">
                     <span className="text-slate-900 dark:text-white block font-medium">{alloc.facultyEmail}</span>
                     <span className="text-[10px] text-slate-400 font-mono">📞 {alloc.facultyPhone}</span>
                   </td>
-                  <td className="p-4 font-black text-purple-600 dark:text-purple-400">{alloc.branch || alloc.department}</td>
-                  <td className="p-4 text-center font-bold text-indigo-600">{alloc.semester}</td>
-                  <td className="p-4 text-center font-bold text-slate-700 dark:text-slate-300">{alloc.section}</td>
-                  <td className="p-4 font-black text-slate-900 dark:text-white">{alloc.subjectName || alloc.subject}</td>
+
+                  <td className="p-4 font-black">
+                    {alloc.branch && alloc.branch !== 'N/A' ? (
+                      <span className="text-purple-600 dark:text-purple-400">{alloc.branch}</span>
+                    ) : (
+                      <span className="text-slate-400 italic font-normal">Not Assigned</span>
+                    )}
+                  </td>
+
+                  {/* Rule 4: Clean Tailwind CSS fallback for unassigned Semester */}
+                  <td className="p-4 text-center">
+                    {alloc.semester && alloc.semester !== 'Not Assigned' && alloc.semester !== 'N/A' ? (
+                      <span className="font-bold text-indigo-600 dark:text-indigo-400">{alloc.semester}</span>
+                    ) : (
+                      <span className="text-slate-400 italic font-normal">Not Assigned</span>
+                    )}
+                  </td>
+
+                  {/* Rule 4: Clean Tailwind CSS fallback for unassigned Section */}
+                  <td className="p-4 text-center">
+                    {alloc.section && alloc.section !== 'Not Assigned' && alloc.section !== 'N/A' ? (
+                      <span className="font-bold text-slate-700 dark:text-slate-300">{alloc.section}</span>
+                    ) : (
+                      <span className="text-slate-400 italic font-normal">Not Assigned</span>
+                    )}
+                  </td>
+
+                  {/* Rule 4: Clean Tailwind CSS fallback for unassigned Subject */}
+                  <td className="p-4 font-bold">
+                    {alloc.subjectName && alloc.subjectName !== 'Not Assigned' && alloc.subjectName !== 'N/A' ? (
+                      <span className="font-black text-slate-900 dark:text-white">{alloc.subjectName}</span>
+                    ) : (
+                      <span className="text-slate-400 italic font-normal">Not Assigned</span>
+                    )}
+                  </td>
+
                   <td className="p-4 text-center">
                     <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-full text-[10px] font-black">
                       {alloc.status || 'Active'}
@@ -956,7 +1144,7 @@ const PrincipalFacultyOverview = ({ principal }) => {
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
                 <span className="px-2.5 py-0.5 bg-purple-500/10 text-purple-600 text-[10px] font-black uppercase rounded-full">
-                  Faculty Assignment Profile
+                  Faculty Member Profile
                 </span>
                 <h3 className="text-lg font-black text-slate-900 dark:text-white mt-1">{selectedFaculty.facultyName}</h3>
               </div>
@@ -984,23 +1172,32 @@ const PrincipalFacultyOverview = ({ principal }) => {
 
             {/* Assignments List */}
             <div className="space-y-3">
-              <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">Active Academic Assignments ({facultyAllAssignments.length})</h4>
-              {facultyAllAssignments.map((asg, idx) => (
-                <div key={idx} className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-800 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-extrabold text-slate-900 dark:text-white">{asg.subjectName || asg.subject}</span>
-                    <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-full text-[9.5px] font-black">Active</span>
-                  </div>
-                  <div className="text-[11px] text-purple-600 dark:text-purple-400 font-bold">
-                    {asg.branch || asg.department} • {asg.semester} • {asg.section}
-                  </div>
+              <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                Active Academic Assignments ({facultyAllAssignments.length})
+              </h4>
+
+              {facultyAllAssignments.length === 0 ? (
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl text-center text-slate-400 italic font-normal">
+                  No subject course allocations assigned by HOD yet.
                 </div>
-              ))}
+              ) : (
+                facultyAllAssignments.map((asg, idx) => (
+                  <div key={idx} className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-800 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-slate-900 dark:text-white">{asg.subjectName || asg.subject}</span>
+                      <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-full text-[9.5px] font-black">Active</span>
+                    </div>
+                    <div className="text-[11px] text-purple-600 dark:text-purple-400 font-bold">
+                      {asg.branch || asg.department} • {asg.semester} • {asg.section}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
             <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl text-[11px] text-slate-600 dark:text-slate-300">
               <strong className="text-purple-700 dark:text-purple-300 block">📌 Principal View Only:</strong>
-              This allocation was configured by the respective Head of Department (HOD). Principal has read-only audit visibility.
+              This faculty profile is registered in the ERP system. Course assignments are managed by respective HODs.
             </div>
 
             <div className="text-right border-t border-slate-100 dark:border-slate-800 pt-3">

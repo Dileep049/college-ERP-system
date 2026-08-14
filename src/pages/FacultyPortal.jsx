@@ -397,16 +397,23 @@ const FacultyStudents = ({ faculty }) => {
 
 // 4. ATTENDANCE & ATTENDANCE MARKING (AUTOMATIC FACULTY TEACHING SCOPE LOCK)
 const FacultyAttendance = ({ faculty }) => {
+  const facultyDept = getFacultyDept(faculty);
   const [teachingAssignments, setTeachingAssignments] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [lecturePeriod, setLecturePeriod] = useState('Period 2 (10:00 - 11:00 AM)');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+
+  const [semester, setSemester] = useState('Semester 6');
+  const [section, setSection] = useState('Section A');
+  const [subject, setSubject] = useState('Neural Networks & Deep Learning');
 
   const [students, setStudents] = useState([]);
   const [attendanceMap, setAttendanceMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { showToast } = useAuth();
+
+  const availableSubjects = Array.from(new Set([subject, 'Data Structures', 'Operating Systems', 'Machine Learning'].filter(Boolean)));
 
   useEffect(() => {
     const fetchAssigns = async () => {
@@ -530,7 +537,7 @@ const FacultyAttendance = ({ faculty }) => {
           <div>
             <label className="text-[10px] text-slate-400 uppercase font-black block mb-1">Subject *</label>
             <select value={subject} onChange={(e) => setSubject(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold">
-              {availableSubjects.map(subj => <option key={subj} value={subj}>{subj}</option>)}
+              {availableSubjects.map((subj, idx) => <option key={`${subj}-${idx}`} value={subj}>{subj}</option>)}
             </select>
           </div>
 
@@ -631,8 +638,15 @@ const FacultyAttendance = ({ faculty }) => {
 
 // 5. INTERNAL MARKS (AUTOMATIC FACULTY TEACHING SCOPE LOCK)
 const FacultyMarks = ({ faculty }) => {
+  const facultyDept = getFacultyDept(faculty);
   const [teachingAssignments, setTeachingAssignments] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const [semester, setSemester] = useState('Semester 6');
+  const [section, setSection] = useState('Section A');
+  const [subject, setSubject] = useState('Neural Networks & Deep Learning');
+  const availableSubjects = Array.from(new Set([subject, 'Data Structures', 'Operating Systems', 'Machine Learning'].filter(Boolean)));
+
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -657,27 +671,82 @@ const FacultyMarks = ({ faculty }) => {
       if (!currentScope) return;
       try {
         setLoading(true);
-        const data = await mockDB.getStudentsByBranchAndSemester(currentScope.department, currentScope.semester, currentScope.section);
-        setStudents(data);
+        let realStudents = [];
+        if (isFirebaseConfigured && db) {
+          try {
+            const qUsers = query(collection(db, 'users'), where('role', '==', 'student'));
+            const snapUsers = await getDocs(qUsers);
+            const usersList = snapUsers.docs.map(doc => ({ uid: doc.id, id: doc.id, ...doc.data() }));
 
+            const qProf = query(collection(db, 'profiles'), where('role', '==', 'student'));
+            const snapProf = await getDocs(qProf);
+            const profList = snapProf.docs.map(doc => ({ uid: doc.id, id: doc.id, ...doc.data() }));
+
+            const sMap = new Map();
+            [...usersList, ...profList].forEach(s => {
+              if (s.uid) sMap.set(s.uid, s);
+            });
+            realStudents = Array.from(sMap.values());
+          } catch (err) {
+            console.warn("Firestore student roster query failed in FacultyMarks:", err);
+          }
+        }
+
+        const mockData = await mockDB.getStudentsByBranchAndSemester(currentScope.department, currentScope.semester, currentScope.section);
+
+        // Filter students for current scope
+        const combinedMap = new Map();
+        
+        // 1. Primary: Real Firestore student user documents
+        realStudents.forEach(st => {
+          const stDept = (st.department || st.branch || '').trim();
+          const stSem = (st.semester || '').trim();
+          const stSec = (st.section || '').trim();
+
+          const bMatch = !stDept || isDepartmentMatch(currentScope.department, stDept) || isDepartmentMatch(stDept, currentScope.department);
+          const sMatch = !stSem || stSem === 'All' || normalizeSemester(stSem) === normalizeSemester(currentScope.semester);
+          const secMatch = !stSec || stSec === 'All' || normalizeSection(stSec) === normalizeSection(currentScope.section);
+
+          if (bMatch && sMatch && secMatch) {
+            const key = st.uid || st.id || st.rollNumber;
+            if (key) combinedMap.set(key, st);
+          }
+        });
+
+        // 2. Secondary: Mock data ONLY if no Firestore students match
+        if (combinedMap.size === 0) {
+          mockData.forEach(st => {
+            const key = st.uid || st.id || st.rollNumber;
+            if (key) combinedMap.set(key, st);
+          });
+        }
+
+        const finalStudentList = Array.from(combinedMap.values());
+        setStudents(finalStudentList);
+
+        // Load existing published/saved marks
+        const existingMarks = await mockDB.getBranchMarks(currentScope.department, currentScope.semester, subject);
         const map = {};
-        data.forEach(s => {
+        finalStudentList.forEach(s => {
           const uid = s.uid || s.studentId || s.rollNumber;
+          const roll = s.rollNumber || s.hallTicketNumber || s.studentRollNumber;
+          const matchedMark = existingMarks.find(m => (roll && (m.rollNumber === roll || m.studentRollNumber === roll)) || (uid && (m.studentId === uid || m.studentUid === uid)));
+
           map[uid] = {
-            mid1: s.mid1 || 16,
-            mid2: s.mid2 || 17,
-            assignments: s.assignmentMarks || 8
+            mid1: matchedMark ? matchedMark.mid1 : (s.mid1 || 16),
+            mid2: matchedMark ? matchedMark.mid2 : (s.mid2 || 17),
+            assignments: matchedMark ? matchedMark.assignments : (s.assignmentMarks || s.assignments || 8)
           };
         });
         setMarksMap(map);
       } catch (e) {
-        console.error(e);
+        console.error("Error loading student roster in FacultyMarks:", e);
       } finally {
         setLoading(false);
       }
     };
     if (currentScope) loadMarks();
-  }, [selectedIndex, teachingAssignments]);
+  }, [selectedIndex, teachingAssignments, subject]);
 
   if (!loading && teachingAssignments.length === 0) {
     return (
@@ -709,29 +778,35 @@ const FacultyMarks = ({ faculty }) => {
       setSaving(true);
       const records = students.map(s => {
         const uid = s.uid || s.studentId || s.rollNumber;
+        const roll = s.rollNumber || s.hallTicketNumber || s.studentRollNumber || uid;
         const m = marksMap[uid] || { mid1: 16, mid2: 17, assignments: 8 };
-        const total = m.mid1 + m.mid2 + m.assignments;
+        const total = (Number(m.mid1) || 0) + (Number(m.mid2) || 0) + (Number(m.assignments) || 0);
+
         return {
           studentId: uid,
-          rollNumber: s.rollNumber,
-          studentName: s.fullName || s.studentName,
+          studentUid: uid,
+          rollNumber: roll,
+          studentRollNumber: roll,
+          studentName: s.fullName || s.name || s.studentName || 'Student',
           department: facultyDept,
-          semester,
-          section,
-          subject,
-          mid1: m.mid1,
-          mid2: m.mid2,
-          assignments: m.assignments,
-          total,
-          facultyId: faculty?.uid,
-          facultyName: faculty?.fullName || 'Faculty'
+          branch: facultyDept,
+          semester: currentScope?.semester || semester,
+          section: currentScope?.section || section,
+          subject: subject,
+          mid1: Number(m.mid1) || 0,
+          mid2: Number(m.mid2) || 0,
+          assignments: Number(m.assignments) || 0,
+          total: total,
+          status: 'Published',
+          facultyId: faculty?.uid || faculty?.id || 'fac-1',
+          facultyName: faculty?.fullName || faculty?.name || 'Faculty'
         };
       });
 
       await mockDB.saveInternalMarksBatch(records);
-      showToast(`Internal marks saved & published for ${facultyDept} students.`, 'success');
+      showToast(`Internal marks saved & published for ${records.length} students.`, 'success');
     } catch (e) {
-      console.error(e);
+      console.error("Error saving internal marks:", e);
       showToast('Could not save marks.', 'error');
     } finally {
       setSaving(false);
@@ -783,7 +858,7 @@ const FacultyMarks = ({ faculty }) => {
           <div>
             <label className="text-[10px] text-slate-400 uppercase font-black block mb-1">Subject *</label>
             <select value={subject} onChange={(e) => setSubject(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border rounded-xl font-bold">
-              {availableSubjects.map(subj => <option key={subj} value={subj}>{subj}</option>)}
+              {availableSubjects.map((subj, idx) => <option key={`${subj}-${idx}`} value={subj}>{subj}</option>)}
             </select>
           </div>
         </div>

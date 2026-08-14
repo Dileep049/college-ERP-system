@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { db } from '../services/firebase';
+import { db, isFirebaseConfigured, mockDB, isDepartmentMatch, normalizeSemester, normalizeSection } from '../services/firebase';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { 
   GraduationCap, 
@@ -46,39 +46,55 @@ export const StudentDashboard = ({ onNavigate }) => {
 
         if (userSnap.exists()) {
           const data = userSnap.data();
+          const rawSec = data.section || user.section || 'A';
+          const formattedSec = String(rawSec).trim().startsWith('Section') ? String(rawSec).trim() : `Section ${String(rawSec).trim()}`;
+          const rawSem = data.semester || user.semester || 'Semester 1';
+          const formattedSem = String(rawSem).trim().startsWith('Semester') ? String(rawSem).trim() : `Semester ${String(rawSem).trim()}`;
+
           setProfile({
             uid,
             fullName: data.fullName || user.fullName || 'Student',
             email: data.email || user.email,
             rollNumber: data.rollNumber || data.studentId || user.rollNumber || 'STU-2026',
-            branch: data.branch || data.department || user.department || user.branch || 'Computer Science & Engineering',
-            semester: data.semester || user.semester || 'Semester 1',
-            section: data.section || user.section || 'Section A',
+            branch: data.branch || data.department || user.department || user.branch || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)',
+            semester: formattedSem,
+            section: formattedSec,
+            rawSection: rawSec,
             gpa: data.gpa || data.cgpa || '8.5'
           });
         } else {
           // Fallback to user context parameters if document missing
+          const rawSec = user.section || 'A';
+          const formattedSec = String(rawSec).trim().startsWith('Section') ? String(rawSec).trim() : `Section ${String(rawSec).trim()}`;
+          const rawSem = user.semester || 'Semester 1';
+          const formattedSem = String(rawSem).trim().startsWith('Semester') ? String(rawSem).trim() : `Semester ${String(rawSem).trim()}`;
+
           setProfile({
             uid,
             fullName: user.fullName || user.name || 'Student',
             email: user.email,
             rollNumber: user.rollNumber || 'STU-2026',
-            branch: user.department || user.branch || 'Computer Science & Engineering',
-            semester: user.semester || 'Semester 1',
-            section: user.section || 'Section A',
+            branch: user.department || user.branch || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)',
+            semester: formattedSem,
+            section: formattedSec,
+            rawSection: rawSec,
             gpa: user.cgpa || '8.5'
           });
         }
       } catch (err) {
-        console.error("[Firestore] Error fetching student profile:", err);
+        console.error("Firestore Fetch Error (Student Profile):", err.message);
+        const rawSec = user?.section || 'A';
+        const formattedSec = String(rawSec).trim().startsWith('Section') ? String(rawSec).trim() : `Section ${String(rawSec).trim()}`;
+
         setProfile({
-          uid: user.uid || user.id,
-          fullName: user.fullName || 'Student',
-          email: user.email,
-          rollNumber: user.rollNumber || 'STU-2026',
-          branch: user.department || user.branch || 'Computer Science & Engineering',
-          semester: user.semester || 'Semester 1',
-          section: user.section || 'Section A',
+          uid: user?.uid || user?.id,
+          fullName: user?.fullName || 'Student',
+          email: user?.email,
+          rollNumber: user?.rollNumber || 'STU-2026',
+          branch: user?.department || user?.branch || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)',
+          semester: user?.semester || 'Semester 1',
+          section: formattedSec,
+          rawSection: rawSec,
           gpa: '8.5'
         });
       } finally {
@@ -97,49 +113,149 @@ export const StudentDashboard = ({ onNavigate }) => {
       setLoadingData(true);
       try {
         const studentUid = profile.uid;
+        const dept = (profile.branch || '').trim();
+        const sem = (profile.semester || '').trim();
+        const sec = (profile.section || '').trim();
+        const rawSec = (profile.rawSection || sec).trim();
 
-        // Query Assignments (Filter by student's branch, semester, section)
-        const assignmentsQuery = query(
-          collection(db, 'assignments'),
-          where('branch', '==', profile.branch),
-          where('semester', '==', profile.semester),
-          where('section', '==', profile.section)
-        );
+        // 1. QUERY ASSIGNMENTS
+        let firestoreAssignments = [];
+        if (isFirebaseConfigured && db) {
+          try {
+            const assRef = collection(db, 'assignments');
+            const qAss = query(
+              assRef,
+              where('targetBranch', '==', dept),
+              where('targetSemester', '==', sem),
+              where('targetSection', '==', sec)
+            );
+            const snapAss = await getDocs(qAss);
+            firestoreAssignments = snapAss.docs.map(d => ({ id: d.id, assignmentId: d.id, ...d.data() }));
+          } catch (err) {
+            console.error("Firestore Fetch Error:", err.message);
+            if (err.code) console.error("Firestore Error Code:", err.code);
+            try {
+              const snapAll = await getDocs(collection(db, 'assignments'));
+              firestoreAssignments = snapAll.docs.map(d => ({ id: d.id, assignmentId: d.id, ...d.data() }));
+            } catch (fallbackErr) {
+              console.error("Firestore Fetch Error (Assignments Fallback):", fallbackErr.message);
+            }
+          }
+        }
 
-        // Query Study Notes (Filter by student's branch, semester, section)
-        const notesQuery = query(
-          collection(db, 'notes'),
-          where('department', '==', profile.branch),
-          where('semester', '==', profile.semester),
-          where('section', '==', profile.section)
-        );
+        let mockAss = [];
+        try {
+          mockAss = await mockDB.getAssignments(dept, sem, sec);
+        } catch (e) {
+          console.warn("MockDB getAssignments fallback:", e);
+        }
 
-        // Query Attendance Records for this Student
-        const attendanceQuery = query(
-          collection(db, 'attendance'),
-          where('studentId', '==', studentUid)
-        );
+        const combinedAssMap = new Map();
+        [...firestoreAssignments, ...mockAss].forEach(item => {
+          const key = item.id || item.assignmentId;
+          if (key) combinedAssMap.set(key, item);
+        });
 
-        // Query Internal Marks for this Student
-        const marksQuery = query(
-          collection(db, 'internal_marks'),
-          where('studentId', '==', studentUid)
-        );
+        const filteredAssignments = Array.from(combinedAssMap.values()).filter(a => {
+          const aBranch = (a.targetBranch || a.branch || a.department || '').trim();
+          const aSem = (a.targetSemester || a.semester || '').trim();
+          const aSec = (a.targetSection || a.section || '').trim();
 
-        const [assignSnap, notesSnap, attSnap, marksSnap] = await Promise.all([
-          getDocs(assignmentsQuery).catch(() => ({ docs: [] })),
-          getDocs(notesQuery).catch(() => ({ docs: [] })),
-          getDocs(attendanceQuery).catch(() => ({ docs: [] })),
-          getDocs(marksQuery).catch(() => ({ docs: [] }))
-        ]);
+          const branchOk = !aBranch || isDepartmentMatch(dept, aBranch) || isDepartmentMatch(aBranch, dept);
+          const semOk = !aSem || aSem === 'All' || normalizeSemester(aSem) === normalizeSemester(sem);
+          const secOk = !aSec || aSec === 'All' || aSec === 'All Sections' || normalizeSection(aSec) === normalizeSection(sec) || normalizeSection(aSec) === normalizeSection(rawSec);
 
-        setAssignments(assignSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-        setNotes(notesSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-        setAttendanceRecords(attSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-        setInternalMarks(marksSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+          return branchOk && semOk && secOk;
+        });
+
+        setAssignments(filteredAssignments);
+
+        // 2. QUERY STUDY NOTES
+        let firestoreNotes = [];
+        if (isFirebaseConfigured && db) {
+          try {
+            const notesRef = collection(db, 'notes');
+            const qNotes = query(
+              notesRef,
+              where('targetBranch', '==', dept),
+              where('targetSemester', '==', sem),
+              where('targetSection', '==', sec)
+            );
+            const snapNotes = await getDocs(qNotes);
+            firestoreNotes = snapNotes.docs.map(d => ({ id: d.id, noteId: d.id, ...d.data() }));
+          } catch (err) {
+            console.error("Firestore Fetch Error:", err.message);
+            if (err.code) console.error("Firestore Error Code:", err.code);
+            try {
+              const snapAllNotes = await getDocs(collection(db, 'notes'));
+              firestoreNotes = snapAllNotes.docs.map(d => ({ id: d.id, noteId: d.id, ...d.data() }));
+            } catch (fallbackErr) {
+              console.error("Firestore Fetch Error (Notes Fallback):", fallbackErr.message);
+            }
+          }
+        }
+
+        let mockNotes = [];
+        try {
+          mockNotes = await mockDB.getStudyNotes ? await mockDB.getStudyNotes(dept, sem, sec) : (await mockDB.getNotes(dept, sem, sec));
+        } catch (e) {
+          console.warn("MockDB getNotes fallback:", e);
+        }
+
+        const combinedNotesMap = new Map();
+        [...firestoreNotes, ...mockNotes].forEach(item => {
+          const key = item.id || item.noteId;
+          if (key) combinedNotesMap.set(key, item);
+        });
+
+        const filteredNotes = Array.from(combinedNotesMap.values()).filter(n => {
+          const nBranch = (n.targetBranch || n.department || n.branch || '').trim();
+          const nSem = (n.targetSemester || n.semester || '').trim();
+          const nSec = (n.targetSection || n.section || '').trim();
+
+          const branchOk = !nBranch || isDepartmentMatch(dept, nBranch) || isDepartmentMatch(nBranch, dept);
+          const semOk = !nSem || nSem === 'All' || normalizeSemester(nSem) === normalizeSemester(sem);
+          const secOk = !nSec || nSec === 'All' || nSec === 'All Sections' || normalizeSection(nSec) === normalizeSection(sec) || normalizeSection(nSec) === normalizeSection(rawSec);
+
+          return branchOk && semOk && secOk;
+        });
+
+        setNotes(filteredNotes);
+
+        // 3. Query Attendance Records for this Student
+        let attDocs = [];
+        if (isFirebaseConfigured && db) {
+          try {
+            const attendanceQuery = query(
+              collection(db, 'attendance'),
+              where('studentId', '==', studentUid)
+            );
+            const attSnap = await getDocs(attendanceQuery);
+            attDocs = attSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+          } catch (err) {
+            console.error("Firestore Fetch Error (Attendance):", err.message);
+          }
+        }
+        setAttendanceRecords(attDocs);
+
+        // 4. Query Internal Marks for this Student
+        let marksDocs = [];
+        if (isFirebaseConfigured && db) {
+          try {
+            const marksQuery = query(
+              collection(db, 'internal_marks'),
+              where('studentId', '==', studentUid)
+            );
+            const marksSnap = await getDocs(marksQuery);
+            marksDocs = marksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+          } catch (err) {
+            console.error("Firestore Fetch Error (Marks):", err.message);
+          }
+        }
+        setInternalMarks(marksDocs);
 
       } catch (err) {
-        console.error("[Firestore] Error executing dependent queries:", err);
+        console.error("Firestore Fetch Error:", err.message);
       } finally {
         setLoadingData(false);
       }

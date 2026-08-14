@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { mockDB, KBN_BRANCHES, KBN_SEMESTERS, BRANCH_SUBJECT_MAP } from '../services/firebase';
+import { db, isFirebaseConfigured, mockDB, KBN_BRANCHES, KBN_SEMESTERS, BRANCH_SUBJECT_MAP, isDepartmentMatch, normalizeSemester, normalizeSection } from '../services/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { StudentDashboard } from '../components/StudentDashboard';
+import { StudentMarks } from '../components/StudentMarks';
 import { 
   LayoutDashboard,
   UserCheck,
@@ -307,94 +309,7 @@ const StudentAttendance = ({ student, isParent }) => {
   );
 };
 
-// 6. MY INTERNAL MARKS
-const StudentMarks = ({ student, isParent }) => {
-  const [loading, setLoading] = useState(true);
-  const [marks, setMarks] = useState([]);
-
-  useEffect(() => {
-    const loadMarks = async () => {
-      try {
-        setLoading(true);
-        const data = await mockDB.getInternalMarks(student?.department, student?.semester, null);
-        const uid = student?.uid || student?.studentId;
-        const myMarks = data.filter(m => m.studentId === uid || m.rollNumber === student?.rollNumber);
-        setMarks(myMarks);
-      } catch (e) {
-        console.error("Error loading internal marks:", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadMarks();
-  }, [student]);
-
-  const defaultMarks = [
-    { subject: 'Neural Networks & Deep Learning', mid1: 17, mid2: 18, assignments: 9, total: 44 },
-    { subject: 'Cloud Computing & DevOps', mid1: 15, mid2: 16, assignments: 8, total: 39 },
-    { subject: 'AI & Data Engineering Lab', mid1: 18, mid2: 19, assignments: 10, total: 47 }
-  ];
-
-  const displayList = marks.length > 0 ? marks : defaultMarks;
-
-  return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
-      <div className="border-b pb-4">
-        <h3 className="text-base font-black text-slate-900 dark:text-white">My Internal Marks Ledger (Read-Only)</h3>
-        <p className="text-xs text-slate-400">Mid 1 (20) + Mid 2 (20) + Assignments (10) = Total (50 Marks)</p>
-      </div>
-
-      {loading ? (
-        <div className="py-12 text-center animate-pulse text-slate-400">Loading internal marks ledger...</div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 text-[10px]">
-                <th className="px-5 py-3">Subject</th>
-                <th className="px-5 py-3 text-center">Mid 1 (20)</th>
-                <th className="px-5 py-3 text-center">Mid 2 (20)</th>
-                <th className="px-5 py-3 text-center">Assignments (10)</th>
-                <th className="px-5 py-3 text-center">Total (50)</th>
-                <th className="px-5 py-3 text-right">Performance Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-bold">
-              {displayList.map((m, idx) => {
-                const total = m.total !== undefined ? m.total : ((m.mid1 || 0) + (m.mid2 || 0) + (m.assignments || 0));
-                const pct = (total / 50) * 100;
-                let statusLabel = 'Excellent';
-                let statusClass = 'bg-emerald-500/10 text-emerald-600';
-                if (pct < 50) {
-                  statusLabel = 'Needs Improvement';
-                  statusClass = 'bg-rose-500/10 text-rose-500';
-                } else if (pct < 70) {
-                  statusLabel = 'Satisfactory';
-                  statusClass = 'bg-amber-500/10 text-amber-500';
-                }
-
-                return (
-                  <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
-                    <td className="px-5 py-4 font-black text-slate-900 dark:text-white">{m.subject}</td>
-                    <td className="px-5 py-4 text-center">{m.mid1 || 0}</td>
-                    <td className="px-5 py-4 text-center">{m.mid2 || 0}</td>
-                    <td className="px-5 py-4 text-center">{m.assignments || 0}</td>
-                    <td className="px-5 py-4 text-center font-black text-blue-600">{total} / 50</td>
-                    <td className="px-5 py-4 text-right">
-                      <span className={`px-3 py-1 rounded-xl text-[9.5px] uppercase font-bold ${statusClass}`}>
-                        {statusLabel}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-};
+// 6. MY INTERNAL MARKS (Imported from ../components/StudentMarks)
 
 // 7. SEMESTER RESULTS
 const StudentResults = ({ student, isParent }) => {
@@ -443,13 +358,61 @@ const StudentAssignments = ({ student, isParent }) => {
     const loadAssignments = async () => {
       try {
         setLoading(true);
-        const dept = student?.department || student?.branch || 'CSE';
-        const sem = student?.semester || student?.courseSemester || 'Semester 1';
-        const sec = student?.section || 'All';
-        const data = await mockDB.getAssignments(dept, sem, sec);
-        setAssignments(data);
+        const rawDept = student?.department || student?.branch || 'B.Sc. Computer Science (CS)';
+        const rawSem = student?.semester || student?.courseSemester || 'Semester 1';
+        const rawSec = student?.section || 'Section A';
+
+        const dept = String(rawDept).trim();
+        const sem = String(rawSem).trim();
+        const sec = String(rawSec).trim();
+
+        let firestoreList = [];
+
+        if (isFirebaseConfigured && db) {
+          try {
+            const assRef = collection(db, 'assignments');
+            const q = query(
+              assRef,
+              where('targetBranch', '==', dept),
+              where('targetSemester', '==', sem),
+              where('targetSection', '==', sec)
+            );
+            const snap = await getDocs(q);
+            firestoreList = snap.docs.map(doc => ({ id: doc.id, assignmentId: doc.id, ...doc.data() }));
+          } catch (error) {
+            console.error("FIREBASE FETCH ERROR:", error.message);
+            try {
+              const snapAll = await getDocs(collection(db, 'assignments'));
+              firestoreList = snapAll.docs.map(doc => ({ id: doc.id, assignmentId: doc.id, ...doc.data() }));
+            } catch (e2) {
+              console.error("FIREBASE FETCH ERROR:", e2.message);
+            }
+          }
+        }
+
+        const mockData = await mockDB.getAssignments(dept, sem, sec);
+
+        const combinedMap = new Map();
+        [...firestoreList, ...mockData].forEach(item => {
+          const key = item.id || item.assignmentId;
+          if (key) combinedMap.set(key, item);
+        });
+
+        const filtered = Array.from(combinedMap.values()).filter(a => {
+          const aBranch = (a.targetBranch || a.department || a.branch || '').trim();
+          const aSem = (a.targetSemester || a.semester || '').trim();
+          const aSec = (a.targetSection || a.section || '').trim();
+
+          const branchOk = !aBranch || isDepartmentMatch(dept, aBranch) || isDepartmentMatch(aBranch, dept);
+          const semOk = !aSem || aSem === 'All' || normalizeSemester(aSem) === normalizeSemester(sem);
+          const secOk = !aSec || aSec === 'All' || aSec === 'All Sections' || normalizeSection(aSec) === normalizeSection(sec);
+
+          return branchOk && semOk && secOk;
+        });
+
+        setAssignments(filtered);
       } catch (e) {
-        console.error(e);
+        console.error("StudentAssignments error:", e);
       } finally {
         setLoading(false);
       }
@@ -459,9 +422,14 @@ const StudentAssignments = ({ student, isParent }) => {
 
   return (
     <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
-      <div className="border-b pb-4">
-        <h3 className="text-base font-black text-slate-900 dark:text-white">Class Assignments Ledger</h3>
-        <p className="text-xs text-slate-400">Homework & lab task submissions allocated for your class</p>
+      <div className="border-b pb-4 font-bold flex items-center justify-between">
+        <div>
+          <h3 className="text-base font-black text-slate-900 dark:text-white">Class Assignments Ledger</h3>
+          <p className="text-xs text-slate-400">Homework & lab task submissions allocated for your class</p>
+        </div>
+        <div className="px-3 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl text-[11px]">
+          {student?.department || 'CS'} • {student?.semester || 'Sem 1'} • {student?.section || 'Sec A'}
+        </div>
       </div>
 
       {loading ? (
@@ -501,15 +469,61 @@ const StudentNotes = ({ student, isParent }) => {
     const loadNotes = async () => {
       try {
         setLoading(true);
-        const dept = student?.department || student?.branch || 'CSE';
-        const sem = student?.semester || student?.courseSemester || 'Semester 1';
-        const sec = student?.section || 'All';
+        const rawDept = student?.department || student?.branch || 'B.Sc. Computer Science (CS)';
+        const rawSem = student?.semester || student?.courseSemester || 'Semester 1';
+        const rawSec = student?.section || 'Section A';
 
-        console.log("StudentNotes querying for:", { dept, sem, sec });
-        const data = await mockDB.getNotes(dept, sem, sec);
-        setNotes(data);
+        const dept = String(rawDept).trim();
+        const sem = String(rawSem).trim();
+        const sec = String(rawSec).trim();
+
+        let firestoreList = [];
+
+        if (isFirebaseConfigured && db) {
+          try {
+            const notesRef = collection(db, 'notes');
+            const q = query(
+              notesRef,
+              where('targetBranch', '==', dept),
+              where('targetSemester', '==', sem),
+              where('targetSection', '==', sec)
+            );
+            const snap = await getDocs(q);
+            firestoreList = snap.docs.map(doc => ({ noteId: doc.id, id: doc.id, ...doc.data() }));
+          } catch (error) {
+            console.error("FIREBASE FETCH ERROR:", error.message);
+            try {
+              const snapAll = await getDocs(collection(db, 'notes'));
+              firestoreList = snapAll.docs.map(doc => ({ noteId: doc.id, id: doc.id, ...doc.data() }));
+            } catch (e2) {
+              console.error("FIREBASE FETCH ERROR:", e2.message);
+            }
+          }
+        }
+
+        const mockData = await mockDB.getNotes(dept, sem, sec);
+
+        const combinedMap = new Map();
+        [...firestoreList, ...mockData].forEach(item => {
+          const key = item.noteId || item.id;
+          if (key) combinedMap.set(key, item);
+        });
+
+        const filtered = Array.from(combinedMap.values()).filter(n => {
+          const nBranch = (n.targetBranch || n.department || n.branch || '').trim();
+          const nSem = (n.targetSemester || n.semester || '').trim();
+          const nSec = (n.targetSection || n.section || '').trim();
+
+          const branchOk = !nBranch || isDepartmentMatch(dept, nBranch) || isDepartmentMatch(nBranch, dept);
+          const semOk = !nSem || nSem === 'All' || normalizeSemester(nSem) === normalizeSemester(sem);
+          const secOk = !nSec || nSec === 'All' || nSec === 'All Sections' || normalizeSection(nSec) === normalizeSection(sec);
+
+          return branchOk && semOk && secOk;
+        });
+
+        setNotes(filtered);
       } catch (e) {
-        console.error("StudentNotes fetch error:", e);
+        console.error("StudentNotes error:", e);
       } finally {
         setLoading(false);
       }

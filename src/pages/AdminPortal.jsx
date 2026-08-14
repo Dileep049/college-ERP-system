@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { mockDB, KBN_BRANCHES, KBN_SEMESTERS, BRANCH_SUBJECT_MAP } from '../services/firebase';
+import { COLLEGE_DEPARTMENTS } from '../utils/constants';
 import { 
   Users, 
   UserPlus, 
@@ -374,26 +375,28 @@ export const AdminPortal = () => {
       ? '+' + formMobile.trim().replace(/\D/g, '')
       : `${formCountryCode}${formMobile.replace(/\D/g, '')}`;
 
+    const cleanSec = formSection.startsWith('Section') ? formSection : `Section ${formSection}`;
+
     try {
       if (editingUser) {
         const updatedFields = {
           fullName: formFullName,
           role: formRole,
           department: formDepartment,
-          semester: formRole === 'student' ? formSemester : null,
+          semester: (formRole === 'student' || formRole === 'faculty') ? formSemester : null,
+          section: (formRole === 'student' || formRole === 'faculty') ? cleanSec : null,
+          academicYear: (formRole === 'student' || formRole === 'faculty') ? formAcademicYear : null,
           rollNumber: formRole === 'student' ? formRollNumber : null,
-          employeeId: formRole !== 'student' ? formEmployeeId : null,
+          employeeId: formRole !== 'student' && formRole !== 'admin' ? formEmployeeId : null,
           mobile: cleanMobile,
           phoneNumber: cleanMobile,
           phoneVerified: true,
-          subjects: formRole === 'faculty' ? formSubjects.split(',').map(s => s.trim()) : null,
+          subjects: formRole === 'faculty' ? (formSubjects ? formSubjects.split(',').map(s => s.trim()) : []) : null,
           // Advanced student fields
           hallTicketNumber: formRole === 'student' ? formHallTicketNumber : null,
-          section: formRole === 'student' ? formSection : null,
           parentName: formRole === 'student' ? formParentName : null,
           parentMobile: formParentMobile,
           parentEmail: formRole === 'student' ? formParentEmail : null,
-          academicYear: formRole === 'student' ? formAcademicYear : null
         };
         await mockDB.updateUser(editingUser.uid, updatedFields);
         showToast('User directory updated successfully.', 'success');
@@ -404,20 +407,20 @@ export const AdminPortal = () => {
           fullName: formFullName,
           role: formRole,
           department: formDepartment,
-          semester: formRole === 'student' ? formSemester : null,
+          semester: (formRole === 'student' || formRole === 'faculty') ? formSemester : null,
+          section: (formRole === 'student' || formRole === 'faculty') ? cleanSec : null,
+          academicYear: (formRole === 'student' || formRole === 'faculty') ? formAcademicYear : null,
           rollNumber: formRole === 'student' ? formRollNumber : null,
-          employeeId: formRole !== 'student' ? formEmployeeId : null,
+          employeeId: formRole !== 'student' && formRole !== 'admin' ? formEmployeeId : null,
           mobile: cleanMobile,
           phoneNumber: cleanMobile,
           phoneVerified: true,
-          subjects: formRole === 'faculty' ? formSubjects.split(',').map(s => s.trim()) : null,
+          subjects: formRole === 'faculty' ? (formSubjects ? formSubjects.split(',').map(s => s.trim()) : []) : null,
           // Advanced student fields
           hallTicketNumber: formRole === 'student' ? formHallTicketNumber : null,
-          section: formRole === 'student' ? formSection : null,
           parentName: formRole === 'student' ? formParentName : null,
           parentMobile: formParentMobile,
           parentEmail: formRole === 'student' ? formParentEmail : null,
-          academicYear: formRole === 'student' ? formAcademicYear : null
         };
         await mockDB.createUser(newUserObj);
         showToast('New ERP user account provisioned.', 'success');
@@ -1405,7 +1408,7 @@ export const AdminPortal = () => {
                   >
                     <option value="N/A">N/A</option>
                     <option value="All">All</option>
-                    {KBN_BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+                    {COLLEGE_DEPARTMENTS.map((b, idx) => <option key={`${b}-${idx}`} value={b}>{b}</option>)}
                   </select>
                 </div>
               </div>
@@ -1491,9 +1494,64 @@ export const AdminPortal = () => {
                 </div>
               )}
 
+              {formRole === 'faculty' && (
+                <div className="space-y-4 border-t border-slate-100 dark:border-slate-800 pt-4">
+                  <div className="border-b border-slate-100 dark:border-slate-800 pb-2">
+                    <span className="text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-wider">Faculty Academic Scope Config</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-450 mb-1">Semester *</label>
+                      <select
+                        value={formSemester}
+                        onChange={(e) => setFormSemester(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                      >
+                        <option value="Semester 1">Semester 1</option>
+                        <option value="Semester 2">Semester 2</option>
+                        <option value="Semester 3">Semester 3</option>
+                        <option value="Semester 4">Semester 4</option>
+                        <option value="Semester 5">Semester 5</option>
+                        <option value="Semester 6">Semester 6</option>
+                        <option value="Semester 7">Semester 7</option>
+                        <option value="Semester 8">Semester 8</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-450 mb-1">Section *</label>
+                      <select
+                        value={formSection}
+                        onChange={(e) => setFormSection(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                      >
+                        <option value="Section A">Section A</option>
+                        <option value="Section B">Section B</option>
+                        <option value="Section C">Section C</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Academic Year *</label>
+                      <input
+                        type="text"
+                        placeholder="2026-2027"
+                        value={formAcademicYear}
+                        onChange={(e) => setFormAcademicYear(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {formRole !== 'student' && formRole !== 'admin' && (
                 <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
-                  <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Employee ID</label>
+                  <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Employee ID *</label>
                   <input type="text" placeholder="FAC-CSE-012" value={formEmployeeId} onChange={(e) => setFormEmployeeId(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
                 </div>
               )}

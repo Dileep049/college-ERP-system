@@ -662,17 +662,21 @@ const FacultyManagement = ({ hod }) => {
                       {(fac.fullName || fac.name || 'FC').split(' ').map(n => n[0]).slice(0, 2).join('')}
                     </div>
                   )}
-                  <div className="overflow-hidden">
-                    <div className="flex items-center gap-2">
+                  <div className="overflow-hidden space-y-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-full text-[9px] font-black uppercase">
-                        Status: Active
+                        Status: {fac.status || 'Active'}
+                      </span>
+                      <span className="px-2 py-0.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-full text-[9px] font-black uppercase">
+                        AY: {fac.academicYear || '2026-2027'}
                       </span>
                     </div>
                     <h3 className="text-sm font-black text-slate-900 dark:text-white mt-1 truncate">{fac.fullName || fac.name}</h3>
-                    <p className="text-[11px] text-purple-600 dark:text-purple-400 font-mono">ID: {fac.facultyId || fac.employeeId || facId}</p>
-                    <p className="text-[11px] text-slate-400 truncate">{fac.email}</p>
-                    <p className="text-[11px] text-slate-400 font-mono">📞 {fac.phone || fac.mobile || '9876543211'}</p>
-                    <p className="text-[11px] text-slate-500 font-semibold mt-0.5">Dept: {fac.department || deptName}</p>
+                    <p className="text-[11px] text-purple-600 dark:text-purple-400 font-mono">Employee ID: {fac.employeeId || fac.facultyId || facId}</p>
+                    <p className="text-[11px] text-slate-400 truncate">Email: {fac.email}</p>
+                    <p className="text-[11px] text-slate-400 font-mono">Phone: {fac.phone || fac.mobile || fac.phoneNumber || '9876543211'}</p>
+                    <p className="text-[11px] text-slate-500 font-semibold">Dept: {fac.department || deptName}</p>
+                    <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold">Scope: {fac.semester || 'Semester 1'} • {fac.section?.startsWith('Section') ? fac.section : `Section ${fac.section || 'A'}`}</p>
                   </div>
                 </div>
 

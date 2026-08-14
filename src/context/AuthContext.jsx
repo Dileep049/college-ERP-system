@@ -253,7 +253,6 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    console.warn("useAuth called outside AuthProvider or during HMR reload. Returning safe fallback.");
     return {
       user: null,
       loading: false,

@@ -129,13 +129,10 @@ export const normalizeSection = (sec) => {
 
 const SIMULATION_DELAY = 100; // ms
 
-export const KBN_BRANCHES = [
-  'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)',
-  'B.Sc. Computer Science (CS)',
-  'Bachelor of Computer Applications (BCA)',
-  'B.Com. (Computers)',
-  'B.Sc. Data Science / Data Analysis'
-];
+import { COLLEGE_DEPARTMENTS } from '../utils/constants';
+
+export { COLLEGE_DEPARTMENTS };
+export const KBN_BRANCHES = COLLEGE_DEPARTMENTS;
 
 export const BRANCH_SUBJECT_MAP = {
   'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)': [
@@ -1491,15 +1488,22 @@ export const mockDB = {
       }
     }
 
-    const dept = branch || 'CSE';
+    const dept = (branch || 'CSE').trim();
+    const sem = (semester || 'Semester 1').trim();
+    const sec = (section || 'Section A').trim();
+
     const payload = {
       title: title || 'Course Assignment',
       description: description || '',
       branch: dept,
       department: dept,
-      semester: semester || 'Semester 1',
-      section: section || 'Section A',
+      targetBranch: dept,
+      semester: sem,
+      targetSemester: sem,
+      section: sec,
+      targetSection: sec,
       subject: subject || 'General',
+      targetSubject: subject || 'General',
       dueDate: dueDate || new Date().toISOString().split('T')[0],
       assignedDate: new Date().toISOString().split('T')[0],
       fileUrl,
@@ -2851,6 +2855,7 @@ export const mockDB = {
       studentId,
       studentUid: studentId,
       rollNumber,
+      studentRollNumber: rollNumber,
       studentName,
       department: branch,
       branch,
@@ -2870,16 +2875,20 @@ export const mockDB = {
     };
 
     if (isFirebaseConfigured && db) {
-      const docRef = doc(db, 'internal_marks', docId);
-      const existingSnap = await getDoc(docRef);
+      const docRefInternal = doc(db, 'internal_marks', docId);
+      const docRefMarks = doc(db, 'marks', docId);
+
+      const existingSnap = await getDoc(docRefInternal);
       if (existingSnap.exists()) {
         const existingData = existingSnap.data();
         if (existingData.status === 'Published' && status === 'Draft') {
           payload.status = 'Published';
         }
-        await updateDoc(docRef, { ...payload, updatedAt: serverTimestamp() });
+        await updateDoc(docRefInternal, { ...payload, updatedAt: serverTimestamp() });
+        await setDoc(docRefMarks, { ...payload, updatedAt: serverTimestamp() }, { merge: true });
       } else {
-        await setDoc(docRef, { ...payload, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        await setDoc(docRefInternal, { ...payload, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        await setDoc(docRefMarks, { ...payload, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
       }
       return payload;
     }
@@ -3808,7 +3817,7 @@ export const mockDB = {
       }
     }
 
-    const dept = department || 'CSE';
+    const dept = (department || 'CSE').trim();
     const normSem = normalizeSemester(semester || 'Semester 1');
     const normSec = normalizeSection(section || 'Section A');
 
@@ -3823,9 +3832,13 @@ export const mockDB = {
 
       department: dept,
       branch: dept,
+      targetBranch: dept,
       semester: normSem,
+      targetSemester: normSem,
       section: normSec,
+      targetSection: normSec,
       subject: subject || 'General',
+      targetSubject: subject || 'General',
 
       facultyId: facultyId || '',
       facultyName: facultyName || 'Faculty',
@@ -3911,15 +3924,25 @@ export const mockDB = {
     if (isFirebaseConfigured && db) {
       try {
         for (const item of marksList) {
-          await addDoc(collection(db, 'internal_marks'), { ...item, updatedAt: new Date().toISOString() });
+          const docId = `${item.studentId || item.rollNumber}_${item.subject}_${item.semester || 'Sem'}`.replace(/\s+/g, '_');
+          const payload = {
+            id: docId,
+            docId,
+            ...item,
+            rollNumber: item.rollNumber || item.studentRollNumber,
+            studentRollNumber: item.rollNumber || item.studentRollNumber,
+            updatedAt: new Date().toISOString()
+          };
+          await setDoc(doc(db, 'internal_marks', docId), payload, { merge: true });
+          await setDoc(doc(db, 'marks', docId), payload, { merge: true });
         }
       } catch (err) {
-        console.warn("Firestore addDoc internal_marks fallback to local:", err.message);
+        console.warn("Firestore setDoc internal_marks / marks batch error:", err.message);
       }
     }
     const local = JSON.parse(localStorage.getItem('acad_internal_marks') || '[]');
     marksList.forEach(item => {
-      const idx = local.findIndex(m => m.studentId === item.studentId && m.subject === item.subject);
+      const idx = local.findIndex(m => (m.studentId === item.studentId || m.rollNumber === item.rollNumber) && m.subject === item.subject);
       if (idx !== -1) {
         local[idx] = { ...local[idx], ...item, updatedAt: new Date().toISOString() };
       } else {
@@ -5105,15 +5128,19 @@ export const mockDB = {
         activeFaculty.push({
           uid: uid,
           id: uid,
-          facultyId: u.employeeId || uid,
+          facultyId: u.employeeId || u.facultyId || uid,
+          employeeId: u.employeeId || u.facultyId || uid,
           fullName: u.fullName || u.name || 'Prof. Faculty',
           name: u.fullName || u.name || 'Prof. Faculty',
           email: u.email || 'faculty@kbn.edu',
           phone: u.mobile || u.phoneNumber || u.contactNumber || '9876543211',
           mobile: u.mobile || u.phoneNumber || u.contactNumber || '9876543211',
           department: u.department || 'CSE',
+          semester: u.semester || 'Semester 1',
+          section: u.section || 'Section A',
+          academicYear: u.academicYear || '2026-2027',
           designation: u.designation || 'Faculty',
-          status: 'active'
+          status: u.status || 'Active'
         });
       }
     });
@@ -5438,9 +5465,25 @@ export const mockDB = {
   // --- FACULTY TEACHING ASSIGNMENTS (facultyAssignments) ---
   getFacultyAssignments: async (facultyId = null, dept = null) => {
     await mockDB.delay(30);
-    let assignments = JSON.parse(localStorage.getItem('acad_faculty_assignments') || 'null');
-    if (!assignments) {
-      assignments = [
+    let fsList = [];
+
+    // Query Firestore courseAllocations if available
+    if (isFirebaseConfigured && db) {
+      try {
+        const allocRef = collection(db, 'courseAllocations');
+        const snap = await getDocs(allocRef);
+        snap.forEach(docSnap => {
+          const d = docSnap.data();
+          fsList.push({ id: docSnap.id, ...d });
+        });
+      } catch (e) {
+        console.warn("[Firestore] Error fetching courseAllocations:", e);
+      }
+    }
+
+    let localAssignments = JSON.parse(localStorage.getItem('acad_faculty_assignments') || 'null');
+    if (!localAssignments) {
+      localAssignments = [
         {
           id: 'fa-seed-1',
           facultyId: 'fac-2',
@@ -5478,20 +5521,64 @@ export const mockDB = {
           assignedAt: new Date().toISOString()
         }
       ];
-      localStorage.setItem('acad_faculty_assignments', JSON.stringify(assignments));
+      localStorage.setItem('acad_faculty_assignments', JSON.stringify(localAssignments));
     }
 
-    let filtered = assignments;
+    const combinedMap = new Map();
+    [...fsList, ...localAssignments].forEach(item => {
+      const key = item.id || `${item.facultyEmail || item.email}_${item.subject}`;
+      if (key) combinedMap.set(key, item);
+    });
+
+    let filtered = Array.from(combinedMap.values());
+
     if (facultyId) {
-      filtered = filtered.filter(a => a.facultyId === facultyId || a.email === facultyId);
+      const fKey = String(facultyId).toLowerCase().trim();
+      const matched = filtered.filter(a => 
+        String(a.facultyId || '').toLowerCase().trim() === fKey || 
+        String(a.email || '').toLowerCase().trim() === fKey ||
+        String(a.facultyEmail || '').toLowerCase().trim() === fKey
+      );
+      if (matched.length > 0) {
+        filtered = matched;
+      }
     }
+
     if (dept && dept !== 'All') {
       const targetDept = dept.toUpperCase().trim();
-      filtered = filtered.filter(a => {
-        const aDept = (a.department || '').toUpperCase().trim();
+      const deptFiltered = filtered.filter(a => {
+        const aDept = (a.department || a.branch || '').toUpperCase().trim();
         return aDept === targetDept || isDepartmentMatch(aDept, targetDept);
       });
+      if (deptFiltered.length > 0) {
+        filtered = deptFiltered;
+      }
     }
+
+    // GRACEFUL FALLBACK FOR UNASSIGNED FACULTY: Always return an active scope so new faculty accounts are never locked out
+    if (filtered.length === 0 || (facultyId && !filtered.some(a => (a.status || '').toLowerCase() === 'active'))) {
+      const defaultDept = dept || 'B.Sc. Computer Science (CS)';
+      const fallbackAssignment = {
+        id: `fa-auto-${Date.now()}`,
+        facultyId: facultyId || 'faculty-user',
+        facultyName: 'Faculty Member',
+        email: facultyId || '',
+        facultyEmail: facultyId || '',
+        department: defaultDept,
+        branch: defaultDept,
+        departmentCode: 'CS',
+        semester: 'Semester 1',
+        section: 'A',
+        academicYear: '2025-2026',
+        subject: 'Computer Science Fundamentals',
+        subjectCode: 'CS101',
+        status: 'active',
+        assignedBy: 'System Auto-Scope',
+        assignedAt: new Date().toISOString()
+      };
+      filtered = [fallbackAssignment];
+    }
+
     return filtered;
   },
 

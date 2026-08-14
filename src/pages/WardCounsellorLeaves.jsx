@@ -96,72 +96,63 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [submittingAction, setSubmittingAction] = useState(false);
 
-  // 1. FETCH COUNSELLOR SCOPE & FILTERED LEAVES
-  const fetchScopeAndLeaves = async () => {
+  // 1. REAL-TIME DATA FETCHING (onSnapshot) & SCOPE RESOLUTION
+  useEffect(() => {
+    if (!counsellor) return;
+
+    let currentBranch = counsellor?.assignedBranch || counsellor?.department || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)';
+    let currentSem = counsellor?.assignedSemester || counsellor?.semester || 'Semester 2';
+    let currentSec = counsellor?.assignedSection || counsellor?.section || 'Section A';
+
+    setScope({
+      assignedBranch: currentBranch,
+      assignedSemester: currentSem,
+      assignedSection: currentSec
+    });
+
+    let unsubscribes = [];
+
+    if (isFirebaseConfigured && db) {
+      setLoading(true);
+      const collectionsToQuery = ['leaves', 'leave_requests', 'student_leaves'];
+      const realTimeMap = {};
+
+      collectionsToQuery.forEach(colName => {
+        try {
+          const colRef = collection(db, colName);
+          const unsub = onSnapshot(colRef, (snapshot) => {
+            snapshot.forEach(docSnap => {
+              const d = docSnap.data();
+              const id = docSnap.id;
+              realTimeMap[id] = { id, leaveId: id, _col: colName, ...d };
+            });
+            processAllLeaves(Object.values(realTimeMap), currentBranch, currentSem, currentSec);
+            setLoading(false);
+          }, (err) => {
+            console.error(`[onSnapshot Error] ${colName}:`, err);
+            setLoading(false);
+          });
+          unsubscribes.push(unsub);
+        } catch (e) {
+          console.error(`Error setting up onSnapshot for ${colName}:`, e);
+        }
+      });
+    } else {
+      fetchOfflineScopeAndLeaves(currentBranch, currentSem, currentSec);
+    }
+
+    return () => {
+      unsubscribes.forEach(unsub => unsub());
+    };
+  }, [counsellor]);
+
+  // Offline / Manual Refresh Fetch
+  const fetchOfflineScopeAndLeaves = async (currentBranch, currentSem, currentSec) => {
     try {
       setLoading(true);
-
-      // Determine active assignment scope
-      let currentBranch = counsellor?.assignedBranch || counsellor?.department || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)';
-      let currentSem = counsellor?.assignedSemester || counsellor?.semester || 'Semester 2';
-      let currentSec = counsellor?.assignedSection || counsellor?.section || 'Section A';
-
-      if (isFirebaseConfigured && db && (counsellor?.uid || counsellor?.id)) {
-        try {
-          const assignQuery = query(
-            collection(db, 'wardCounsellorAssignments'),
-            where('wardCounsellorId', '==', counsellor.uid || counsellor.id),
-            where('status', '==', 'active')
-          );
-          const assignSnap = await getDocs(assignQuery);
-          if (!assignSnap.empty) {
-            const data = assignSnap.docs[0].data();
-            currentBranch = data.department || data.branch || currentBranch;
-            currentSem = data.semester || currentSem;
-            currentSec = data.section || currentSec;
-          }
-        } catch (e) {
-          console.warn("[Firestore] Could not load active assignment scope:", e);
-        }
-      }
-
-      setScope({
-        assignedBranch: currentBranch,
-        assignedSemester: currentSem,
-        assignedSection: currentSec
-      });
-
-      // Fetch leaves matching exact academic scope
       let rawList = [];
       const seenIds = new Set();
 
-      // Query Firestore collections loosely (without composite index constraint)
-      if (isFirebaseConfigured && db) {
-        const collectionsToQuery = ['leaves', 'leave_requests', 'student_leaves'];
-
-        for (const colName of collectionsToQuery) {
-          try {
-            const colRef = collection(db, colName);
-            const snap = await getDocs(colRef);
-            snap.forEach(docSnap => {
-              const d = docSnap.data();
-              const id = docSnap.id;
-              if (!seenIds.has(id)) {
-                seenIds.add(id);
-                rawList.push({ id, leaveId: id, ...d });
-              }
-            });
-          } catch (fsErr) {
-            console.error(`🔥 FIREBASE ERROR (Collection '${colName}'):`, fsErr);
-            showToast?.(`Firebase Error on ${colName}: ${fsErr.message}`, 'error');
-            if (fsErr.message?.includes('index') || fsErr.code === 'failed-precondition') {
-              console.error(`🔥 MISSING COMPOSITE INDEX ERROR ON ${colName}:`, fsErr.message);
-            }
-          }
-        }
-      }
-
-      // Merge mockDB / local storage fallback leaves
       try {
         const mockRes = await mockDB.getLeaves('counsellor', counsellor?.uid || 'counsellor', {
           assignedDepartment: currentBranch,
@@ -175,152 +166,227 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
             rawList.push(l);
           }
         });
-      } catch (mockErr) {
-        console.warn("Error fetching mock leaves:", mockErr);
-      }
+      } catch (_) {}
 
-      // Local storage direct merge
-      ['acad_student_leaves', 'acad_leave_requests'].forEach(key => {
-        try {
-          const localItems = JSON.parse(localStorage.getItem(key) || '[]');
-          localItems.forEach(item => {
-            const id = item.id || item.leaveId;
-            if (id && !seenIds.has(id)) {
-              seenIds.add(id);
-              rawList.push(item);
-            }
-          });
-        } catch (_) {}
-      });
-
-      // Apply Client-Side Scope Normalization Filter
-      const allLeaves = rawList.filter(item => {
-        const itemBranch = item.branch || item.department || '';
-        const itemSem = item.semester || '';
-        const itemSec = item.section || '';
-        return isScopeMatch(itemBranch, itemSem, itemSec, currentBranch, currentSem, currentSec);
-      });
-
-      // Calculate monthly leave count per student
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
-      const statsMap = {};
-
-      allLeaves.forEach(l => {
-        const studentKey = l.studentId || l.rollNumber || l.studentName;
-        if (!studentKey) return;
-
-        if (!statsMap[studentKey]) {
-          statsMap[studentKey] = { monthlyApproved: 0, totalApproved: 0 };
-        }
-
-        if (l.status === 'Approved') {
-          statsMap[studentKey].totalApproved += 1;
-
-          const leaveDate = new Date(l.startDate || l.fromDate || l.submittedAt || Date.now());
-          if (leaveDate.getMonth() === currentMonth && leaveDate.getFullYear() === currentYear) {
-            statsMap[studentKey].monthlyApproved += 1;
-          }
-        }
-      });
-      setStudentMonthlyStats(statsMap);
-
-      // Separate into Pending vs Processed (Approved/Rejected)
-      const pending = allLeaves.filter(l => (l.status || 'Pending').toLowerCase() === 'pending');
-      const processed = allLeaves.filter(l => (l.status || '').toLowerCase() === 'approved' || (l.status || '').toLowerCase() === 'rejected');
-
-      // Sort newest first
-      const sortByDate = (a, b) => new Date(b.submittedAt || b.startDate || 0) - new Date(a.submittedAt || a.startDate || 0);
-      pending.sort(sortByDate);
-      processed.sort(sortByDate);
-
-      setPendingLeaves(pending);
-      setProcessedLeaves(processed);
+      processAllLeaves(rawList, currentBranch, currentSem, currentSec);
     } catch (err) {
-      console.error("Error fetching ward counsellor leaves:", err);
-      showToast('Could not load student leave applications.', 'error');
+      console.error("Error fetching offline leaves:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (counsellor) {
-      fetchScopeAndLeaves();
-    }
-  }, [counsellor]);
+  const fetchScopeAndLeaves = () => {
+    fetchOfflineScopeAndLeaves(scope.assignedBranch, scope.assignedSemester, scope.assignedSection);
+  };
 
-  // 2. APPROVE LEAVE HANDLER
+  // Helper to process, scope-filter, and separate Pending vs Processed Leaves
+  const processAllLeaves = (rawList, currentBranch, currentSem, currentSec) => {
+    const listCopy = [...rawList];
+    const seenIds = new Set(listCopy.map(l => l.id || l.leaveId));
+
+    // Merge Local Storage fallback items
+    ['acad_student_leaves', 'acad_leave_requests'].forEach(key => {
+      try {
+        const localItems = JSON.parse(localStorage.getItem(key) || '[]');
+        localItems.forEach(item => {
+          const id = item.id || item.leaveId;
+          if (id && !seenIds.has(id)) {
+            seenIds.add(id);
+            listCopy.push(item);
+          }
+        });
+      } catch (_) {}
+    });
+
+    // Filter by Counsellor Academic Scope
+    const scopedLeaves = listCopy.filter(item => {
+      const itemBranch = item.branch || item.department || '';
+      const itemSem = item.semester || '';
+      const itemSec = item.section || '';
+      return isScopeMatch(itemBranch, itemSem, itemSec, currentBranch, currentSem, currentSec);
+    });
+
+    // Calculate monthly stats per student
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const statsMap = {};
+
+    scopedLeaves.forEach(l => {
+      const studentKey = l.studentId || l.rollNumber || l.studentName;
+      if (!studentKey) return;
+
+      if (!statsMap[studentKey]) {
+        statsMap[studentKey] = { monthlyApproved: 0, totalApproved: 0 };
+      }
+
+      if (l.status === 'Approved') {
+        statsMap[studentKey].totalApproved += 1;
+        const leaveDate = new Date(l.startDate || l.fromDate || l.submittedAt || Date.now());
+        if (leaveDate.getMonth() === currentMonth && leaveDate.getFullYear() === currentYear) {
+          statsMap[studentKey].monthlyApproved += 1;
+        }
+      }
+    });
+    setStudentMonthlyStats(statsMap);
+
+    // Rule 2: Separate into two distinct state arrays:
+    // a) pendingLeaves: status === "Pending"
+    // b) processedLeaves: status === "Approved" || status === "Rejected"
+    const pending = scopedLeaves.filter(l => (l.status || 'Pending').toLowerCase() === 'pending');
+    const processed = scopedLeaves.filter(l => (l.status || '').toLowerCase() === 'approved' || (l.status || '').toLowerCase() === 'rejected');
+
+    const sortByDate = (a, b) => new Date(b.submittedAt || b.startDate || 0) - new Date(a.submittedAt || a.startDate || 0);
+    pending.sort(sortByDate);
+    processed.sort(sortByDate);
+
+    setPendingLeaves(pending);
+    setProcessedLeaves(processed);
+  };
+
+  // 2. FIRESTORE APPROVE LEAVE LOGIC (Rule 1 & 3)
   const handleApprove = async (leave) => {
     const leaveId = leave.id || leave.leaveId;
-    const counsellorName = counsellor.fullName || counsellor.name || 'Ward Counsellor';
+    const counsellorName = counsellor?.fullName || counsellor?.name || 'Ward Counsellor';
 
     try {
       setSubmittingAction(true);
+
+      // Update Firestore using updateDoc
       if (isFirebaseConfigured && db && leaveId) {
         try {
-          const leaveRef = doc(db, 'leaves', leaveId);
+          const colName = leave._col || 'leaves';
+          const leaveRef = doc(db, colName, leaveId);
           await updateDoc(leaveRef, {
             status: 'Approved',
             actionBy: counsellorName,
             approvedBy: counsellorName,
-            actionAt: new Date().toISOString(),
+            actionAt: serverTimestamp(),
             updatedAt: serverTimestamp()
           });
         } catch (fsErr) {
-          console.warn("[Firestore] Approve update warning:", fsErr);
+          console.warn("[Firestore] Col fallback updateDoc attempt:", fsErr);
+          try {
+            await updateDoc(doc(db, 'leaves', leaveId), {
+              status: 'Approved',
+              actionBy: counsellorName,
+              approvedBy: counsellorName,
+              actionAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            });
+          } catch (_) {}
         }
       }
 
-      await mockDB.reviewLeave(leaveId, 'Approved', 'Approved by Ward Counsellor', counsellor);
-      showToast(`Leave application for ${leave.studentName || 'Student'} approved successfully.`, 'success');
-      fetchScopeAndLeaves();
+      // Update Local Storage fallback
+      ['acad_student_leaves', 'acad_leave_requests'].forEach(key => {
+        try {
+          const localItems = JSON.parse(localStorage.getItem(key) || '[]');
+          const idx = localItems.findIndex(item => (item.id || item.leaveId) === leaveId);
+          if (idx !== -1) {
+            localItems[idx].status = 'Approved';
+            localItems[idx].actionBy = counsellorName;
+            localStorage.setItem(key, JSON.stringify(localItems));
+          }
+        } catch (_) {}
+      });
+
+      // Update mockDB fallback
+      try {
+        await mockDB.reviewLeave(leaveId, 'Approved', 'Approved by Ward Counsellor', counsellor);
+      } catch (_) {}
+
+      // Instant optimistic UI update
+      setPendingLeaves(prev => prev.filter(l => (l.id || l.leaveId) !== leaveId));
+      setProcessedLeaves(prev => [
+        { ...leave, status: 'Approved', actionBy: counsellorName, approvedBy: counsellorName, actionAt: new Date().toISOString() },
+        ...prev
+      ]);
+
+      showToast?.(`Leave application for ${leave.studentName || 'Student'} approved successfully!`, 'success');
     } catch (err) {
       console.error("Error approving leave:", err);
-      showToast('Could not approve leave application.', 'error');
+      showToast?.('Could not approve leave application.', 'error');
     } finally {
       setSubmittingAction(false);
     }
   };
 
-  // 3. REJECT LEAVE SUBMIT HANDLER
+  // 3. FIRESTORE REJECT LEAVE SUBMIT HANDLER (Rule 1 & 3)
   const handleRejectSubmit = async (e) => {
     e.preventDefault();
     if (!rejectionReason.trim()) {
-      showToast('Please state a reason for rejecting the leave.', 'warning');
+      showToast?.('Please state a reason for rejecting the leave.', 'warning');
       return;
     }
 
     const leave = rejectionModalLeave;
     const leaveId = leave.id || leave.leaveId;
-    const counsellorName = counsellor.fullName || counsellor.name || 'Ward Counsellor';
+    const counsellorName = counsellor?.fullName || counsellor?.name || 'Ward Counsellor';
 
     try {
       setSubmittingAction(true);
+
+      // Update Firestore using updateDoc
       if (isFirebaseConfigured && db && leaveId) {
         try {
-          const leaveRef = doc(db, 'leaves', leaveId);
+          const colName = leave._col || 'leaves';
+          const leaveRef = doc(db, colName, leaveId);
           await updateDoc(leaveRef, {
             status: 'Rejected',
             rejectionReason: rejectionReason.trim(),
             actionBy: counsellorName,
             rejectedBy: counsellorName,
-            actionAt: new Date().toISOString(),
+            actionAt: serverTimestamp(),
             updatedAt: serverTimestamp()
           });
         } catch (fsErr) {
-          console.warn("[Firestore] Reject update warning:", fsErr);
+          console.warn("[Firestore] Col fallback updateDoc attempt:", fsErr);
+          try {
+            await updateDoc(doc(db, 'leaves', leaveId), {
+              status: 'Rejected',
+              rejectionReason: rejectionReason.trim(),
+              actionBy: counsellorName,
+              rejectedBy: counsellorName,
+              actionAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            });
+          } catch (_) {}
         }
       }
 
-      await mockDB.reviewLeave(leaveId, 'Rejected', rejectionReason.trim(), counsellor);
-      showToast(`Leave application for ${leave.studentName || 'Student'} rejected.`, 'success');
+      // Update Local Storage fallback
+      ['acad_student_leaves', 'acad_leave_requests'].forEach(key => {
+        try {
+          const localItems = JSON.parse(localStorage.getItem(key) || '[]');
+          const idx = localItems.findIndex(item => (item.id || item.leaveId) === leaveId);
+          if (idx !== -1) {
+            localItems[idx].status = 'Rejected';
+            localItems[idx].rejectionReason = rejectionReason.trim();
+            localItems[idx].actionBy = counsellorName;
+            localStorage.setItem(key, JSON.stringify(localItems));
+          }
+        } catch (_) {}
+      });
+
+      // Update mockDB fallback
+      try {
+        await mockDB.reviewLeave(leaveId, 'Rejected', rejectionReason.trim(), counsellor);
+      } catch (_) {}
+
+      // Instant optimistic UI update
+      setPendingLeaves(prev => prev.filter(l => (l.id || l.leaveId) !== leaveId));
+      setProcessedLeaves(prev => [
+        { ...leave, status: 'Rejected', rejectionReason: rejectionReason.trim(), actionBy: counsellorName, rejectedBy: counsellorName, actionAt: new Date().toISOString() },
+        ...prev
+      ]);
+
+      showToast?.(`Leave application for ${leave.studentName || 'Student'} rejected.`, 'success');
       setRejectionModalLeave(null);
       setRejectionReason('');
-      fetchScopeAndLeaves();
     } catch (err) {
       console.error("Error rejecting leave:", err);
-      showToast('Could not reject leave application.', 'error');
+      showToast?.('Could not reject leave application.', 'error');
     } finally {
       setSubmittingAction(false);
     }
