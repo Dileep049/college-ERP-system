@@ -642,13 +642,21 @@ const StudentLeaves = ({ student, isParent }) => {
 
     try {
       setApplying(true);
+      const dept = student?.assignedBranch || student?.department || student?.branch || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)';
+      const sem = student?.assignedSemester || student?.semester || 'Semester 2';
+      const sec = student?.assignedSection || student?.section || 'Section A';
+
       await mockDB.applyStudentLeave(student?.uid, {
         leaveType,
         fromDate,
         toDate,
         reason,
-        studentName: student?.fullName || student?.studentName,
-        department: student?.department || 'CSE'
+        studentName: student?.fullName || student?.name || student?.studentName || 'Student',
+        rollNumber: student?.rollNumber || student?.studentId || '',
+        department: dept,
+        branch: dept,
+        semester: sem,
+        section: sec
       });
 
       showToast('Leave application submitted to assigned Ward Counsellor.', 'success');

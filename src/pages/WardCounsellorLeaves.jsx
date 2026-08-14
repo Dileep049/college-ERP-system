@@ -19,6 +19,61 @@ import {
   Award
 } from 'lucide-react';
 
+// Normalization Helpers
+const normBranch = (str) => {
+  if (!str) return '';
+  const s = String(str).toUpperCase().trim();
+  if (s.includes('AI') || s.includes('ARTIFICIAL') || s.includes('MACHINE LEARNING')) return 'AI & ML';
+  if (s.includes('COMPUTER') || s.includes('CSE') || s.includes('CS')) return 'CSE';
+  if (s.includes('ECE') || s.includes('ELECTRONIC')) return 'ECE';
+  if (s.includes('EEE') || s.includes('ELECTRICAL')) return 'EEE';
+  if (s.includes('CIVIL')) return 'CIVIL';
+  if (s.includes('MECH')) return 'MECHANICAL';
+  return s;
+};
+
+const normSem = (str) => {
+  if (!str) return '';
+  const s = String(str).toUpperCase().trim();
+  const digitMatch = s.match(/\d+/);
+  if (digitMatch) return digitMatch[0];
+  if (s.includes('VIII') || s === '8') return '8';
+  if (s.includes('VII') || s === '7') return '7';
+  if (s.includes('VI') || s === '6') return '6';
+  if (s.includes('V') || s === '5') return '5';
+  if (s.includes('IV') || s === '4') return '4';
+  if (s.includes('III') || s === '3') return '3';
+  if (s.includes('II') || s === '2') return '2';
+  if (s.includes('I') || s === '1') return '1';
+  return s;
+};
+
+const normSec = (str) => {
+  if (!str) return '';
+  const s = String(str).toUpperCase().trim();
+  const clean = s.replace(/SECTION/g, '').replace(/SEC/g, '').trim();
+  return clean || s;
+};
+
+const isScopeMatch = (itemBranch, itemSem, itemSec, scopeBranch, scopeSem, scopeSec) => {
+  if (scopeBranch && scopeBranch !== 'All' && scopeBranch !== 'N/A') {
+    const b1 = normBranch(itemBranch);
+    const b2 = normBranch(scopeBranch);
+    if (b1 && b2 && b1 !== b2 && !b1.includes(b2) && !b2.includes(b1)) return false;
+  }
+  if (scopeSem && scopeSem !== 'All' && scopeSem !== 'N/A' && itemSem) {
+    const s1 = normSem(itemSem);
+    const s2 = normSem(scopeSem);
+    if (s1 && s2 && s1 !== s2) return false;
+  }
+  if (scopeSec && scopeSec !== 'All' && scopeSec !== 'N/A' && itemSec) {
+    const sec1 = normSec(itemSec);
+    const sec2 = normSec(scopeSec);
+    if (sec1 && sec2 && sec1 !== sec2) return false;
+  }
+  return true;
+};
+
 export const WardCounsellorLeaves = ({ counsellor }) => {
   const { showToast } = useAuth();
 
@@ -31,8 +86,8 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
 
   // Resolved Scope
   const [scope, setScope] = useState({
-    assignedBranch: counsellor?.assignedBranch || counsellor?.department || 'B.Sc. Computer Science (CS)',
-    assignedSemester: counsellor?.assignedSemester || counsellor?.semester || 'Semester 6',
+    assignedBranch: counsellor?.assignedBranch || counsellor?.department || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)',
+    assignedSemester: counsellor?.assignedSemester || counsellor?.semester || 'Semester 2',
     assignedSection: counsellor?.assignedSection || counsellor?.section || 'Section A'
   });
 
@@ -47,8 +102,8 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
       setLoading(true);
 
       // Determine active assignment scope
-      let currentBranch = counsellor?.assignedBranch || counsellor?.department || 'B.Sc. Computer Science (CS)';
-      let currentSem = counsellor?.assignedSemester || counsellor?.semester || 'Semester 6';
+      let currentBranch = counsellor?.assignedBranch || counsellor?.department || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)';
+      let currentSem = counsellor?.assignedSemester || counsellor?.semester || 'Semester 2';
       let currentSec = counsellor?.assignedSection || counsellor?.section || 'Section A';
 
       if (isFirebaseConfigured && db && (counsellor?.uid || counsellor?.id)) {
@@ -77,30 +132,32 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
       });
 
       // Fetch leaves matching exact academic scope
-      let allLeaves = [];
+      let rawList = [];
       const seenIds = new Set();
 
-      // Query Firestore 'leaves' collection
+      // Query Firestore collections loosely (without composite index constraint)
       if (isFirebaseConfigured && db) {
-        try {
-          const leavesRef = collection(db, 'leaves');
-          const qLeaves = query(
-            leavesRef,
-            where('branch', '==', currentBranch),
-            where('semester', '==', currentSem),
-            where('section', '==', currentSec)
-          );
-          const leavesSnap = await getDocs(qLeaves);
-          leavesSnap.forEach(docSnap => {
-            const d = docSnap.data();
-            const id = docSnap.id;
-            if (!seenIds.has(id)) {
-              seenIds.add(id);
-              allLeaves.push({ id, leaveId: id, ...d });
+        const collectionsToQuery = ['leaves', 'leave_requests', 'student_leaves'];
+
+        for (const colName of collectionsToQuery) {
+          try {
+            const colRef = collection(db, colName);
+            const snap = await getDocs(colRef);
+            snap.forEach(docSnap => {
+              const d = docSnap.data();
+              const id = docSnap.id;
+              if (!seenIds.has(id)) {
+                seenIds.add(id);
+                rawList.push({ id, leaveId: id, ...d });
+              }
+            });
+          } catch (fsErr) {
+            console.error(`🔥 FIREBASE ERROR (Collection '${colName}'):`, fsErr);
+            showToast?.(`Firebase Error on ${colName}: ${fsErr.message}`, 'error');
+            if (fsErr.message?.includes('index') || fsErr.code === 'failed-precondition') {
+              console.error(`🔥 MISSING COMPOSITE INDEX ERROR ON ${colName}:`, fsErr.message);
             }
-          });
-        } catch (fsErr) {
-          console.warn("[Firestore] Error fetching student leaves:", fsErr);
+          }
         }
       }
 
@@ -115,12 +172,34 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
           const id = l.id || l.leaveId;
           if (id && !seenIds.has(id)) {
             seenIds.add(id);
-            allLeaves.push(l);
+            rawList.push(l);
           }
         });
       } catch (mockErr) {
         console.warn("Error fetching mock leaves:", mockErr);
       }
+
+      // Local storage direct merge
+      ['acad_student_leaves', 'acad_leave_requests'].forEach(key => {
+        try {
+          const localItems = JSON.parse(localStorage.getItem(key) || '[]');
+          localItems.forEach(item => {
+            const id = item.id || item.leaveId;
+            if (id && !seenIds.has(id)) {
+              seenIds.add(id);
+              rawList.push(item);
+            }
+          });
+        } catch (_) {}
+      });
+
+      // Apply Client-Side Scope Normalization Filter
+      const allLeaves = rawList.filter(item => {
+        const itemBranch = item.branch || item.department || '';
+        const itemSem = item.semester || '';
+        const itemSec = item.section || '';
+        return isScopeMatch(itemBranch, itemSem, itemSec, currentBranch, currentSem, currentSec);
+      });
 
       // Calculate monthly leave count per student
       const currentMonth = new Date().getMonth();

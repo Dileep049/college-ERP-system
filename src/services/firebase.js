@@ -6567,32 +6567,66 @@ export const mockDB = {
 
   applyStudentLeave: async (studentId, leaveData) => {
     await mockDB.delay(100);
+    const deptVal = leaveData.department || leaveData.branch || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)';
+    const semVal = leaveData.semester || 'Semester 2';
+    const secVal = leaveData.section || 'Section A';
+
     const newLeave = {
       id: `student-leave-${Date.now()}`,
+      leaveId: `student-leave-${Date.now()}`,
       studentId: studentId || 'stud-cse',
+      applicantId: studentId || 'stud-cse',
+      uid: studentId || 'stud-cse',
       studentName: leaveData.studentName || 'Student',
-      department: leaveData.department || 'CSE',
+      applicantName: leaveData.studentName || 'Student',
+      rollNumber: leaveData.rollNumber || '',
+      department: deptVal,
+      branch: deptVal,
+      semester: semVal,
+      section: secVal,
       leaveType: leaveData.leaveType || 'Casual Leave',
-      fromDate: leaveData.fromDate || new Date().toISOString().split('T')[0],
-      toDate: leaveData.toDate || new Date().toISOString().split('T')[0],
+      fromDate: leaveData.fromDate || leaveData.startDate || new Date().toISOString().split('T')[0],
+      startDate: leaveData.fromDate || leaveData.startDate || new Date().toISOString().split('T')[0],
+      toDate: leaveData.toDate || leaveData.endDate || new Date().toISOString().split('T')[0],
+      endDate: leaveData.toDate || leaveData.endDate || new Date().toISOString().split('T')[0],
       reason: leaveData.reason || 'Personal Work',
       status: 'Pending',
+      applicantRole: 'student',
       appliedAt: new Date().toISOString(),
+      submittedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       approvedBy: '',
       rejectionReason: ''
     };
 
     if (isFirebaseConfigured && db) {
       try {
+        const ref1 = await addDoc(collection(db, 'leaves'), newLeave);
+        newLeave.id = ref1.id;
+        newLeave.leaveId = ref1.id;
+      } catch (e) {
+        console.error("FIREBASE ERROR (collection leaves):", e);
+      }
+      try {
         await addDoc(collection(db, 'student_leaves'), newLeave);
       } catch (e) {
-        console.error("Firestore applyStudentLeave error:", e);
+        console.error("FIREBASE ERROR (collection student_leaves):", e);
+      }
+      try {
+        await addDoc(collection(db, 'leave_requests'), newLeave);
+      } catch (e) {
+        console.error("FIREBASE ERROR (collection leave_requests):", e);
       }
     }
 
-    const local = JSON.parse(localStorage.getItem('acad_student_leaves') || '[]');
-    local.unshift(newLeave);
-    localStorage.setItem('acad_student_leaves', JSON.stringify(local));
+    const local1 = JSON.parse(localStorage.getItem('acad_student_leaves') || '[]');
+    local1.unshift(newLeave);
+    localStorage.setItem('acad_student_leaves', JSON.stringify(local1));
+
+    const local2 = JSON.parse(localStorage.getItem('acad_leave_requests') || '[]');
+    local2.unshift(newLeave);
+    localStorage.setItem('acad_leave_requests', JSON.stringify(local2));
+
     return newLeave;
   },
 
