@@ -4,6 +4,7 @@ import { mockDB } from '../services/firebase';
 import { WardCounsellorLeaveDesk } from '../components/WardCounsellorLeaveDesk';
 import { WardCounsellorLeaves } from './WardCounsellorLeaves';
 import { WardCounsellorProfile } from './WardCounsellorProfile';
+import { ParentMeetings } from './ParentMeetings';
 import {
   UserCheck,
   Users,
@@ -89,7 +90,7 @@ export const WardCounsellorPortal = ({ subPage }) => {
     );
   }
 
-  if (subPage === 'parent-meetings') return <ParentMeetingsManager counsellor={user} />;
+  if (subPage === 'parent-meetings') return <ParentMeetings counsellor={user} />;
   if (subPage === 'wards') return <WardsDirectory counsellor={user} />;
   if (subPage === 'reports') return <CounsellorReports counsellor={user} />;
   if (subPage === 'leaves' || subPage === 'student-leaves') return <WardCounsellorLeaves counsellor={user} />;
