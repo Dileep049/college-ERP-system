@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { mockDB } from '../services/firebase';
+import { WardCounsellorLeaveDesk } from '../components/WardCounsellorLeaveDesk';
+import { WardCounsellorLeaves } from './WardCounsellorLeaves';
+import { WardCounsellorProfile } from './WardCounsellorProfile';
 import {
   UserCheck,
   Users,
@@ -12,6 +15,7 @@ import {
   Activity,
   FileText,
   AlertCircle,
+  CheckCircle,
   CheckCircle2,
   XCircle,
   Search,
@@ -88,12 +92,14 @@ export const WardCounsellorPortal = ({ subPage }) => {
   if (subPage === 'parent-meetings') return <ParentMeetingsManager counsellor={user} />;
   if (subPage === 'wards') return <WardsDirectory counsellor={user} />;
   if (subPage === 'reports') return <CounsellorReports counsellor={user} />;
-  if (subPage === 'leaves') return <CounsellorLeaves counsellor={user} />;
+  if (subPage === 'leaves' || subPage === 'student-leaves') return <WardCounsellorLeaves counsellor={user} />;
+  if (subPage === 'profile') return <WardCounsellorProfile />;
   return <CounsellorDashboard counsellor={user} />;
 };
 
 // 1. COUNSELLOR DASHBOARD & MENTORING CONSOLE
 const CounsellorDashboard = ({ counsellor }) => {
+  const [activeAssignment, setActiveAssignment] = useState(null);
   const [wards, setWards] = useState([]);
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -121,7 +127,11 @@ const CounsellorDashboard = ({ counsellor }) => {
   const loadCounsellorData = async () => {
     try {
       setLoading(true);
-      const branchStudents = await mockDB.getWardsForCounsellor(counsellor.uid, counsellor.department);
+
+      const assign = await mockDB.getFacultyWardAssignment(counsellor?.uid || counsellor?.id || counsellor?.email);
+      setActiveAssignment(assign || null);
+
+      const branchStudents = await mockDB.getWardsForCounsellor(counsellor.uid, assign?.department || counsellor.department);
       setWards(branchStudents);
 
       const allMeetings = await mockDB.getCounsellingMeetings('counsellor', counsellor.uid);
@@ -145,7 +155,7 @@ const CounsellorDashboard = ({ counsellor }) => {
       const summary = await mockDB.getMonthlyWardSummary(counsellor.uid, selectedMonth, selectedYear);
       setMonthlySummary(summary);
 
-      const sections = await mockDB.getSectionAnalytics(counsellor.department);
+      const sections = await mockDB.getSectionAnalytics(assign?.department || counsellor.department);
       setSectionAnalytics(sections);
     } catch (e) {
       console.error(e);
@@ -197,7 +207,7 @@ const CounsellorDashboard = ({ counsellor }) => {
             </span>
             <h2 className="text-2xl font-black font-display mt-2">Mentoring Command Board</h2>
             <p className="text-xs text-purple-200 mt-0.5">
-              Counsellor: <strong className="text-white font-bold">{counsellor.fullName}</strong> • Department of {counsellor.department || 'B.Sc. Computer Science'}
+              Counsellor: <strong className="text-white font-bold">{counsellor.fullName}</strong> • Department of {activeAssignment?.department || counsellor.department || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)'}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -206,6 +216,38 @@ const CounsellorDashboard = ({ counsellor }) => {
               <span>Log Student Concern</span>
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Locked Scope Cards (Read-only for Ward Counsellor 🔒) */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between">
+          <div>
+            <span className="text-[10px] text-slate-400 font-bold uppercase block">Branch / Department</span>
+            <strong className="text-slate-900 dark:text-white text-xs block">{activeAssignment?.department || counsellor?.department || 'AI & ML'}</strong>
+          </div>
+          <span className="text-sm font-bold text-slate-400">🔒</span>
+        </div>
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between">
+          <div>
+            <span className="text-[10px] text-slate-400 font-bold uppercase block">Assigned Semester</span>
+            <strong className="text-purple-600 dark:text-purple-400 text-xs block">{activeAssignment?.semester || 'Semester 6'}</strong>
+          </div>
+          <span className="text-sm font-bold text-slate-400">🔒</span>
+        </div>
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between">
+          <div>
+            <span className="text-[10px] text-slate-400 font-bold uppercase block">Assigned Section</span>
+            <strong className="text-indigo-600 dark:text-indigo-400 text-xs block">Section {activeAssignment?.section || 'A'}</strong>
+          </div>
+          <span className="text-sm font-bold text-slate-400">🔒</span>
+        </div>
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between">
+          <div>
+            <span className="text-[10px] text-slate-400 font-bold uppercase block">Academic Year</span>
+            <strong className="text-slate-900 dark:text-white text-xs block font-mono">{activeAssignment?.academicYear || '2026-2027'}</strong>
+          </div>
+          <span className="text-sm font-bold text-slate-400">🔒</span>
         </div>
       </div>
 
@@ -851,17 +893,34 @@ const ParentMeetingsManager = ({ counsellor }) => {
 const CounsellorLeaves = ({ counsellor }) => {
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Filter States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [deptFilter, setDeptFilter] = useState('ALL');
+  const [semFilter, setSemFilter] = useState('ALL');
+  const [secFilter, setSecFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+
+  // Rejection Modal
   const [rejectionModalLeave, setRejectionModalLeave] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  
   const { showToast } = useAuth();
+
+  // Resolved Counsellor Academic Scope
+  const assignedBranch = counsellor.assignedBranch || counsellor.branch || counsellor.department || 'CSE';
+  const assignedSemester = counsellor.assignedSemester || counsellor.semester || 'Semester 6';
+  const assignedSection = counsellor.assignedSection || counsellor.section || 'Section A';
 
   const loadLeaves = async () => {
     try {
       setLoading(true);
-      const res = await mockDB.getLeaves('counsellor', counsellor.uid, counsellor.department || counsellor.branch || 'CSE');
+      // Pass counsellor object to mockDB.getLeaves to enforce academic scoping
+      const res = await mockDB.getLeaves('counsellor', counsellor.uid, counsellor);
       setLeaves(res);
     } catch (err) {
-      console.error(err);
+      console.error("Error loading leave applications:", err);
+      showToast('Could not load student leave requests.', 'error');
     } finally {
       setLoading(false);
     }
@@ -874,7 +933,7 @@ const CounsellorLeaves = ({ counsellor }) => {
   const handleApprove = async (leaveId) => {
     try {
       await mockDB.reviewLeave(leaveId, 'Approved', 'Approved by Ward Counsellor', counsellor);
-      showToast('Student leave approved successfully.', 'success');
+      showToast('Student leave application approved successfully.', 'success');
       loadLeaves();
     } catch (err) {
       console.error(err);
@@ -885,12 +944,17 @@ const CounsellorLeaves = ({ counsellor }) => {
   const handleRejectSubmit = async (e) => {
     e.preventDefault();
     if (!rejectionReason.trim()) {
-      showToast('Please enter a rejection reason.', 'warning');
+      showToast('Rejection reason is required before rejecting leave.', 'warning');
       return;
     }
     try {
-      await mockDB.reviewLeave(rejectionModalLeave.leaveId || rejectionModalLeave.id, 'Rejected', rejectionReason, counsellor);
-      showToast('Student leave request rejected.', 'success');
+      await mockDB.reviewLeave(
+        rejectionModalLeave.leaveId || rejectionModalLeave.id,
+        'Rejected',
+        rejectionReason.trim(),
+        counsellor
+      );
+      showToast('Student leave application rejected.', 'success');
       setRejectionModalLeave(null);
       setRejectionReason('');
       loadLeaves();
@@ -906,47 +970,218 @@ const CounsellorLeaves = ({ counsellor }) => {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
   };
 
+  // Filtered Applications
+  const filteredLeaves = leaves.filter(l => {
+    // Search Query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const name = (l.studentName || l.applicantName || '').toLowerCase();
+      const roll = (l.rollNumber || '').toLowerCase();
+      const reason = (l.reason || '').toLowerCase();
+      if (!name.includes(q) && !roll.includes(q) && !reason.includes(q)) return false;
+    }
+
+    // Department Filter
+    if (deptFilter !== 'ALL') {
+      const d = (l.department || l.branch || '').toUpperCase();
+      if (!d.includes(deptFilter.toUpperCase())) return false;
+    }
+
+    // Semester Filter
+    if (semFilter !== 'ALL') {
+      const s = (l.semester || '').toUpperCase();
+      if (!s.includes(semFilter.toUpperCase())) return false;
+    }
+
+    // Section Filter
+    if (secFilter !== 'ALL') {
+      const sec = (l.section || '').toUpperCase();
+      if (!sec.includes(secFilter.toUpperCase())) return false;
+    }
+
+    // Status Filter
+    if (statusFilter !== 'ALL') {
+      const st = (l.status || '').toLowerCase();
+      if (st !== statusFilter.toLowerCase()) return false;
+    }
+
+    return true;
+  });
+
+  // Calculate Stat Counts
+  const pendingCount = leaves.filter(l => (l.status || '').toLowerCase() === 'pending').length;
+  const approvedCount = leaves.filter(l => (l.status || '').toLowerCase() === 'approved').length;
+  const rejectedCount = leaves.filter(l => (l.status || '').toLowerCase() === 'rejected').length;
+  const totalCount = leaves.length;
+
   return (
     <div className="space-y-6 text-xs font-semibold">
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-5">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-4">
+      
+      {/* Scope Banner & Header */}
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
           <div>
-            <h2 className="text-lg font-black text-slate-900 dark:text-white">Student Leave Approvals</h2>
-            <p className="text-xs text-slate-400 font-normal mt-0.5">
-              Assigned Branch: <span className="font-extrabold text-purple-600 uppercase">{counsellor.department || counsellor.branch || 'CSE'}</span>
-            </p>
+            <h2 className="text-lg font-black text-slate-900 dark:text-white">Ward Counsellor Student Leave Desk</h2>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <span className="px-2.5 py-1 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-900/60 rounded-xl text-[11px] font-extrabold uppercase">
+                Branch: {assignedBranch}
+              </span>
+              <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900/60 rounded-xl text-[11px] font-extrabold uppercase">
+                Semester: {assignedSemester}
+              </span>
+              <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/60 rounded-xl text-[11px] font-extrabold uppercase">
+                Section: {assignedSection}
+              </span>
+            </div>
           </div>
-          <button onClick={loadLeaves} className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl flex items-center gap-1 text-xs font-bold transition-all">
-            <RefreshCw size={13} />
-            <span>Refresh</span>
+
+          <button onClick={loadLeaves} className="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all">
+            <RefreshCw size={14} />
+            <span>Refresh List</span>
           </button>
         </div>
 
+        {/* 4 Counter Stat Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-black uppercase block tracking-wider opacity-80">Pending Review</span>
+              <span className="text-2xl font-black">{pendingCount}</span>
+            </div>
+            <Clock size={24} className="opacity-40" />
+          </div>
+
+          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-black uppercase block tracking-wider opacity-80">Approved</span>
+              <span className="text-2xl font-black">{approvedCount}</span>
+            </div>
+            <CheckCircle size={24} className="opacity-40" />
+          </div>
+
+          <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-black uppercase block tracking-wider opacity-80">Rejected</span>
+              <span className="text-2xl font-black">{rejectedCount}</span>
+            </div>
+            <XCircle size={24} className="opacity-40" />
+          </div>
+
+          <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-300 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-black uppercase block tracking-wider opacity-80">Total Wards Scope</span>
+              <span className="text-2xl font-black">{totalCount}</span>
+            </div>
+            <FileText size={24} className="opacity-40" />
+          </div>
+        </div>
+
+        {/* Filter Controls Bar */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 pt-2">
+          
+          {/* Search Box */}
+          <div className="relative md:col-span-1">
+            <Search className="absolute left-3 top-3 text-slate-400" size={14} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search Student / Roll..."
+              className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold dark:text-white"
+            />
+          </div>
+
+          {/* Department Filter */}
+          <select
+            value={deptFilter}
+            onChange={e => setDeptFilter(e.target.value)}
+            className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold dark:text-white"
+          >
+            <option value="ALL">All Departments</option>
+            <option value="CSE">CSE</option>
+            <option value="ECE">ECE</option>
+            <option value="EEE">EEE</option>
+            <option value="AI & ML">AI & ML</option>
+            <option value="Civil">Civil</option>
+            <option value="Mechanical">Mechanical</option>
+            <option value="MCA">MCA</option>
+            <option value="BCA">BCA</option>
+          </select>
+
+          {/* Semester Filter */}
+          <select
+            value={semFilter}
+            onChange={e => setSemFilter(e.target.value)}
+            className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold dark:text-white"
+          >
+            <option value="ALL">All Semesters</option>
+            <option value="Semester 1">Semester 1</option>
+            <option value="Semester 2">Semester 2</option>
+            <option value="Semester 3">Semester 3</option>
+            <option value="Semester 4">Semester 4</option>
+            <option value="Semester 5">Semester 5</option>
+            <option value="Semester 6">Semester 6</option>
+            <option value="Semester 7">Semester 7</option>
+            <option value="Semester 8">Semester 8</option>
+          </select>
+
+          {/* Section Filter */}
+          <select
+            value={secFilter}
+            onChange={e => setSecFilter(e.target.value)}
+            className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold dark:text-white"
+          >
+            <option value="ALL">All Sections</option>
+            <option value="Section A">Section A</option>
+            <option value="Section B">Section B</option>
+            <option value="Section C">Section C</option>
+          </select>
+
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+            className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold dark:text-white"
+          >
+            <option value="ALL">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+
+        </div>
+      </div>
+
+      {/* Applications List */}
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
         {loading ? (
-          <div className="py-12 text-center text-slate-400 animate-pulse">Loading student leave requests...</div>
-        ) : leaves.length === 0 ? (
-          <div className="py-12 text-center text-slate-400 font-normal">No student leave requests found for branch {counsellor.department || counsellor.branch || 'CSE'}.</div>
+          <div className="py-16 text-center text-slate-400 animate-pulse font-bold">Loading student leave requests from Firestore...</div>
+        ) : filteredLeaves.length === 0 ? (
+          <div className="py-16 text-center text-slate-400 font-bold">No student leave requests match your criteria or scope.</div>
         ) : (
           <div className="space-y-4">
-            {leaves.map((l) => {
-              const numDays = calculateDays(l.startDate, l.endDate);
+            {filteredLeaves.map((l) => {
+              const numDays = calculateDays(l.startDate || l.fromDate, l.endDate || l.toDate);
               const isPending = (l.status || '').toLowerCase() === 'pending';
               const isApproved = (l.status || '').toLowerCase() === 'approved';
               const isRejected = (l.status || '').toLowerCase() === 'rejected';
 
               return (
                 <div key={l.leaveId || l.id} className="p-5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/60 dark:border-slate-800 space-y-3">
+                  
+                  {/* Top Bar: Student info + Status */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-purple-600/10 text-purple-600 flex items-center justify-center font-black text-sm uppercase">
+                      <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center font-black text-sm uppercase shadow">
                         {l.studentName ? l.studentName.charAt(0) : 'S'}
                       </div>
                       <div>
-                        <h4 className="text-sm font-black text-slate-900 dark:text-white">{l.studentName || 'Student'}</h4>
+                        <h4 className="text-sm font-black text-slate-900 dark:text-white">{l.studentName || l.applicantName || 'Student'}</h4>
                         <div className="flex flex-wrap items-center gap-2 text-[10.5px] text-slate-500 font-semibold mt-0.5">
                           <span>Roll: <strong className="text-slate-700 dark:text-slate-300">{l.rollNumber || 'N/A'}</strong></span>
                           <span>•</span>
-                          <span>Dept: <strong className="text-slate-700 dark:text-slate-300">{l.department || 'CSE'}</strong></span>
+                          <span>Dept: <strong className="text-slate-700 dark:text-slate-300">{l.department || l.branch || 'CSE'}</strong></span>
                           <span>•</span>
                           <span>Sem: <strong className="text-slate-700 dark:text-slate-300">{l.semester || 'N/A'}</strong></span>
                           <span>•</span>
@@ -955,22 +1190,24 @@ const CounsellorLeaves = ({ counsellor }) => {
                       </div>
                     </div>
 
-                    <span className={`self-start sm:self-center px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
-                      isApproved ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
-                      isRejected ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                    <span className={`self-start sm:self-center px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                      isApproved ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' :
+                      isRejected ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20' :
+                      'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
                     }`}>
                       {l.status || 'Pending'}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-[11px]">
+                  {/* Metadata Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 text-[11px]">
                     <div>
                       <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Leave Type</span>
                       <span className="font-extrabold text-slate-800 dark:text-slate-200">{l.leaveType || 'Casual Leave'}</span>
                     </div>
                     <div>
                       <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Duration</span>
-                      <span className="font-bold text-slate-700 dark:text-slate-300">{l.startDate} to {l.endDate}</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-300">{l.startDate || l.fromDate} to {l.endDate || l.toDate}</span>
                     </div>
                     <div>
                       <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Number of Days</span>
@@ -982,28 +1219,44 @@ const CounsellorLeaves = ({ counsellor }) => {
                     </div>
                   </div>
 
+                  {/* Reason */}
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Reason</span>
-                    <p className="text-xs text-slate-700 dark:text-slate-300 font-normal leading-relaxed bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800">{l.reason}</p>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Reason for Leave</span>
+                    <p className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                      {l.reason}
+                    </p>
                   </div>
 
+                  {/* Approval Details Banner */}
                   {isApproved && (
-                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/20">
-                      Approved by: {l.approvedByName || counsellor.fullName || 'Ward Counsellor'} {l.approvedAt ? `on ${new Date(l.approvedAt).toLocaleDateString()}` : ''}
+                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/20 flex items-center justify-between">
+                      <span>Approved by: <strong>{l.approvedByName || counsellor.fullName || 'Ward Counsellor'}</strong></span>
+                      <span className="text-[10px] text-slate-400 font-normal">{l.approvedAt ? new Date(l.approvedAt).toLocaleString() : ''}</span>
                     </div>
                   )}
 
+                  {/* Rejection Details Banner */}
                   {isRejected && (
-                    <div className="text-[11px] text-rose-600 dark:text-rose-400 font-bold bg-rose-500/5 p-3 rounded-xl border border-rose-500/20 space-y-0.5">
-                      <div>Rejected by: {l.rejectedByName || counsellor.fullName || 'Ward Counsellor'} {l.rejectedAt ? `on ${new Date(l.rejectedAt).toLocaleDateString()}` : ''}</div>
-                      {(l.rejectionReason || l.remarks) && <div className="text-slate-600 dark:text-slate-300 font-normal">Reason: {l.rejectionReason || l.remarks}</div>}
+                    <div className="text-[11px] text-rose-600 dark:text-rose-400 font-bold bg-rose-500/5 p-3.5 rounded-xl border border-rose-500/20 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span>Rejected by: <strong>{l.rejectedByName || counsellor.fullName || 'Ward Counsellor'}</strong></span>
+                        <span className="text-[10px] text-slate-400 font-normal">{l.rejectedAt ? new Date(l.rejectedAt).toLocaleString() : ''}</span>
+                      </div>
+                      <div className="text-slate-700 dark:text-slate-300 font-medium bg-white/60 dark:bg-slate-900/60 p-2 rounded-lg border border-rose-200/40 dark:border-rose-900/40">
+                        <span className="text-rose-600 dark:text-rose-400 font-black mr-1">Rejection Reason:</span>
+                        {l.rejectionReason || l.remarks || 'No reason provided.'}
+                      </div>
                     </div>
                   )}
 
+                  {/* Action Buttons for Pending */}
                   {isPending && (
                     <div className="flex items-center justify-end gap-3 pt-2">
                       <button
-                        onClick={() => setRejectionModalLeave(l)}
+                        onClick={() => {
+                          setRejectionModalLeave(l);
+                          setRejectionReason('');
+                        }}
                         className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all"
                       >
                         Reject
@@ -1016,6 +1269,7 @@ const CounsellorLeaves = ({ counsellor }) => {
                       </button>
                     </div>
                   )}
+
                 </div>
               );
             })}
@@ -1023,30 +1277,35 @@ const CounsellorLeaves = ({ counsellor }) => {
         )}
       </div>
 
-      {/* Rejection Modal */}
+      {/* Rejection Reason Modal */}
       {rejectionModalLeave && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase">Reject Student Leave Application</h3>
               <button onClick={() => setRejectionModalLeave(null)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
             </div>
+            
             <p className="text-xs text-slate-500 font-normal">
-              Student: <strong className="text-slate-800 dark:text-slate-200">{rejectionModalLeave.studentName}</strong> ({rejectionModalLeave.rollNumber})
+              Rejecting application for: <strong className="text-slate-800 dark:text-slate-200">{rejectionModalLeave.studentName || rejectionModalLeave.applicantName}</strong> ({rejectionModalLeave.rollNumber})
             </p>
+
             <form onSubmit={handleRejectSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-2 uppercase">Rejection Reason</label>
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-2 uppercase">
+                  Rejection Reason *
+                </label>
                 <textarea
                   rows="3"
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
-                  placeholder="Provide explicit explanation for rejection..."
+                  placeholder="Explicit reason for rejection (required)..."
                   required
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none dark:text-white font-medium resize-none text-xs"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none dark:text-white font-medium resize-none text-xs"
                 ></textarea>
               </div>
-              <div className="flex items-center justify-end gap-3">
+
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setRejectionModalLeave(null)}
@@ -1056,7 +1315,7 @@ const CounsellorLeaves = ({ counsellor }) => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs shadow-md"
+                  className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs shadow-md"
                 >
                   Confirm Rejection
                 </button>
@@ -1065,6 +1324,7 @@ const CounsellorLeaves = ({ counsellor }) => {
           </div>
         </div>
       )}
+
     </div>
   );
 };

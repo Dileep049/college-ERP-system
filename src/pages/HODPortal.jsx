@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { mockDB, KBN_SEMESTERS, KBN_BRANCHES, BRANCH_SUBJECT_MAP } from '../services/firebase';
+import { AssignWardCounsellorModal } from '../components/AssignWardCounsellorModal';
 import jsPDF from 'jspdf';
 import {
   ResponsiveContainer,
@@ -88,7 +89,7 @@ export const HODPortal = ({ subPage }) => {
         return <DepartmentOverview hod={user} />;
       case 'faculty-directory':
       case 'faculty':
-        return <FacultyDirectory hod={user} />;
+        return <FacultyManagement hod={user} />;
       case 'ward-counsellors':
         return <WardCounsellorManagement hod={user} />;
       case 'workload':
@@ -124,9 +125,9 @@ export const HODPortal = ({ subPage }) => {
         <div>
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-              Department Administration
+              GLOBAL ADMINISTRATION
             </span>
-            <span className="text-xs text-slate-400 font-semibold">• {user?.department || 'CSE Department'}</span>
+            <span className="text-xs text-slate-400 font-semibold">• ALL DEPARTMENTS</span>
           </div>
           <h1 className="text-xl font-extrabold text-slate-900 dark:text-white mt-1">
             HOD Command Portal — {user?.fullName || 'Dr. Alan Turing'}
@@ -483,36 +484,46 @@ const DepartmentOverview = ({ hod }) => {
 };
 
 // -------------------------------------------------------------
-// 3. HOD - FACULTY DIRECTORY & ASSIGNMENT SYSTEM
+// 3. FACULTY DIRECTORY & TEACHING ASSIGNMENTS MODULE (facultyAssignments)
 // -------------------------------------------------------------
-const FacultyDirectory = ({ hod }) => {
+const FacultyManagement = ({ hod }) => {
+  const [activeTab, setActiveTab] = useState('directory'); // 'directory' | 'assignments' | 'leaves'
   const [facultyMembers, setFacultyMembers] = useState([]);
-  const [allocations, setAllocations] = useState([]);
+  const [assignments, setAssignments] = useState([]);
+  const [facultyLeaves, setFacultyLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAssignModal, setShowAssignModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('directory'); // 'directory' | 'assignments'
+  const [selectedFacultyView, setSelectedFacultyView] = useState(null);
+  
+  // Rejection modal state for Faculty Leave
+  const [rejectionLeaveId, setRejectionLeaveId] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
-  const deptName = hod?.department || 'B.Sc. Computer Science (CS)';
+  const deptName = hod?.department || hod?.assignedBranch || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)';
 
   const emptyFormData = {
     facultyId: '',
+    facultyName: '',
     facultyEmail: '',
     facultyPhone: '',
-    department: '',
-    semester: '',
-    section: '',
-    subject: ''
+    department: deptName,
+    semester: 'Semester 6',
+    section: 'A',
+    academicYear: '2026-2027',
+    subject: '',
+    subjectCode: ''
   };
 
   const [formData, setFormData] = useState(emptyFormData);
-  const [selectedFaculty, setSelectedFaculty] = useState(null);
 
   const loadData = async () => {
     setLoading(true);
     const facs = await mockDB.getFacultyByDepartment(deptName);
-    const allocs = await mockDB.getSubjectAllocations(deptName);
+    const facAssigns = await mockDB.getFacultyAssignments(null, deptName);
+    const leaves = await mockDB.getFacultyLeavesForHOD(deptName);
     setFacultyMembers(facs);
-    setAllocations(allocs);
+    setAssignments(facAssigns);
+    setFacultyLeaves(leaves);
     setLoading(false);
   };
 
@@ -520,87 +531,88 @@ const FacultyDirectory = ({ hod }) => {
     loadData();
   }, [hod]);
 
-  useEffect(() => {
-    const fac = facultyMembers.find(f => f.uid === formData.facultyId);
-    setSelectedFaculty(fac || null);
-  }, [formData.facultyId, facultyMembers]);
+  // When faculty selected in dropdown, auto-fill details
+  const handleFacultySelectChange = (e) => {
+    const facId = e.target.value;
+    const fac = facultyMembers.find(f => f.uid === facId || f.id === facId);
+    if (fac) {
+      setFormData(prev => ({
+        ...prev,
+        facultyId: fac.uid || fac.id,
+        facultyName: fac.fullName || fac.name || 'Prof. Faculty',
+        facultyEmail: fac.email || 'faculty@kbn.edu',
+        facultyPhone: fac.phone || fac.mobile || fac.phoneNumber || '9876543211'
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, facultyId: facId }));
+    }
+  };
 
-  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((email || '').trim());
-  const isValidPhone = (phone) => /^\+?[0-9]{10,15}$/.test((phone || '').trim().replace(/[\s-]/g, ''));
-
-  const isFormValid =
-    formData.facultyId !== '' &&
-    isValidEmail(formData.facultyEmail) &&
-    isValidPhone(formData.facultyPhone) &&
-    formData.department !== '' &&
-    formData.semester !== '' &&
-    formData.section !== '' &&
-    formData.subject !== '';
+  const subjectsForDept = (formData.department && BRANCH_SUBJECT_MAP[formData.department])
+    ? BRANCH_SUBJECT_MAP[formData.department]
+    : ['Artificial Intelligence', 'Machine Learning', 'Neural Networks', 'Python Programming', 'Data Science & Analytics', 'Compiler Design', 'Software Engineering'];
 
   const handleAssignSubmit = async (e) => {
     e.preventDefault();
-    if (!isFormValid) return;
+    if (!formData.facultyId) return alert('Please select a Faculty member.');
+    if (!formData.department) return alert('Please select Branch / Department.');
+    if (!formData.semester) return alert('Semester is mandatory.');
+    if (!formData.section) return alert('Section is mandatory.');
+    if (!formData.academicYear) return alert('Academic Year is mandatory.');
+    if (!formData.subject) return alert('Subject is mandatory.');
 
-    const fac = facultyMembers.find(f => f.uid === formData.facultyId);
-    await mockDB.assignSubjectToFaculty(
-      formData.department,
-      formData.semester,
-      formData.subject,
-      formData.facultyId,
-      fac?.fullName || 'Faculty Member',
-      formData.section,
-      hod,
-      formData.facultyEmail,
-      formData.facultyPhone
-    );
+    await mockDB.saveFacultyAssignment({
+      facultyId: formData.facultyId,
+      facultyName: formData.facultyName,
+      facultyEmail: formData.facultyEmail,
+      facultyPhone: formData.facultyPhone,
+      department: formData.department,
+      semester: formData.semester,
+      section: formData.section,
+      academicYear: formData.academicYear,
+      subject: formData.subject,
+      subjectCode: formData.subjectCode || (formData.subject.toUpperCase().slice(0, 3) + '601')
+    }, hod);
 
     setShowAssignModal(false);
     setFormData(emptyFormData);
     loadData();
   };
 
-  const handleRemoveAssignment = async (alloc) => {
-    if (confirm(`Are you sure you want to remove assignment for ${alloc.facultyName} (${alloc.subjectName || alloc.subject})?`)) {
-      await mockDB.removeSubjectAllocation(alloc.id || alloc.allocationId);
+  const handleDeactivateAssignment = async (assignId, subjectName) => {
+    if (confirm(`Deactivate teaching assignment for ${subjectName}?`)) {
+      await mockDB.deactivateFacultyAssignment(assignId, hod);
       loadData();
     }
   };
 
-  const subjectsForDept = formData.department 
-    ? (BRANCH_SUBJECT_MAP[formData.department] || BRANCH_SUBJECT_MAP['CSE'] || ['Neural Networks & Deep Learning', 'Machine Learning', 'Artificial Intelligence', 'Data Mining', 'Compiler Design', 'Software Engineering'])
-    : ['Neural Networks & Deep Learning', 'Machine Learning', 'Artificial Intelligence', 'Data Mining', 'Compiler Design', 'Software Engineering'];
-
-  const openNewAssignModal = () => {
-    setFormData(emptyFormData);
-    setShowAssignModal(true);
+  const handleApproveLeave = async (leaveId) => {
+    await mockDB.reviewFacultyLeave(leaveId, 'Approved', '', hod);
+    loadData();
   };
 
-  const openAssignModalForFaculty = (fac, alloc) => {
-    setFormData({
-      facultyId: fac.uid,
-      facultyEmail: '',
-      facultyPhone: '',
-      department: '',
-      semester: '',
-      section: '',
-      subject: ''
-    });
-    setShowAssignModal(true);
+  const handleRejectLeaveSubmit = async (e) => {
+    e.preventDefault();
+    if (!rejectionReason.trim()) return alert('Rejection reason is required.');
+    await mockDB.reviewFacultyLeave(rejectionLeaveId, 'Rejected', rejectionReason.trim(), hod);
+    setRejectionLeaveId(null);
+    setRejectionReason('');
+    loadData();
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-xs font-semibold">
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
         <div>
           <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
             <Users className="text-purple-600" size={20} />
-            Faculty Directory & Course Allocations
+            Faculty Directory & Teaching Workload
           </h2>
-          <p className="text-xs text-slate-400">Manage department faculty profiles, academic workload, and class subject assignments</p>
+          <p className="text-xs text-slate-400">Manage faculty members, teaching subject assignments (`facultyAssignments`), and faculty leave applications</p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl text-xs font-bold mr-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl text-xs font-bold">
             <button
               onClick={() => setActiveTab('directory')}
               className={`px-3 py-1.5 rounded-xl uppercase text-[10px] tracking-wider transition-all ${activeTab === 'directory' ? 'bg-white dark:bg-slate-900 text-purple-600 shadow-sm' : 'text-slate-500'}`}
@@ -611,82 +623,106 @@ const FacultyDirectory = ({ hod }) => {
               onClick={() => setActiveTab('assignments')}
               className={`px-3 py-1.5 rounded-xl uppercase text-[10px] tracking-wider transition-all ${activeTab === 'assignments' ? 'bg-white dark:bg-slate-900 text-purple-600 shadow-sm' : 'text-slate-500'}`}
             >
-              Subject Allocations ({allocations.length})
+              Teaching Assignments ({assignments.filter(a => a.status === 'active' || a.status === 'Active').length})
+            </button>
+            <button
+              onClick={() => setActiveTab('leaves')}
+              className={`px-3 py-1.5 rounded-xl uppercase text-[10px] tracking-wider transition-all ${activeTab === 'leaves' ? 'bg-white dark:bg-slate-900 text-purple-600 shadow-sm' : 'text-slate-500'}`}
+            >
+              Faculty Leaves ({facultyLeaves.filter(l => l.status === 'Pending').length})
             </button>
           </div>
           <button
-            onClick={openNewAssignModal}
+            onClick={() => {
+              setFormData(emptyFormData);
+              setShowAssignModal(true);
+            }}
             className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-2xl shadow-lg shadow-purple-500/20 flex items-center gap-2"
           >
             <Plus size={16} />
-            <span>Assign Faculty</span>
+            <span>Assign Teaching</span>
           </button>
         </div>
       </div>
 
-      {/* Directory Grid View */}
+      {/* Directory Cards View */}
       {activeTab === 'directory' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {facultyMembers.map((fac) => {
-            const facAlloc = allocations.find(a => a.facultyId === fac.uid);
-            const isAssigned = !!facAlloc;
+            const facId = fac.uid || fac.id;
+            const facAssigns = assignments.filter(a => (a.facultyId === facId || a.email === fac.email) && (a.status === 'active' || a.status === 'Active'));
 
             return (
-              <div key={fac.uid} className="p-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md hover:shadow-xl transition-all space-y-4 flex flex-col justify-between">
+              <div key={facId} className="p-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md hover:shadow-xl transition-all space-y-4 flex flex-col justify-between">
                 <div className="flex items-start gap-4">
                   {fac.photo || fac.profilePhotoUrl ? (
-                    <img src={fac.photo || fac.profilePhotoUrl} alt={fac.fullName} className="w-14 h-14 rounded-2xl object-cover border-2 border-purple-500/30 shrink-0" />
+                    <img src={fac.photo || fac.profilePhotoUrl} alt={fac.fullName || fac.name} className="w-14 h-14 rounded-2xl object-cover border-2 border-purple-500/30 shrink-0" />
                   ) : (
                     <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white font-black text-lg flex items-center justify-center shadow-lg shrink-0">
-                      {fac.fullName?.split(' ').map(n => n[0]).slice(0, 2).join('') || 'FC'}
+                      {(fac.fullName || fac.name || 'FC').split(' ').map(n => n[0]).slice(0, 2).join('')}
                     </div>
                   )}
                   <div className="overflow-hidden">
                     <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${isAssigned ? 'bg-emerald-500/10 text-emerald-600' : 'bg-slate-100 text-slate-500 dark:bg-slate-800'}`}>
-                        {isAssigned ? 'Assigned' : 'Unassigned'}
+                      <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-full text-[9px] font-black uppercase">
+                        Status: Active
                       </span>
                     </div>
-                    <h3 className="text-sm font-black text-slate-900 dark:text-white mt-1 truncate">{fac.fullName}</h3>
-                    <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold">{fac.designation || 'Faculty Member'}</p>
-                    <p className="text-[11px] text-slate-400 truncate">{facAlloc?.facultyEmail || fac.email}</p>
-                    <p className="text-[11px] text-slate-400 font-mono">📞 {facAlloc?.facultyPhone || fac.phoneNumber || fac.mobile || '9876543210'}</p>
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white mt-1 truncate">{fac.fullName || fac.name}</h3>
+                    <p className="text-[11px] text-purple-600 dark:text-purple-400 font-mono">ID: {fac.facultyId || fac.employeeId || facId}</p>
+                    <p className="text-[11px] text-slate-400 truncate">{fac.email}</p>
+                    <p className="text-[11px] text-slate-400 font-mono">📞 {fac.phone || fac.mobile || '9876543211'}</p>
+                    <p className="text-[11px] text-slate-500 font-semibold mt-0.5">Dept: {fac.department || deptName}</p>
                   </div>
                 </div>
 
-                {/* Assignment Scope Box */}
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800/80 text-xs space-y-1.5">
-                  <div className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Academic Scope</div>
-                  {facAlloc ? (
-                    <>
-                      <div className="font-extrabold text-slate-900 dark:text-white">{facAlloc.subjectName || facAlloc.subject}</div>
-                      <div className="flex items-center gap-3 text-[11px] text-purple-600 dark:text-purple-400 font-bold">
-                        <span>{facAlloc.branch || facAlloc.department}</span>
-                        <span>•</span>
-                        <span>{facAlloc.semester || 'Semester 1'}</span>
-                        <span>•</span>
-                        <span>{facAlloc.section || 'Section A'}</span>
-                      </div>
-                    </>
+                {/* Teaching Assignments Scope Box */}
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800/80 text-xs space-y-2">
+                  <div className="text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                    Active Teaching Assignments ({facAssigns.length})
+                  </div>
+                  {facAssigns.length > 0 ? (
+                    <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+                      {facAssigns.map(a => (
+                        <div key={a.id} className="p-2 bg-white dark:bg-slate-900 rounded-xl border border-purple-500/20 text-[11px]">
+                          <strong className="text-slate-900 dark:text-white block">{a.subject} ({a.subjectCode})</strong>
+                          <span className="text-purple-600 dark:text-purple-400 font-bold block">{a.department}</span>
+                          <span className="text-slate-400 block">{a.semester} • Section {a.section} • AY {a.academicYear}</span>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
-                    <div className="text-slate-400 italic text-[11px]">No class / subject currently assigned</div>
+                    <div className="text-slate-400 italic text-[11px]">No active subject assignment</div>
                   )}
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
-                  {facAlloc && (
-                    <button
-                      onClick={() => handleRemoveAssignment(facAlloc)}
-                      className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 rounded-xl text-xs font-bold"
-                    >
-                      Remove
-                    </button>
-                  )}
+                <div className="flex items-center justify-end gap-1.5 flex-wrap pt-1 border-t border-slate-100 dark:border-slate-800">
                   <button
-                    onClick={() => openAssignModalForFaculty(fac, facAlloc)}
-                    className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-md"
+                    onClick={() => setSelectedFacultyView(fac)}
+                    className="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl text-[11px] font-bold"
                   >
-                    {facAlloc ? 'Edit Assignment' : 'Assign Faculty'}
+                    View Faculty
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('assignments')}
+                    className="px-2.5 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 rounded-xl text-[11px] font-bold"
+                  >
+                    View Assignments
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFormData({
+                        ...emptyFormData,
+                        facultyId: fac.uid || fac.id,
+                        facultyName: fac.fullName || fac.name,
+                        facultyEmail: fac.email,
+                        facultyPhone: fac.phone || fac.mobile || '9876543211'
+                      });
+                      setShowAssignModal(true);
+                    }}
+                    className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-[11px] font-bold shadow-md"
+                  >
+                    Assign Teaching
                   </button>
                 </div>
               </div>
@@ -695,7 +731,7 @@ const FacultyDirectory = ({ hod }) => {
         </div>
       )}
 
-      {/* Assignments Table View */}
+      {/* Teaching Assignments Table View */}
       {activeTab === 'assignments' && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden overflow-x-auto">
           <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
@@ -705,40 +741,44 @@ const FacultyDirectory = ({ hod }) => {
                 <th className="p-4">Email</th>
                 <th className="p-4">Phone</th>
                 <th className="p-4">Department</th>
-                <th className="p-4">Assigned Subject</th>
+                <th className="p-4">Subject</th>
                 <th className="p-4 text-center">Semester</th>
                 <th className="p-4 text-center">Section</th>
+                <th className="p-4 font-mono">Academic Year</th>
                 <th className="p-4">Status</th>
                 <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {allocations.length === 0 ? (
+              {assignments.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="p-8 text-center text-slate-400">No subject allocations found for {deptName}. Click "Assign Faculty" to create one.</td>
+                  <td colSpan="10" className="p-8 text-center text-slate-400">No teaching assignments found. Click "Assign Faculty" to create one.</td>
                 </tr>
               ) : (
-                allocations.map((alloc) => (
-                  <tr key={alloc.id || alloc.allocationId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                assignments.map((alloc) => (
+                  <tr key={alloc.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                     <td className="p-4 font-bold text-slate-900 dark:text-white">{alloc.facultyName}</td>
-                    <td className="p-4 font-medium text-slate-600 dark:text-slate-300">{alloc.facultyEmail || 'N/A'}</td>
-                    <td className="p-4 font-mono text-slate-500">{alloc.facultyPhone || 'N/A'}</td>
-                    <td className="p-4 font-bold text-purple-600">{alloc.branch || alloc.department || deptName}</td>
-                    <td className="p-4 font-black text-slate-800 dark:text-slate-200">{alloc.subjectName || alloc.subject}</td>
-                    <td className="p-4 text-center font-bold text-purple-600">{alloc.semester || 'Semester 1'}</td>
-                    <td className="p-4 text-center font-bold text-indigo-600">{alloc.section || 'Section A'}</td>
+                    <td className="p-4 text-slate-600 dark:text-slate-300">{alloc.email || alloc.facultyEmail}</td>
+                    <td className="p-4 font-mono text-slate-500">{alloc.phone || alloc.facultyPhone}</td>
+                    <td className="p-4 font-bold text-purple-600">{alloc.department}</td>
+                    <td className="p-4 font-black text-slate-800 dark:text-slate-200">{alloc.subject} ({alloc.subjectCode})</td>
+                    <td className="p-4 text-center font-bold text-purple-600">{alloc.semester}</td>
+                    <td className="p-4 text-center font-bold text-indigo-600">Sec {alloc.section}</td>
+                    <td className="p-4 font-mono text-slate-500">{alloc.academicYear || '2026-2027'}</td>
                     <td className="p-4">
-                      <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-full text-[10px] font-bold">
-                        Assigned
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${alloc.status === 'active' || alloc.status === 'Active' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-slate-100 text-slate-500 dark:bg-slate-800'}`}>
+                        {alloc.status === 'active' || alloc.status === 'Active' ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td className="p-4 text-right">
-                      <button
-                        onClick={() => handleRemoveAssignment(alloc)}
-                        className="px-2.5 py-1 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 rounded-lg text-[11px] font-bold"
-                      >
-                        Remove
-                      </button>
+                    <td className="p-4 text-right space-x-1">
+                      {(alloc.status === 'active' || alloc.status === 'Active') && (
+                        <button
+                          onClick={() => handleDeactivateAssignment(alloc.id, alloc.subject)}
+                          className="px-2.5 py-1 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 rounded-lg text-[11px] font-bold"
+                        >
+                          Deactivate
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -748,112 +788,174 @@ const FacultyDirectory = ({ hod }) => {
         </div>
       )}
 
-      {/* Assign Faculty Form Modal (MANUAL ENTRY) */}
+      {/* Faculty Leaves Desk View */}
+      {activeTab === 'leaves' && (
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md p-6 space-y-4">
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-black text-slate-900 dark:text-white">Faculty Leave Applications</h3>
+              <p className="text-xs text-slate-400">Review leave applications submitted by faculty members in {deptName}</p>
+            </div>
+          </div>
+
+          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+              <tr>
+                <th className="p-3">Faculty Name</th>
+                <th className="p-3">Leave Type</th>
+                <th className="p-3">Duration</th>
+                <th className="p-3">Reason</th>
+                <th className="p-3">Status</th>
+                <th className="p-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {facultyLeaves.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="p-8 text-center text-slate-400">No faculty leave requests found.</td>
+                </tr>
+              ) : (
+                facultyLeaves.map((leave) => (
+                  <tr key={leave.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                    <td className="p-3 font-bold text-slate-900 dark:text-white">{leave.facultyName}</td>
+                    <td className="p-3 font-extrabold text-purple-600">{leave.leaveType}</td>
+                    <td className="p-3 font-mono">{leave.startDate} to {leave.endDate} ({leave.totalDays} day/s)</td>
+                    <td className="p-3 text-slate-600 dark:text-slate-300 max-w-xs truncate">{leave.reason}</td>
+                    <td className="p-3">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                        leave.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-600' :
+                        leave.status === 'Rejected' ? 'bg-rose-500/10 text-rose-600' : 'bg-amber-500/10 text-amber-600'
+                      }`}>
+                        {leave.status}
+                      </span>
+                    </td>
+                    <td className="p-3 text-right space-x-2">
+                      {leave.status === 'Pending' ? (
+                        <>
+                          <button
+                            onClick={() => handleApproveLeave(leave.id)}
+                            className="px-3 py-1 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg text-xs font-bold shadow-sm"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => setRejectionLeaveId(leave.id)}
+                            className="px-3 py-1 bg-rose-600 text-white hover:bg-rose-700 rounded-lg text-xs font-bold shadow-sm"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-[11px] text-slate-400 italic">
+                          {leave.status === 'Rejected' && leave.rejectionReason ? `Reason: ${leave.rejectionReason}` : 'Reviewed'}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Assign Faculty Form Modal */}
       {showAssignModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <form onSubmit={handleAssignSubmit} className="bg-white dark:bg-slate-900 max-w-lg w-full rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+          <form onSubmit={handleAssignSubmit} className="bg-white dark:bg-slate-900 max-w-xl w-full max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
-                <h3 className="text-base font-black text-slate-900 dark:text-white">Assign Faculty Academic Scope</h3>
-                <p className="text-xs text-slate-400">All assignment details must be entered / selected manually by HOD</p>
+                <h3 className="text-base font-black text-slate-900 dark:text-white">Assign Faculty</h3>
+                <p className="text-xs text-purple-600 dark:text-purple-400 font-bold">Assign Faculty to Academic Subject Teaching Scope</p>
               </div>
-              <button 
-                type="button" 
-                onClick={() => {
-                  setShowAssignModal(false);
-                  setFormData(emptyFormData);
-                }} 
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X size={18} />
-              </button>
+              <button type="button" onClick={() => setShowAssignModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
             </div>
 
-            <div className="space-y-3.5 text-xs font-semibold">
-              {/* 1. Select Faculty Member */}
+            <div className="space-y-3.5 text-xs">
+              {/* 1. Select Faculty/User */}
               <div>
                 <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  1. Select Faculty Member <span className="text-rose-500">*</span>
+                  Select Faculty/User <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={formData.facultyId}
-                  onChange={(e) => setFormData({ ...formData, facultyId: e.target.value })}
+                  onChange={handleFacultySelectChange}
                   className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold"
+                  required
                 >
-                  <option value="">Choose Faculty Member</option>
+                  <option value="">[ Select Faculty ]</option>
                   {facultyMembers.map((f) => (
-                    <option key={f.uid} value={f.uid}>
-                      {f.fullName} — {f.designation || 'Faculty'}
+                    <option key={f.uid || f.id} value={f.uid || f.id}>
+                      {f.fullName || f.name} • Faculty ID: {f.facultyId || f.employeeId || f.uid} • Email: {f.email}
                     </option>
                   ))}
                 </select>
               </div>
-
-              {/* 2. Faculty Email - MANUAL */}
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  2. Faculty Email <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  required
-                  placeholder="e.g. ravi.kumar@kbn.edu"
-                  value={formData.facultyEmail}
-                  onChange={(e) => setFormData({ ...formData, facultyEmail: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold"
-                />
-                {formData.facultyEmail && !isValidEmail(formData.facultyEmail) && (
-                  <p className="text-[10px] text-rose-500 font-bold mt-1">Please enter a valid email format (e.g. name@kbn.edu)</p>
-                )}
+              {/* Auto-filled Read-only Faculty Details */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <div>
+                  <label className="block font-bold text-[10px] uppercase text-slate-400 mb-0.5">Faculty Name</label>
+                  <input
+                    type="text"
+                    value={formData.facultyName}
+                    readOnly
+                    placeholder="[ Auto-filled ]"
+                    className="w-full p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-[10px] uppercase text-slate-400 mb-0.5">Faculty ID</label>
+                  <input
+                    type="text"
+                    value={formData.facultyId}
+                    readOnly
+                    placeholder="[ Auto-filled ]"
+                    className="w-full p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-purple-600 font-bold font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-[10px] uppercase text-slate-400 mb-0.5">Email</label>
+                  <input
+                    type="email"
+                    value={formData.facultyEmail}
+                    readOnly
+                    placeholder="[ Auto-filled ]"
+                    className="w-full p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold"
+                  />
+                </div>
               </div>
 
-              {/* 3. Faculty Phone - MANUAL */}
+              {/* Department / Branch */}
               <div>
                 <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  3. Faculty Phone <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. 9876543211"
-                  value={formData.facultyPhone}
-                  onChange={(e) => setFormData({ ...formData, facultyPhone: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold"
-                />
-                {formData.facultyPhone && !isValidPhone(formData.facultyPhone) && (
-                  <p className="text-[10px] text-rose-500 font-bold mt-1">Please enter a valid 10-digit phone number</p>
-                )}
-              </div>
-
-              {/* 4. Department - MANUAL */}
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  4. Department <span className="text-rose-500">*</span>
+                  Department / Branch <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={formData.department}
-                  onChange={(e) => setFormData({ ...formData, department: e.target.value, subject: '' })}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                   className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold"
+                  required
                 >
-                  <option value="">Choose Department</option>
+                  <option value="">[ Select Branch ]</option>
                   {KBN_BRANCHES.map((b) => (
                     <option key={b} value={b}>{b}</option>
                   ))}
                 </select>
               </div>
 
-              {/* 5 & 6. Semester & Section Grid - MANUAL */}
+              {/* Semester & Section Grid */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    5. Semester <span className="text-rose-500">*</span>
+                    Semester <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={formData.semester}
                     onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
                     className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold"
+                    required
                   >
-                    <option value="">Choose Semester</option>
+                    <option value="">[ Select Semester ]</option>
                     {KBN_SEMESTERS.map(s => (
                       <option key={s} value={s}>{s}</option>
                     ))}
@@ -861,76 +963,89 @@ const FacultyDirectory = ({ hod }) => {
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    6. Section <span className="text-rose-500">*</span>
+                    Section <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={formData.section}
                     onChange={(e) => setFormData({ ...formData, section: e.target.value })}
                     className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold"
+                    required
                   >
-                    <option value="">Choose Section</option>
-                    <option value="Section A">Section A</option>
-                    <option value="Section B">Section B</option>
+                    <option value="">[ Select Section ]</option>
+                    <option value="A">Section A</option>
+                    <option value="B">Section B</option>
+                    <option value="C">Section C</option>
                   </select>
                 </div>
               </div>
 
-              {/* 7. Subject Assignment - MANUAL */}
+              {/* Academic Year */}
               <div>
                 <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  7. Subject Assignment <span className="text-rose-500">*</span>
+                  Academic Year <span className="text-rose-500">*</span>
                 </label>
                 <select
-                  value={formData.subject}
-                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                  value={formData.academicYear}
+                  onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })}
                   className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold"
+                  required
                 >
-                  <option value="">Choose Subject</option>
-                  {subjectsForDept.map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
+                  <option value="2026-2027">2026-2027</option>
+                  <option value="2025-2026">2025-2026</option>
                 </select>
               </div>
 
-              {/* 8. Assignment Preview - Rendered ONLY after all required fields are manually filled */}
-              {isFormValid && selectedFaculty && (
-                <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-2xl text-xs space-y-1.5 animate-in fade-in duration-150">
-                  <div className="font-black text-purple-700 dark:text-purple-300 uppercase tracking-wider text-[9.5px]">
-                    Assignment Preview
-                  </div>
-                  <div className="space-y-0.5 text-slate-800 dark:text-slate-200 font-semibold">
-                    <p><span className="text-slate-400 font-normal">Faculty:</span> <strong className="font-black text-slate-900 dark:text-white">{selectedFaculty.fullName}</strong></p>
-                    <p><span className="text-slate-400 font-normal">Email:</span> <strong className="font-black text-slate-900 dark:text-white">{formData.facultyEmail}</strong></p>
-                    <p><span className="text-slate-400 font-normal">Phone:</span> <strong className="font-black text-slate-900 dark:text-white">{formData.facultyPhone}</strong></p>
-                    <p><span className="text-slate-400 font-normal">Department:</span> <strong className="font-black text-purple-600 dark:text-purple-400">{formData.department}</strong></p>
-                    <p><span className="text-slate-400 font-normal">Semester:</span> <strong className="font-black text-indigo-600">{formData.semester}</strong></p>
-                    <p><span className="text-slate-400 font-normal">Section:</span> <strong className="font-black text-indigo-600">{formData.section}</strong></p>
-                    <p><span className="text-slate-400 font-normal">Subject:</span> <strong className="font-black text-slate-900 dark:text-white">{formData.subject}</strong></p>
-                  </div>
+              {/* Subject & Subject Code */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Subject <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={formData.subject}
+                    onChange={(e) => {
+                      const subj = e.target.value;
+                      setFormData({ 
+                        ...formData, 
+                        subject: subj,
+                        subjectCode: subj ? (subj.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3) + '601') : ''
+                      });
+                    }}
+                    className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold"
+                    required
+                  >
+                    <option value="">[ Select Subject ]</option>
+                    {subjectsForDept.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
                 </div>
-              )}
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Subject Code
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="[ Optional / Auto-filled ]"
+                    value={formData.subjectCode}
+                    onChange={(e) => setFormData({ ...formData, subjectCode: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold font-mono"
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* 9. Buttons */}
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
-                onClick={() => {
-                  setShowAssignModal(false);
-                  setFormData(emptyFormData);
-                }}
-                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold"
+                onClick={() => setShowAssignModal(false)}
+                className="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl font-bold text-xs"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                disabled={!isFormValid}
-                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all shadow-lg ${
-                  isFormValid
-                    ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-purple-500/20 cursor-pointer'
-                    : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed shadow-none'
-                }`}
+                className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-bold text-xs shadow-lg shadow-purple-500/20"
               >
                 Confirm Assignment
               </button>
@@ -943,33 +1058,35 @@ const FacultyDirectory = ({ hod }) => {
 };
 
 // -------------------------------------------------------------
-// 4. BRANCH-LEVEL WARD COUNSELLOR MANAGEMENT VIEW (1 BRANCH = 1 ACTIVE COUNSELLOR)
+// 4. BRANCH-LEVEL WARD COUNSELLOR MANAGEMENT VIEW (1 SCOPE = 1 ACTIVE COUNSELLOR)
 // -------------------------------------------------------------
 const WardCounsellorManagement = ({ hod }) => {
   const [counsellors, setCounsellors] = useState([]);
   const [historyList, setHistoryList] = useState([]);
   const [activeTab, setActiveTab] = useState('active'); // active | history
   const [deptList, setDeptList] = useState([]);
-  const [facultyList, setFacultyList] = useState([]);
+  const [userList, setUserList] = useState([]);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showReplacementConfirmModal, setShowReplacementConfirmModal] = useState(false);
   const [selectedWardSection, setSelectedWardSection] = useState(null);
   const [wardStudents, setWardStudents] = useState([]);
+  const [scopeConflictAssignment, setScopeConflictAssignment] = useState(null);
 
-  // Form State
+  // Form state containing ONLY the 5 required fields
   const [formData, setFormData] = useState({
-    department: hod?.department || 'B.Sc. Computer Science (CS)',
-    facultyId: ''
+    wardCounsellorId: '',
+    wardCounsellorName: '',
+    department: hod?.department || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)',
+    semester: 'Semester 6',
+    section: 'Section A',
+    academicYear: '2026-2027'
   });
 
-  const [selectedFacultyInfo, setSelectedFacultyInfo] = useState(null);
-  const [totalDeptStudentCount, setTotalDeptStudentCount] = useState(181);
-  const [existingActiveCounsellor, setExistingActiveCounsellor] = useState(null);
-
   const loadData = async () => {
-    const list = await mockDB.getWardCounsellors(hod?.department);
-    setCounsellors(list.filter(c => c.status === 'Active'));
-    setHistoryList(list.filter(c => c.status === 'Inactive'));
+    // Pass null so HOD retrieves ALL ward counsellor assignments across all departments globally
+    const list = await mockDB.getWardCounsellorAssignments(null);
+    setCounsellors(list.filter(c => c.status === 'active' || c.status === 'Active'));
+    setHistoryList(list.filter(c => c.status === 'inactive' || c.status === 'Inactive'));
 
     const depts = await mockDB.getDepartmentsList();
     setDeptList(depts);
@@ -979,78 +1096,103 @@ const WardCounsellorManagement = ({ hod }) => {
     loadData();
   }, [hod]);
 
-  // Load faculty when department changes in form
+  // Fetch existing active users/faculty members for the dropdown selection
   useEffect(() => {
-    const fetchDeptFaculty = async () => {
-      if (formData.department) {
-        const facs = await mockDB.getFacultyByDepartment(formData.department);
-        setFacultyList(facs);
-        if (facs.length > 0 && !facs.some(f => f.uid === formData.facultyId)) {
-          setFormData(prev => ({ ...prev, facultyId: facs[0].uid }));
-          setSelectedFacultyInfo(facs[0]);
-        }
-
-        const count = await mockDB.getDepartmentStudentCount(formData.department);
-        setTotalDeptStudentCount(count);
-
-        const activeC = await mockDB.getActiveBranchWardCounsellor(formData.department);
-        setExistingActiveCounsellor(activeC || null);
+    const fetchUsers = async () => {
+      const users = await mockDB.getAllActiveFacultyUsers();
+      setUserList(users);
+      if (users.length > 0 && !formData.wardCounsellorId) {
+        const u = users[0];
+        setFormData(prev => ({
+          ...prev,
+          wardCounsellorId: u.uid || u.id || 'usr-1',
+          wardCounsellorName: u.fullName || u.name || 'Dileep'
+        }));
       }
     };
-    fetchDeptFaculty();
-  }, [formData.department]);
+    fetchUsers();
+  }, [showAssignModal]);
 
-  // Update selected faculty info
-  useEffect(() => {
-    const fac = facultyList.find(f => f.uid === formData.facultyId);
-    setSelectedFacultyInfo(fac || null);
-  }, [formData.facultyId, facultyList]);
-
-  const handleAssignClick = (e) => {
-    e.preventDefault();
-    if (!formData.facultyId) return alert('Please select a faculty member.');
-
-    if (existingActiveCounsellor && existingActiveCounsellor.facultyId !== formData.facultyId) {
-      // Show Replacement Confirmation Modal
-      setShowReplacementConfirmModal(true);
+  const handleUserSelect = (e) => {
+    const uid = e.target.value;
+    const found = userList.find(u => (u.uid || u.id) === uid);
+    if (found) {
+      setFormData(prev => ({
+        ...prev,
+        wardCounsellorId: found.uid || found.id,
+        wardCounsellorName: found.fullName || found.name || 'Dileep'
+      }));
     } else {
-      executeAssignment();
+      setFormData(prev => ({ ...prev, wardCounsellorId: uid }));
     }
   };
 
-  const executeAssignment = async () => {
-    await mockDB.assignBranchWardCounsellor(
-      formData.department,
-      formData.facultyId,
-      hod
+  const handleAssignSubmitModal = async (submittedData) => {
+    setFormData(submittedData);
+    if (!submittedData.wardCounsellorId) return alert('Please select a Ward Counsellor.');
+    if (!submittedData.department) return alert('Please select Branch / Department.');
+    if (!submittedData.semester) return alert('Semester is mandatory.');
+    if (!submittedData.section) return alert('Section is mandatory.');
+    if (!submittedData.academicYear) return alert('Academic Year is mandatory.');
+
+    // Check active scope conflict: Only 1 active counsellor per (Branch + Semester + Section + Academic Year)
+    const existing = await mockDB.checkActiveAssignmentForScope(
+      submittedData.department,
+      submittedData.semester,
+      submittedData.section,
+      submittedData.academicYear
     );
+
+    if (existing && existing.wardCounsellorId !== submittedData.wardCounsellorId && existing.facultyId !== submittedData.wardCounsellorId) {
+      setScopeConflictAssignment(existing);
+      setShowReplacementConfirmModal(true);
+    } else {
+      executeAssignment(submittedData);
+    }
+  };
+
+  const executeAssignment = async (overrideData = null) => {
+    const dataToUse = overrideData || formData;
+    const payload = {
+      wardCounsellorId: dataToUse.wardCounsellorId,
+      wardCounsellorName: dataToUse.wardCounsellorName,
+      facultyId: dataToUse.wardCounsellorId,
+      facultyName: dataToUse.wardCounsellorName,
+      branch: dataToUse.department,
+      department: dataToUse.department,
+      semester: dataToUse.semester,
+      section: dataToUse.section,
+      academicYear: dataToUse.academicYear
+    };
+
+    await mockDB.saveWardCounsellorAssignment(payload, hod);
     setShowAssignModal(false);
     setShowReplacementConfirmModal(false);
+    setScopeConflictAssignment(null);
     loadData();
   };
 
-  const handleRemove = async (counsellor) => {
-    if (confirm(`Are you sure you want to remove ${counsellor.facultyName} as Branch Ward Counsellor for ${counsellor.department}?`)) {
-      await mockDB.removeWardCounsellorV2(counsellor.id, hod);
+  const handleDeactivate = async (assignment) => {
+    if (confirm(`Deactivate Ward Counsellor assignment for ${assignment.wardCounsellorName || assignment.facultyName} (${assignment.department} - ${assignment.semester} ${assignment.section})?`)) {
+      await mockDB.deactivateWardCounsellorAssignment(assignment.id, hod);
       loadData();
     }
   };
 
   const handleViewWards = async (counsellor) => {
     setSelectedWardSection(counsellor);
-    const students = await mockDB.getWardsBySection(counsellor.department || hod?.department, 'Section A');
+    const secStr = counsellor.section.startsWith('Section') ? counsellor.section : `Section ${counsellor.section}`;
+    const students = await mockDB.getWardsBySection(counsellor.department || hod?.department, secStr);
     setWardStudents(students);
   };
 
-  const activeBranchCounsellor = counsellors.length > 0 ? counsellors[0] : null;
-
   return (
-    <div className="space-y-6">
-      {/* Header & Controls */}
+    <div className="space-y-6 text-xs font-semibold">
+      {/* Header Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
         <div>
-          <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">Branch Ward Counsellor Management</h2>
-          <p className="text-xs text-slate-400">One Branch = One Active Ward Counsellor across all department sections</p>
+          <h2 className="text-lg font-black text-slate-900 dark:text-white">Ward Counsellor Assignments</h2>
+          <p className="text-xs text-slate-400">One Branch + Semester + Section + Academic Year = One Active Ward Counsellor</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl text-xs font-bold mr-2">
@@ -1058,7 +1200,7 @@ const WardCounsellorManagement = ({ hod }) => {
               onClick={() => setActiveTab('active')}
               className={`px-3 py-1.5 rounded-xl uppercase text-[10px] tracking-wider transition-all ${activeTab === 'active' ? 'bg-white dark:bg-slate-900 text-purple-600 shadow-sm' : 'text-slate-500'}`}
             >
-              Active Branch Assignment ({counsellors.length})
+              Active ({counsellors.length})
             </button>
             <button
               onClick={() => setActiveTab('history')}
@@ -1070,117 +1212,104 @@ const WardCounsellorManagement = ({ hod }) => {
 
           <button
             onClick={() => setShowAssignModal(true)}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-2xl shadow-lg shadow-purple-500/20 flex items-center gap-2"
+            className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-2xl shadow-lg shadow-purple-500/20 flex items-center gap-2"
           >
             <Plus size={16} />
-            <span>Assign Branch Ward Counsellor</span>
+            <span>Assign Counsellor</span>
           </button>
         </div>
       </div>
 
-      {/* Branch Ward Counsellor Summary Card */}
-      {activeBranchCounsellor && activeTab === 'active' && (
-        <div className="p-6 bg-gradient-to-r from-purple-700 via-indigo-700 to-slate-900 text-white rounded-3xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-white/20 border border-white/30 text-white flex items-center justify-center font-black text-xl shadow-lg shrink-0">
-              {activeBranchCounsellor.facultyName.split(' ').map(n => n[0]).slice(0, 2).join('')}
-            </div>
-            <div>
-              <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-400 text-slate-950">
-                Active Branch Ward Counsellor
-              </span>
-              <h3 className="text-xl font-black mt-1">{activeBranchCounsellor.facultyName}</h3>
-              <p className="text-xs text-purple-200">{activeBranchCounsellor.designation} • Department of {activeBranchCounsellor.department}</p>
-              <div className="mt-2 flex flex-wrap gap-4 text-[11px] text-purple-100 font-semibold">
-                <span>Total Ward Students: <strong className="text-white font-black">{activeBranchCounsellor.wardStudentsCount} Wards</strong></span>
-                <span>Sections Covered: <strong className="text-white font-black">A, B, C, D</strong></span>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => handleViewWards(activeBranchCounsellor)}
-              className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold backdrop-blur-md border border-white/20"
-            >
-              View All Ward Students
-            </button>
-            <button
-              onClick={() => {
-                setFormData({
-                  department: activeBranchCounsellor.department,
-                  facultyId: activeBranchCounsellor.facultyId
-                });
-                setShowAssignModal(true);
-              }}
-              className="px-4 py-2 bg-white text-purple-900 hover:bg-purple-50 rounded-xl text-xs font-extrabold shadow-lg"
-            >
-              Change Counsellor
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Active Branch Ward Counsellors Table */}
+      {/* Ward Counsellor Table — Showing ONLY required columns */}
       {activeTab === 'active' && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden overflow-x-auto">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-x-auto">
+          <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">Active Ward Counsellors Ledger</h3>
+            <span className="text-xs text-slate-500 dark:text-slate-300 font-bold">{counsellors.length} Active Assignments</span>
+          </div>
           <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
-            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-700 dark:text-slate-300 tracking-wider">
               <tr>
-                <th className="p-4">Department / Branch</th>
-                <th className="p-4">Active Ward Counsellor</th>
-                <th className="p-4">Faculty ID</th>
-                <th className="p-4">Designation</th>
-                <th className="p-4 text-center">Sections</th>
-                <th className="p-4 text-center">Total Ward Students</th>
-                <th className="p-4">Status</th>
-                <th className="p-4 text-right">Actions</th>
+                <th className="px-4 py-3.5 text-slate-700 dark:text-slate-300">Ward Counsellor</th>
+                <th className="px-4 py-3.5 text-slate-700 dark:text-slate-300">Branch</th>
+                <th className="px-4 py-3.5 text-center text-slate-700 dark:text-slate-300">Semester</th>
+                <th className="px-4 py-3.5 text-center text-slate-700 dark:text-slate-300">Section</th>
+                <th className="px-4 py-3.5 text-center text-slate-700 dark:text-slate-300">Academic Year</th>
+                <th className="px-4 py-3.5 text-slate-700 dark:text-slate-300">Status</th>
+                <th className="px-4 py-3.5 text-right text-slate-700 dark:text-slate-300">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {counsellors.map((c) => (
-                <tr key={c.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                  <td className="p-4 font-bold text-slate-900 dark:text-white">{c.department}</td>
-                  <td className="p-4 font-bold text-purple-600 dark:text-purple-400">
-                    {c.facultyName}
-                    <span className="text-[10px] text-slate-400 block font-normal">{c.facultyEmail}</span>
-                  </td>
-                  <td className="p-4 font-mono text-slate-500">{c.facultyId}</td>
-                  <td className="p-4 text-slate-500">{c.designation}</td>
-                  <td className="p-4 text-center font-bold text-slate-700 dark:text-slate-300">Section A, B, C, D</td>
-                  <td className="p-4 text-center font-black text-purple-600">{c.wardStudentsCount} Wards</td>
-                  <td className="p-4">
-                    <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-full text-[10px] font-bold">
-                      Active
-                    </span>
-                  </td>
-                  <td className="p-4 text-right space-x-2">
-                    <button
-                      onClick={() => handleViewWards(c)}
-                      className="px-2.5 py-1 bg-indigo-500/10 text-indigo-600 rounded-lg hover:bg-indigo-500/20 text-[11px] font-bold"
-                    >
-                      View Wards
-                    </button>
-                    <button
-                      onClick={() => {
-                        setFormData({
-                          department: c.department,
-                          facultyId: c.facultyId
-                        });
-                        setShowAssignModal(true);
-                      }}
-                      className="px-2.5 py-1 bg-purple-500/10 text-purple-600 rounded-lg hover:bg-purple-500/20 text-[11px] font-bold"
-                    >
-                      Change
-                    </button>
-                    <button
-                      onClick={() => handleRemove(c)}
-                      className="px-2.5 py-1 bg-rose-500/10 text-rose-600 rounded-lg hover:bg-rose-500/20 text-[11px] font-bold"
-                    >
-                      Remove
-                    </button>
+              {counsellors.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="p-8 text-center text-slate-500 dark:text-slate-300 font-normal">
+                    No active Ward Counsellor assignments found. Click "Assign Counsellor" to create one.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                counsellors.map((c) => {
+                  const cName = c.wardCounsellorName || c.facultyName || c.name || c.fullName || 'No Name';
+                  const cBranch = c.branch || c.department || 'No Branch';
+                  const cSem = c.semester || 'No Semester';
+                  const cSec = c.section ? (c.section.startsWith('Section') ? c.section : `Section ${c.section}`) : 'No Section';
+                  const cAy = c.academicYear || 'No Academic Year';
+
+                  return (
+                    <tr key={c.id || c.wardCounsellorId || Math.random()} className="hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-medium whitespace-nowrap">
+                        {cName}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-purple-600 dark:text-purple-300 font-medium whitespace-nowrap">
+                        {cBranch}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-center text-gray-900 dark:text-white font-medium">
+                        {cSem}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-center text-indigo-600 dark:text-indigo-300 font-medium">
+                        {cSec}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-center text-gray-900 dark:text-white font-medium font-mono">
+                        {cAy}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-medium">
+                        <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full text-xs font-bold">
+                          Active
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-right space-x-1.5 whitespace-nowrap">
+                        <button
+                          onClick={() => handleViewWards(c)}
+                          className="px-2.5 py-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-500/20 text-xs font-bold"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => {
+                            setFormData({
+                              wardCounsellorId: c.wardCounsellorId || c.facultyId,
+                              wardCounsellorName: cName,
+                              department: cBranch,
+                              semester: cSem,
+                              section: cSec,
+                              academicYear: cAy
+                            });
+                            setShowAssignModal(true);
+                          }}
+                          className="px-2.5 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg hover:bg-purple-500/20 text-xs font-bold"
+                        >
+                          Edit Scope
+                        </button>
+                        <button
+                          onClick={() => handleDeactivate(c)}
+                          className="px-2.5 py-1 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-lg hover:bg-rose-500/20 text-xs font-bold"
+                        >
+                          Deactivate
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
@@ -1188,36 +1317,46 @@ const WardCounsellorManagement = ({ hod }) => {
 
       {/* Assignment History Table */}
       {activeTab === 'history' && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden overflow-x-auto">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-x-auto">
           {historyList.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 text-xs">No historical ward counsellor assignments found.</div>
+            <div className="p-8 text-center text-slate-400 dark:text-slate-300">No historical ward counsellor assignments found.</div>
           ) : (
             <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
-              <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+              <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-700 dark:text-slate-300 tracking-wider">
                 <tr>
-                  <th className="p-4">Faculty</th>
-                  <th className="p-4">Department</th>
-                  <th className="p-4">Assigned Date</th>
-                  <th className="p-4">Removed Date</th>
-                  <th className="p-4">Assigned By</th>
-                  <th className="p-4">Status</th>
+                  <th className="px-4 py-3.5 text-slate-700 dark:text-slate-300">Ward Counsellor</th>
+                  <th className="px-4 py-3.5 text-slate-700 dark:text-slate-300">Branch</th>
+                  <th className="px-4 py-3.5 text-center text-slate-700 dark:text-slate-300">Semester</th>
+                  <th className="px-4 py-3.5 text-center text-slate-700 dark:text-slate-300">Section</th>
+                  <th className="px-4 py-3.5 text-center text-slate-700 dark:text-slate-300">Academic Year</th>
+                  <th className="px-4 py-3.5 text-center text-slate-700 dark:text-slate-300">Assigned Date</th>
+                  <th className="px-4 py-3.5 text-center text-slate-700 dark:text-slate-300">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {historyList.map((h) => (
-                  <tr key={h.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                    <td className="p-4 font-bold text-slate-900 dark:text-white">{h.facultyName}</td>
-                    <td className="p-4 font-bold text-purple-600">{h.department}</td>
-                    <td className="p-4 text-slate-500">{h.assignedDate || (h.assignedAt ? new Date(h.assignedAt).toLocaleDateString() : 'N/A')}</td>
-                    <td className="p-4 text-slate-500">{h.removedAt ? new Date(h.removedAt).toLocaleDateString() : 'Replaced'}</td>
-                    <td className="p-4 text-slate-400">{h.assignedByName || 'HOD'}</td>
-                    <td className="p-4">
-                      <span className="px-2.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full text-[10px] font-bold">
-                        Inactive
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {historyList.map((h) => {
+                  const hName = h.wardCounsellorName || h.facultyName || h.name || h.fullName || 'No Name';
+                  const hBranch = h.branch || h.department || 'No Branch';
+                  const hSem = h.semester || 'No Semester';
+                  const hSec = h.section ? (h.section.startsWith('Section') ? h.section : `Section ${h.section}`) : 'No Section';
+                  const hAy = h.academicYear || 'No Academic Year';
+
+                  return (
+                    <tr key={h.id || Math.random()} className="hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-medium whitespace-nowrap">{hName}</td>
+                      <td className="px-4 py-3 text-sm text-purple-600 dark:text-purple-300 font-medium whitespace-nowrap">{hBranch}</td>
+                      <td className="px-4 py-3 text-sm text-center text-gray-900 dark:text-white font-medium">{hSem}</td>
+                      <td className="px-4 py-3 text-sm text-center text-indigo-600 dark:text-indigo-300 font-medium">{hSec}</td>
+                      <td className="px-4 py-3 text-sm text-center text-gray-900 dark:text-white font-medium font-mono">{hAy}</td>
+                      <td className="px-4 py-3 text-sm text-center text-gray-900 dark:text-white font-medium">{h.assignedAt ? new Date(h.assignedAt).toLocaleDateString() : 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm text-center">
+                        <span className="px-2.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-full text-xs font-bold">
+                          Inactive
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -1231,16 +1370,15 @@ const WardCounsellorManagement = ({ hod }) => {
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
                 <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                  Department Ward Roster — {selectedWardSection.department}
+                  Ward Roster — {selectedWardSection.branch || selectedWardSection.department}
                 </h3>
                 <p className="text-xs text-slate-400">
-                  Active Ward Counsellor: {selectedWardSection.facultyName} ({selectedWardSection.wardStudentsCount} Ward Students across Sections A, B, C, D)
+                  Ward Counsellor: <strong>{selectedWardSection.wardCounsellorName || selectedWardSection.facultyName}</strong> ({selectedWardSection.semester} • {selectedWardSection.section} • AY {selectedWardSection.academicYear})
                 </p>
               </div>
               <button onClick={() => setSelectedWardSection(null)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
             </div>
 
-            {/* Ward Student Table */}
             <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
               <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[9px] text-slate-400 tracking-wider">
                 <tr>
@@ -1250,7 +1388,7 @@ const WardCounsellorManagement = ({ hod }) => {
                   <th className="p-3 text-center">Attendance</th>
                   <th className="p-3 text-center">Marks</th>
                   <th className="p-3">Fee Status</th>
-                  <th className="p-3">Risk</th>
+                  <th className="p-3">Risk Level</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -1258,7 +1396,7 @@ const WardCounsellorManagement = ({ hod }) => {
                   <tr key={st.rollNumber} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                     <td className="p-3 font-mono font-bold">{st.rollNumber}</td>
                     <td className="p-3 font-bold text-slate-900 dark:text-white">{st.name}</td>
-                    <td className="p-3 font-bold text-purple-600">Section A</td>
+                    <td className="p-3 font-bold text-purple-600">{selectedWardSection.section}</td>
                     <td className={`p-3 text-center font-extrabold ${st.attendance < 75 ? 'text-rose-500' : 'text-emerald-600'}`}>{st.attendance}%</td>
                     <td className="p-3 text-center font-bold">{st.internalMarks}/100</td>
                     <td className="p-3">
@@ -1279,122 +1417,53 @@ const WardCounsellorManagement = ({ hod }) => {
         </div>
       )}
 
-      {/* Assign Branch Ward Counsellor Form Modal */}
-      {showAssignModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <form onSubmit={handleAssignClick} className="bg-white dark:bg-slate-900 max-w-lg w-full rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div>
-                <h3 className="text-base font-black text-slate-900 dark:text-white">Assign Branch Ward Counsellor</h3>
-                <p className="text-xs text-slate-400">One Branch = One Active Ward Counsellor across all sections</p>
-              </div>
-              <button type="button" onClick={() => setShowAssignModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
-            </div>
+      {/* 1. ASSIGN WARD COUNSELLOR FORM MODAL */}
+      <AssignWardCounsellorModal
+        isOpen={showAssignModal}
+        onClose={() => setShowAssignModal(false)}
+        onAssignSubmit={handleAssignSubmitModal}
+        hod={hod}
+        deptList={deptList}
+        initialFormData={formData}
+      />
 
-            <div className="space-y-3.5 text-xs">
-              {/* Department Dropdown */}
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Select Branch / Department</label>
-                <select
-                  value={formData.department}
-                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold"
-                >
-                  {deptList.map((d) => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Faculty Dropdown (Filtered to Selected Department) */}
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Select Faculty ({facultyList.length} Active)</label>
-                <select
-                  value={formData.facultyId}
-                  onChange={(e) => setFormData({ ...formData, facultyId: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold"
-                >
-                  {facultyList.length === 0 ? (
-                    <option value="">No faculty members available for {formData.department}</option>
-                  ) : (
-                    facultyList.map((f) => (
-                      <option key={f.uid} value={f.uid}>
-                        {f.fullName} — {f.designation || 'Faculty'} ({f.employeeId || f.uid})
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
-
-              {/* Branch Summary Preview Card */}
-              {selectedFacultyInfo && (
-                <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-2xl space-y-2">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className="text-[9.5px] uppercase font-bold text-purple-600 dark:text-purple-400 block">Department Assignment Preview</span>
-                      <h4 className="text-sm font-black text-slate-900 dark:text-white">{formData.department}</h4>
-                    </div>
-                    <span className="px-2 py-0.5 bg-purple-600 text-white text-[9.5px] font-black rounded-md">1 Branch = 1 Counsellor</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-700 dark:text-slate-300 pt-1 border-t border-purple-500/20">
-                    <div>Selected Faculty: <strong className="text-slate-900 dark:text-white">{selectedFacultyInfo.fullName}</strong></div>
-                    <div>Designation: <strong>{selectedFacultyInfo.designation || 'Associate Professor'}</strong></div>
-                    <div>Total Dept Students: <strong className="text-purple-600 dark:text-purple-400">{totalDeptStudentCount} Wards</strong></div>
-                    <div>Total Sections: <strong>Section A, B, C, D</strong></div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowAssignModal(false)}
-                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-lg shadow-purple-500/20"
-              >
-                Confirm Assignment
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Existing Ward Counsellor Replacement Confirmation Modal */}
+      {/* Active Assignment Conflict Modal */}
       {showReplacementConfirmModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 max-w-md w-full rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4">
             <div className="flex items-center gap-2 text-amber-600">
               <AlertTriangle size={22} />
-              <h3 className="text-base font-black text-slate-900 dark:text-white">Existing Ward Counsellor Found</h3>
+              <h3 className="text-base font-black text-slate-900 dark:text-white">Active Assignment Exists</h3>
             </div>
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-semibold">
-              <strong>{formData.department}</strong> already has an active Branch Ward Counsellor:
-              <br />
-              <span className="text-purple-600 font-extrabold block my-1">
-                {existingActiveCounsellor?.facultyName} ({existingActiveCounsellor?.designation})
-              </span>
-              Do you want to replace the existing Ward Counsellor with <strong>{selectedFacultyInfo?.fullName}</strong>?
+            
+            <p className="text-xs text-rose-600 dark:text-rose-400 font-extrabold bg-rose-50 dark:bg-rose-950/40 p-3 rounded-xl border border-rose-200 dark:border-rose-900">
+              This academic scope already has an active Ward Counsellor.
             </p>
-            <div className="flex items-center justify-end gap-2 pt-2">
+
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs space-y-1">
+              <span className="text-[10px] text-slate-400 uppercase font-black block">Current Active Counsellor:</span>
+              <h4 className="text-sm font-black text-slate-900 dark:text-white">{scopeConflictAssignment?.wardCounsellorName || scopeConflictAssignment?.facultyName}</h4>
+              <p className="text-purple-600 dark:text-purple-400 font-bold">{scopeConflictAssignment?.department}</p>
+              <p className="text-slate-600 dark:text-slate-300 font-medium">{scopeConflictAssignment?.semester} • {scopeConflictAssignment?.section} ({scopeConflictAssignment?.academicYear})</p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
-                onClick={() => setShowReplacementConfirmModal(false)}
-                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold"
+                onClick={() => {
+                  setShowReplacementConfirmModal(false);
+                  if (scopeConflictAssignment) handleViewWards(scopeConflictAssignment);
+                }}
+                className="px-4 py-2 rounded-xl bg-indigo-500/10 text-indigo-600 text-xs font-bold hover:bg-indigo-500/20"
               >
-                Cancel
+                View Current Counsellor
               </button>
               <button
                 type="button"
                 onClick={executeAssignment}
                 className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-lg shadow-amber-500/20"
               >
-                Replace Ward Counsellor
+                Change Counsellor
               </button>
             </div>
           </div>

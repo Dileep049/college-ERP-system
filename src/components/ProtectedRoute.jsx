@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export const ProtectedRoute = ({ children, allowedRole }) => {
-  const { user, loading, showToast } = useAuth();
+  const { user, loading, profileError, loadUserProfile, logout, showToast } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -15,6 +15,34 @@ export const ProtectedRoute = ({ children, allowedRole }) => {
           <div className="absolute h-8 w-8 rounded-full bg-blue-500/20 animate-pulse"></div>
         </div>
         <p className="mt-4 text-slate-500 dark:text-slate-400 font-medium animate-pulse">Verifying credentials...</p>
+      </div>
+    );
+  }
+
+  if (profileError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 p-6 text-center transition-colors duration-200">
+        <div className="max-w-md w-full p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl space-y-5">
+          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto text-xl font-bold">
+            ⚠️
+          </div>
+          <h3 className="text-lg font-black text-slate-900 dark:text-white">Profile Loading Error</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{profileError}</p>
+          <div className="flex items-center justify-center gap-3 pt-2">
+            <button
+              onClick={() => user?.uid ? loadUserProfile(user.uid) : window.location.reload()}
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-xs font-bold shadow-md transition-all"
+            >
+              Retry Profile
+            </button>
+            <button
+              onClick={() => logout()}
+              className="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl text-xs font-bold transition-all"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

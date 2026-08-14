@@ -24,6 +24,7 @@ import { HODPortal } from './pages/HODPortal';
 import { PrincipalPortal } from './pages/PrincipalPortal';
 import { PlacementPortal } from './pages/PlacementPortal';
 import { WardCounsellorPortal } from './pages/WardCounsellorPortal';
+import { WardCounsellorProfile } from './pages/WardCounsellorProfile';
 import { LibrarianPortal } from './pages/LibrarianPortal';
 import { AdminPortal } from './pages/AdminPortal';
 import { ParentPortal } from './pages/ParentPortal';
@@ -170,6 +171,15 @@ const LandingPage = () => {
   );
 };
 
+// Helper to render Leave Application inside DashboardLayout based on user role
+const ApplyLeavePage = () => {
+  const { user } = useAuth();
+  if (user?.role === 'faculty') {
+    return <FacultyPortal subPage="leaves" />;
+  }
+  return <StudentPortal subPage="leaves" />;
+};
+
 // Main App Container Routing
 function AppContent() {
   return (
@@ -178,371 +188,111 @@ function AppContent() {
         {/* Landing Select Page */}
         <Route path="/" element={<LandingPage />} />
 
-        {/* --- STUDENT PORTAL ROUTES --- */}
+        {/* --- AUTHENTICATION LOGIN ROUTES (PUBLIC) --- */}
         <Route path="/student/login" element={<StudentLogin />} />
-        {['dashboard', 'profile', 'academic-overview', 'course-registration', 'attendance', 'marks', 'results', 'assignments', 'notes', 'leaves', 'counsellor', 'faculty', 'placements', 'counselling', 'notifications', 'document-requests', 'support-desk', 'performance'].map((subPage) => (
-          <Route key={subPage} path={`/student/${subPage}`} element={
-            <ProtectedRoute allowedRole="student">
-              <DashboardLayout>
-                <StudentPortal subPage={subPage} />
-              </DashboardLayout>
-            </ProtectedRoute>
-          } />
-        ))}
-
-        {/* --- PARENT PORTAL ROUTES --- */}
-        <Route path="/parent/login" element={<ParentLogin />} />
-        {['dashboard', 'my-ward', 'academic-overview', 'attendance', 'marks', 'results', 'assignments', 'notes', 'leaves', 'counsellor', 'faculty', 'counselling', 'meetings', 'placements', 'monthly-report', 'notifications', 'profile', 'fees', 'grievances'].map((subPage) => (
-          <Route key={subPage} path={`/parent/${subPage}`} element={
-            <ProtectedRoute allowedRole="parent">
-              <DashboardLayout>
-                <ParentPortal subPage={subPage} />
-              </DashboardLayout>
-            </ProtectedRoute>
-          } />
-        ))}
-
-        {/* --- FACULTY PORTAL ROUTES --- */}
         <Route path="/faculty/login" element={<FacultyLogin />} />
-        {['dashboard', 'classes', 'students', 'attendance', 'marks', 'assignments', 'notes', 'academic-performance', 'student-progress', 'leaves', 'reports', 'profile', 'ward-counselling', 'wards'].map((subPage) => (
-          <Route key={subPage} path={`/faculty/${subPage}`} element={
-            <ProtectedRoute allowedRole="faculty">
-              <DashboardLayout>
-                <FacultyPortal subPage={subPage} />
-              </DashboardLayout>
-            </ProtectedRoute>
-          } />
-        ))}
-
-        {/* --- HOD PORTAL ROUTES --- */}
+        <Route path="/parent/login" element={<ParentLogin />} />
         <Route path="/hod/login" element={<HODLogin />} />
-        <Route path="/hod/dashboard" element={
-          <ProtectedRoute allowedRole="hod">
-            <DashboardLayout>
-              <HODPortal subPage="dashboard" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/hod/overview" element={
-          <ProtectedRoute allowedRole="hod">
-            <DashboardLayout>
-              <HODPortal subPage="overview" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/hod/faculty-directory" element={
-          <ProtectedRoute allowedRole="hod">
-            <DashboardLayout>
-              <HODPortal subPage="faculty-directory" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/hod/faculty" element={
-          <ProtectedRoute allowedRole="hod">
-            <DashboardLayout>
-              <HODPortal subPage="faculty-directory" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/hod/ward-counsellors" element={
-          <ProtectedRoute allowedRole="hod">
-            <DashboardLayout>
-              <HODPortal subPage="ward-counsellors" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/hod/workload" element={
-          <ProtectedRoute allowedRole="hod">
-            <DashboardLayout>
-              <HODPortal subPage="workload" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/hod/attendance-monitoring" element={
-          <ProtectedRoute allowedRole="hod">
-            <DashboardLayout>
-              <HODPortal subPage="attendance-monitoring" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/hod/attendance-unlocks" element={
-          <ProtectedRoute allowedRole="hod">
-            <DashboardLayout>
-              <HODPortal subPage="attendance-unlocks" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/hod/faculty-leaves" element={
-          <ProtectedRoute allowedRole="hod">
-            <DashboardLayout>
-              <HODPortal subPage="faculty-leaves" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/hod/leaves" element={
-          <ProtectedRoute allowedRole="hod">
-            <DashboardLayout>
-              <HODPortal subPage="faculty-leaves" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/hod/academic-performance" element={
-          <ProtectedRoute allowedRole="hod">
-            <DashboardLayout>
-              <HODPortal subPage="academic-performance" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/hod/curriculum" element={
-          <ProtectedRoute allowedRole="hod">
-            <DashboardLayout>
-              <HODPortal subPage="curriculum" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/hod/announcements" element={
-          <ProtectedRoute allowedRole="hod">
-            <DashboardLayout>
-              <HODPortal subPage="announcements" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/hod/reports" element={
-          <ProtectedRoute allowedRole="hod">
-            <DashboardLayout>
-              <HODPortal subPage="reports" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/hod/audit-logs" element={
-          <ProtectedRoute allowedRole="hod">
-            <DashboardLayout>
-              <HODPortal subPage="audit-logs" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/hod/settings" element={
-          <ProtectedRoute allowedRole="hod">
-            <DashboardLayout>
-              <HODPortal subPage="settings" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-
-        {/* --- PRINCIPAL PORTAL ROUTES --- */}
         <Route path="/principal/login" element={<PrincipalLogin />} />
-        <Route path="/principal/dashboard" element={
-          <ProtectedRoute allowedRole="principal">
-            <DashboardLayout>
-              <PrincipalPortal subPage="dashboard" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/principal/branches" element={
-          <ProtectedRoute allowedRole="principal">
-            <DashboardLayout>
-              <PrincipalPortal subPage="branches" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/principal/results" element={
-          <ProtectedRoute allowedRole="principal">
-            <DashboardLayout>
-              <PrincipalPortal subPage="results" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/principal/performance" element={
-          <ProtectedRoute allowedRole="principal">
-            <DashboardLayout>
-              <PrincipalPortal subPage="performance" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/principal/faculty" element={
-          <ProtectedRoute allowedRole="principal">
-            <DashboardLayout>
-              <PrincipalPortal subPage="faculty" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/principal/attendance" element={
-          <ProtectedRoute allowedRole="principal">
-            <DashboardLayout>
-              <PrincipalPortal subPage="attendance" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/principal/placements" element={
-          <ProtectedRoute allowedRole="principal">
-            <DashboardLayout>
-              <PrincipalPortal subPage="placements" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/principal/settings" element={
-          <ProtectedRoute allowedRole="principal">
-            <DashboardLayout>
-              <PrincipalPortal subPage="settings" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/principal/reports" element={
-          <ProtectedRoute allowedRole="principal">
-            <DashboardLayout>
-              <PrincipalPortal subPage="reports" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/principal/documents" element={
-          <ProtectedRoute allowedRole="principal">
-            <DashboardLayout>
-              <PrincipalPortal subPage="documents" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/principal/leaves" element={
-          <ProtectedRoute allowedRole="principal">
-            <DashboardLayout>
-              <PrincipalPortal subPage="leaves" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/principal/calendar" element={
-          <ProtectedRoute allowedRole="principal">
-            <DashboardLayout>
-              <PrincipalPortal subPage="calendar" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-
-        {/* --- PLACEMENT PORTAL ROUTES --- */}
         <Route path="/placement/login" element={<PlacementLogin />} />
-        {['dashboard', 'drives', 'upcoming-drives', 'applications', 'students', 'candidates', 'shortlisted', 'interviews', 'selected', 'partners', 'training', 'analytics', 'reports', 'notifications', 'settings'].map((subPage) => (
-          <Route key={subPage} path={`/placement/${subPage}`} element={
-            <ProtectedRoute allowedRole="placement">
-              <DashboardLayout>
-                <PlacementPortal subPage={subPage} />
-              </DashboardLayout>
-            </ProtectedRoute>
-          } />
-        ))}
-
-        {/* --- WARD COUNSELLOR PORTAL ROUTES --- */}
         <Route path="/counsellor/login" element={<CounsellorLogin />} />
-        <Route path="/counsellor/dashboard" element={
-          <ProtectedRoute allowedRole="counsellor">
-            <DashboardLayout>
-              <WardCounsellorPortal subPage="dashboard" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/counsellor/parent-meetings" element={
-          <ProtectedRoute allowedRole="counsellor">
-            <DashboardLayout>
-              <WardCounsellorPortal subPage="parent-meetings" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/counsellor/wards" element={
-          <ProtectedRoute allowedRole="counsellor">
-            <DashboardLayout>
-              <WardCounsellorPortal subPage="wards" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/counsellor/leaves" element={
-          <ProtectedRoute allowedRole="counsellor">
-            <DashboardLayout>
-              <WardCounsellorPortal subPage="leaves" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/counsellor/reports" element={
-          <ProtectedRoute allowedRole="counsellor">
-            <DashboardLayout>
-              <WardCounsellorPortal subPage="reports" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-
-        {/* --- CENTRAL LIBRARY PORTAL ROUTES --- */}
         <Route path="/librarian/login" element={<LibrarianLogin />} />
-        <Route path="/librarian/dashboard" element={
-          <ProtectedRoute allowedRole="librarian">
-            <DashboardLayout>
-              <LibrarianPortal subPage="dashboard" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/librarian/circulation" element={
-          <ProtectedRoute allowedRole="librarian">
-            <DashboardLayout>
-              <LibrarianPortal subPage="circulation" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/librarian/analytics" element={
-          <ProtectedRoute allowedRole="librarian">
-            <DashboardLayout>
-              <LibrarianPortal subPage="analytics" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/librarian/eresources" element={
-          <ProtectedRoute allowedRole="librarian">
-            <DashboardLayout>
-              <LibrarianPortal subPage="eresources" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/librarian/fines" element={
-          <ProtectedRoute allowedRole="librarian">
-            <DashboardLayout>
-              <LibrarianPortal subPage="fines" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-
-        {/* --- ADMIN PORTAL ROUTES --- */}
         <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin/dashboard" element={
-          <ProtectedRoute allowedRole="admin">
-            <DashboardLayout>
-              <AdminPortal />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/admin/reports" element={
-          <ProtectedRoute allowedRole="admin">
-            <DashboardLayout>
-              <ReportsModule userRole="admin" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/admin/bulk-import" element={
-          <ProtectedRoute allowedRole="admin">
-            <DashboardLayout>
-              <StudentBulkImport />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/faculty/reports" element={
-          <ProtectedRoute allowedRole="faculty">
-            <DashboardLayout>
-              <ReportsModule userRole="faculty" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/counsellor/reports" element={
-          <ProtectedRoute allowedRole="counsellor">
-            <DashboardLayout>
-              <ReportsModule userRole="counsellor" />
-            </DashboardLayout>
-          </ProtectedRoute>
-        } />
 
-        {/* Fallback redirect */}
+        {/* --- PROTECTED NESTED DASHBOARD ROUTES (OUTLET WRAPPED) --- */}
+        <Route element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }>
+          {/* Universal Leave Application Route */}
+          <Route path="/apply-leave" element={<ApplyLeavePage />} />
+          <Route path="/dashboard/leave" element={<ApplyLeavePage />} />
+          <Route path="/dashboard/attendance" element={<StudentPortal subPage="attendance" />} />
+          <Route path="/dashboard/assignments" element={<StudentPortal subPage="assignments" />} />
+          <Route path="/dashboard/marks" element={<StudentPortal subPage="marks" />} />
+          <Route path="/dashboard" element={<StudentPortal subPage="dashboard" />} />
+
+          {/* Student Portal Subpages */}
+          <Route path="/student/apply-leave" element={<StudentPortal subPage="leaves" />} />
+          {['dashboard', 'profile', 'academic-overview', 'course-registration', 'attendance', 'marks', 'results', 'assignments', 'notes', 'leaves', 'counsellor', 'faculty', 'placements', 'counselling', 'notifications', 'document-requests', 'support-desk', 'performance'].map((subPage) => (
+            <Route key={subPage} path={`/student/${subPage}`} element={<StudentPortal subPage={subPage} />} />
+          ))}
+
+          {/* Faculty Portal Subpages */}
+          <Route path="/faculty/apply-leave" element={<FacultyPortal subPage="leaves" />} />
+          {['dashboard', 'classes', 'students', 'attendance', 'marks', 'assignments', 'notes', 'academic-performance', 'student-progress', 'leaves', 'reports', 'profile', 'ward-counselling', 'wards'].map((subPage) => (
+            <Route key={subPage} path={`/faculty/${subPage}`} element={<FacultyPortal subPage={subPage} />} />
+          ))}
+
+          {/* Parent Portal Subpages */}
+          {['dashboard', 'my-ward', 'academic-overview', 'attendance', 'marks', 'results', 'assignments', 'notes', 'leaves', 'counsellor', 'faculty', 'counselling', 'meetings', 'placements', 'monthly-report', 'notifications', 'profile', 'fees', 'grievances'].map((subPage) => (
+            <Route key={subPage} path={`/parent/${subPage}`} element={<ParentPortal subPage={subPage} />} />
+          ))}
+
+          {/* HOD Portal Subpages */}
+          <Route path="/hod/dashboard" element={<HODPortal subPage="dashboard" />} />
+          <Route path="/hod/overview" element={<HODPortal subPage="overview" />} />
+          <Route path="/hod/faculty-directory" element={<HODPortal subPage="faculty-directory" />} />
+          <Route path="/hod/faculty" element={<HODPortal subPage="faculty-directory" />} />
+          <Route path="/hod/ward-counsellors" element={<HODPortal subPage="ward-counsellors" />} />
+          <Route path="/hod/workload" element={<HODPortal subPage="workload" />} />
+          <Route path="/hod/attendance-monitoring" element={<HODPortal subPage="attendance-monitoring" />} />
+          <Route path="/hod/attendance-unlocks" element={<HODPortal subPage="attendance-unlocks" />} />
+          <Route path="/hod/faculty-leaves" element={<HODPortal subPage="faculty-leaves" />} />
+          <Route path="/hod/leaves" element={<HODPortal subPage="faculty-leaves" />} />
+          <Route path="/hod/academic-performance" element={<HODPortal subPage="academic-performance" />} />
+          <Route path="/hod/curriculum" element={<HODPortal subPage="curriculum" />} />
+          <Route path="/hod/announcements" element={<HODPortal subPage="announcements" />} />
+          <Route path="/hod/reports" element={<HODPortal subPage="reports" />} />
+          <Route path="/hod/audit-logs" element={<HODPortal subPage="audit-logs" />} />
+          <Route path="/hod/settings" element={<HODPortal subPage="settings" />} />
+
+          {/* Principal Portal Subpages */}
+          <Route path="/principal/dashboard" element={<PrincipalPortal subPage="dashboard" />} />
+          <Route path="/principal/branches" element={<PrincipalPortal subPage="branches" />} />
+          <Route path="/principal/results" element={<PrincipalPortal subPage="results" />} />
+          <Route path="/principal/performance" element={<PrincipalPortal subPage="performance" />} />
+          <Route path="/principal/faculty" element={<PrincipalPortal subPage="faculty" />} />
+          <Route path="/principal/attendance" element={<PrincipalPortal subPage="attendance" />} />
+          <Route path="/principal/placements" element={<PrincipalPortal subPage="placements" />} />
+          <Route path="/principal/settings" element={<PrincipalPortal subPage="settings" />} />
+          <Route path="/principal/reports" element={<PrincipalPortal subPage="reports" />} />
+          <Route path="/principal/documents" element={<PrincipalPortal subPage="documents" />} />
+          <Route path="/principal/leaves" element={<PrincipalPortal subPage="leaves" />} />
+          <Route path="/principal/calendar" element={<PrincipalPortal subPage="calendar" />} />
+
+          {/* Placement Portal Subpages */}
+          {['dashboard', 'drives', 'upcoming-drives', 'applications', 'students', 'candidates', 'shortlisted', 'interviews', 'selected', 'partners', 'training', 'analytics', 'reports', 'notifications', 'settings'].map((subPage) => (
+            <Route key={subPage} path={`/placement/${subPage}`} element={<PlacementPortal subPage={subPage} />} />
+          ))}
+
+          {/* Ward Counsellor Subpages */}
+          <Route path="/counsellor/dashboard" element={<WardCounsellorPortal subPage="dashboard" />} />
+          <Route path="/counsellor/parent-meetings" element={<WardCounsellorPortal subPage="parent-meetings" />} />
+          <Route path="/counsellor/wards" element={<WardCounsellorPortal subPage="wards" />} />
+          <Route path="/counsellor/leaves" element={<WardCounsellorPortal subPage="leaves" />} />
+          <Route path="/counsellor/student-leaves" element={<WardCounsellorPortal subPage="student-leaves" />} />
+          <Route path="/counsellor/reports" element={<WardCounsellorPortal subPage="reports" />} />
+          <Route path="/counsellor/profile" element={<WardCounsellorProfile />} />
+          <Route path="/ward-counsellor/profile" element={<WardCounsellorProfile />} />
+
+          {/* Central Library Subpages */}
+          <Route path="/librarian/dashboard" element={<LibrarianPortal subPage="dashboard" />} />
+          <Route path="/librarian/circulation" element={<LibrarianPortal subPage="circulation" />} />
+          <Route path="/librarian/analytics" element={<LibrarianPortal subPage="analytics" />} />
+          <Route path="/librarian/eresources" element={<LibrarianPortal subPage="eresources" />} />
+          <Route path="/librarian/fines" element={<LibrarianPortal subPage="fines" />} />
+
+          {/* Admin Subpages */}
+          <Route path="/admin/dashboard" element={<AdminPortal />} />
+          <Route path="/admin/reports" element={<ReportsModule userRole="admin" />} />
+          <Route path="/admin/bulk-import" element={<StudentBulkImport />} />
+          <Route path="/faculty/reports" element={<ReportsModule userRole="faculty" />} />
+          <Route path="/counsellor/reports" element={<ReportsModule userRole="counsellor" />} />
+        </Route>
+
+        {/* Fallback Catch-All */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 

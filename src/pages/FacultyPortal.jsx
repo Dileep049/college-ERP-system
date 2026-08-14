@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { mockDB, KBN_BRANCHES, KBN_SEMESTERS, BRANCH_SUBJECT_MAP, getSubjectsForBranch } from '../services/firebase';
+import { db, isFirebaseConfigured, mockDB, KBN_BRANCHES, KBN_SEMESTERS, BRANCH_SUBJECT_MAP, getSubjectsForBranch } from '../services/firebase';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { FacultyDashboard } from '../components/FacultyDashboard';
 import { 
   LayoutDashboard,
   BookOpen,
@@ -123,242 +125,7 @@ const calculateStudentRisk = (attendance, totalMarks) => {
   return { level: 'Good', class: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30', reason: 'Satisfactory Academic Record' };
 };
 
-// 1. FACULTY ACADEMIC COMMAND CENTER (DASHBOARD)
-const FacultyDashboard = ({ faculty }) => {
-  const [loading, setLoading] = useState(true);
-  const [students, setStudents] = useState([]);
-  const [allocations, setAllocations] = useState([]);
-  const [assignments, setAssignments] = useState([]);
-  const [notes, setNotes] = useState([]);
-  const [attendanceRecords, setAttendanceRecords] = useState([]);
-
-  const facultyDept = getFacultyDept(faculty);
-
-  useEffect(() => {
-    const loadDashboard = async () => {
-      try {
-        setLoading(true);
-        
-        const [allStudents, myAllocations, allAssignments, allNotes, attendanceData] = await Promise.all([
-          mockDB.getStudents(facultyDept),
-          mockDB.getSubjectAllocations(facultyDept, faculty?.uid),
-          mockDB.getAssignments(facultyDept),
-          mockDB.getNotes(facultyDept),
-          mockDB.getAttendance(facultyDept)
-        ]);
-
-        setStudents(allStudents);
-        setAllocations(myAllocations.length > 0 ? myAllocations : [
-          { subject: 'Neural Networks & Deep Learning', subjectCode: 'CS-601', department: facultyDept, semester: 'Semester 6', section: 'A', period: 'Period 2' },
-          { subject: 'Cloud Computing & DevOps', subjectCode: 'CS-602', department: facultyDept, semester: 'Semester 6', section: 'B', period: 'Period 4' }
-        ]);
-        setAssignments(allAssignments.filter(a => a.facultyId === faculty?.uid || a.createdBy === faculty?.fullName));
-        setNotes(allNotes.filter(n => n.facultyId === faculty?.uid || n.uploadedBy === faculty?.fullName));
-        setAttendanceRecords(attendanceData);
-      } catch (e) {
-        console.error("Faculty dashboard fetch error:", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDashboard();
-  }, [faculty]);
-
-  // Derived metrics scoped strictly to Faculty's Department
-  const totalClassesCount = allocations.length;
-  const totalStudentsCount = students.length;
-  const todayClassesCount = Math.min(totalClassesCount * 2, 4);
-  const attendanceCompletedCount = attendanceRecords.filter(r => r.date === new Date().toISOString().split('T')[0]).length;
-  const pendingAttendanceCount = Math.max(0, todayClassesCount - attendanceCompletedCount);
-  
-  const avgAttendance = students.length > 0 
-    ? (students.reduce((acc, s) => acc + (parseFloat(s.attendancePercentage || s.attendance || 82)), 0) / students.length).toFixed(1)
-    : 84.5;
-
-  const atRiskStudents = students.filter(s => (s.attendancePercentage || s.attendance || 80) < 75 || (s.gpa || 8.0) < 6.5);
-
-  return (
-    <div className="space-y-6 text-xs font-semibold">
-      
-      {/* Professional Header Banner */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-900 text-white shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-indigo-300 text-[10px] font-black uppercase tracking-widest">
-            <span>ACADEMIA</span> • <span>Faculty Console</span>
-          </div>
-          <h1 className="text-2xl font-black font-display tracking-tight">
-            {faculty?.fullName || faculty?.name || 'Prof. Charles Xavier'}
-          </h1>
-          <p className="text-xs text-slate-300 font-medium flex items-center gap-2">
-            <span>{faculty?.designation || 'Professor'}</span> • 
-            <span className="px-2.5 py-0.5 bg-blue-500/20 text-blue-200 rounded-lg font-black border border-blue-400/30 flex items-center gap-1">
-              <Building2 size={12} /> {facultyDept}
-            </span>
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <span className="px-3.5 py-1.5 bg-white/10 backdrop-blur-md rounded-xl border border-white/15 text-[11px] font-extrabold text-emerald-300 flex items-center gap-1.5">
-            <CheckCircle2 size={14} /> Department Locked & Active
-          </span>
-        </div>
-      </div>
-
-      {/* 9 Main Dashboard Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Assigned Classes</span>
-            <BookOpen size={16} className="text-blue-500" />
-          </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white">{totalClassesCount}</p>
-          <span className="text-[9.5px] text-blue-600 dark:text-blue-400 font-bold block">{facultyDept} Courses</span>
-        </div>
-
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Total Students</span>
-            <Users size={16} className="text-indigo-500" />
-          </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white">{totalStudentsCount}</p>
-          <span className="text-[9.5px] text-indigo-600 dark:text-indigo-400 font-bold block">Enrolled Candidates</span>
-        </div>
-
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Today's Lectures</span>
-            <Clock size={16} className="text-purple-500" />
-          </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white">{todayClassesCount}</p>
-          <span className="text-[9.5px] text-purple-600 dark:text-purple-400 font-bold block">Scheduled Slots</span>
-        </div>
-
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Attendance Marked</span>
-            <CheckSquare size={16} className="text-emerald-500" />
-          </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white">{attendanceCompletedCount}</p>
-          <span className="text-[9.5px] text-emerald-600 dark:text-emerald-400 font-bold block">Completed Logs</span>
-        </div>
-
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Pending Attendance</span>
-            <AlertTriangle size={16} className="text-amber-500" />
-          </div>
-          <p className="text-2xl font-black text-amber-500">{pendingAttendanceCount}</p>
-          <span className="text-[9.5px] text-amber-600 dark:text-amber-400 font-bold block">Action Required</span>
-        </div>
-
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Assignments</span>
-            <Briefcase size={16} className="text-sky-500" />
-          </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white">{assignments.length}</p>
-          <span className="text-[9.5px] text-sky-600 dark:text-sky-400 font-bold block">Published Tasks</span>
-        </div>
-
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Study Materials</span>
-            <ClipboardList size={16} className="text-teal-500" />
-          </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white">{notes.length}</p>
-          <span className="text-[9.5px] text-teal-600 dark:text-teal-400 font-bold block">Notes Uploaded</span>
-        </div>
-
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Avg Attendance</span>
-            <TrendingUp size={16} className="text-emerald-500" />
-          </div>
-          <p className="text-2xl font-black text-emerald-500">{avgAttendance}%</p>
-          <span className="text-[9.5px] text-emerald-600 dark:text-emerald-400 font-bold block">Class Average</span>
-        </div>
-
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2 col-span-2 sm:col-span-1">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Students At Risk</span>
-            <AlertTriangle size={16} className="text-rose-500" />
-          </div>
-          <p className="text-2xl font-black text-rose-500">{atRiskStudents.length}</p>
-          <span className="text-[9.5px] text-rose-600 dark:text-rose-400 font-bold block">Below 75% Att / Low Marks</span>
-        </div>
-      </div>
-
-      {/* Academic Analytics & Class Progress Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Class Attendance Visual Breakdown */}
-        <div className="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-            <div>
-              <h3 className="text-sm font-black text-slate-900 dark:text-white">Academic Subject Performance & Attendance Distribution</h3>
-              <p className="text-[10.5px] text-slate-400">Live attendance percentage across assigned {facultyDept} subject sections</p>
-            </div>
-            <Activity size={18} className="text-blue-500" />
-          </div>
-
-          <div className="space-y-4">
-            {allocations.map((alloc, idx) => {
-              const attVal = 82 + idx * 4;
-              return (
-                <div key={idx} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 space-y-2">
-                  <div className="flex justify-between items-center text-xs">
-                    <div>
-                      <span className="font-extrabold text-slate-900 dark:text-white">{alloc.subject}</span>
-                      <span className="text-[10px] text-slate-400 block">{alloc.department || facultyDept} • {alloc.semester} ({alloc.section || 'Section A'})</span>
-                    </div>
-                    <span className="font-black text-blue-600 dark:text-blue-400 text-sm">{attVal}% Att.</span>
-                  </div>
-                  <div className="w-full bg-slate-200 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
-                    <div className="bg-gradient-to-r from-blue-500 to-indigo-600 h-full rounded-full transition-all" style={{ width: `${attVal}%` }}></div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* At-Risk Students Quick Focus Panel */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-            <div>
-              <h3 className="text-sm font-black text-slate-900 dark:text-white">Academic Warning List ({facultyDept})</h3>
-              <p className="text-[10.5px] text-slate-400">Students requiring performance intervention</p>
-            </div>
-            <AlertTriangle size={18} className="text-rose-500" />
-          </div>
-
-          {atRiskStudents.length === 0 ? (
-            <div className="py-12 text-center text-slate-400 font-bold">All enrolled students maintain satisfactory attendance (&gt;75%).</div>
-          ) : (
-            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-              {atRiskStudents.slice(0, 5).map((s, idx) => (
-                <div key={idx} className="p-3.5 rounded-2xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <img src={s.photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'} alt="" className="w-8 h-8 rounded-full object-cover border border-rose-300" />
-                    <div>
-                      <h4 className="text-xs font-black text-slate-900 dark:text-white">{s.fullName || s.studentName}</h4>
-                      <p className="text-[9.5px] text-slate-400">{s.rollNumber} • {s.semester}</p>
-                    </div>
-                  </div>
-                  <span className="px-2 py-0.5 bg-rose-500/10 text-rose-600 rounded text-[9.5px] font-black">
-                    {s.attendancePercentage || s.attendance || 68}% Att.
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-      </div>
-
-    </div>
-  );
-};
+// FacultyPortal routes subpages to dedicated portal components
 
 // 2. MY CLASSES
 const FacultyClasses = ({ faculty }) => {
@@ -628,31 +395,37 @@ const FacultyStudents = ({ faculty }) => {
   );
 };
 
-// 4. ATTENDANCE & ATTENDANCE MARKING (AUTOMATIC FACULTY DEPARTMENT LOCK)
+// 4. ATTENDANCE & ATTENDANCE MARKING (AUTOMATIC FACULTY TEACHING SCOPE LOCK)
 const FacultyAttendance = ({ faculty }) => {
-  const facultyDept = getFacultyDept(faculty);
-
-  const [semester, setSemester] = useState('Semester 6');
-  const [section, setSection] = useState('Section A');
-  const [subject, setSubject] = useState('Neural Networks & Deep Learning');
+  const [teachingAssignments, setTeachingAssignments] = useState([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [lecturePeriod, setLecturePeriod] = useState('Period 2 (10:00 - 11:00 AM)');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
   const [students, setStudents] = useState([]);
   const [attendanceMap, setAttendanceMap] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { showToast } = useAuth();
 
-  // Branch subjects available
-  const availableSubjects = getSubjectsForBranch(facultyDept).length > 0 
-    ? getSubjectsForBranch(facultyDept) 
-    : ['Data Structures', 'Operating Systems', 'Database Management Systems', 'Neural Networks', 'Computer Networks'];
+  useEffect(() => {
+    const fetchAssigns = async () => {
+      setLoading(true);
+      const assigns = await mockDB.getFacultyAssignments(faculty?.uid || faculty?.id || faculty?.email);
+      const activeOnly = assigns.filter(a => a.status === 'active' || a.status === 'Active');
+      setTeachingAssignments(activeOnly);
+      setLoading(false);
+    };
+    fetchAssigns();
+  }, [faculty]);
+
+  const currentScope = teachingAssignments[selectedIndex] || null;
 
   const loadStudentsForAttendance = async () => {
+    if (!currentScope) return;
     try {
       setLoading(true);
-      const data = await mockDB.getStudentsByBranchAndSemester(facultyDept, semester, section);
+      const data = await mockDB.getStudentsByBranchAndSemester(currentScope.department, currentScope.semester, currentScope.section);
       setStudents(data);
 
       const initialMap = {};
@@ -668,8 +441,27 @@ const FacultyAttendance = ({ faculty }) => {
   };
 
   useEffect(() => {
-    loadStudentsForAttendance();
-  }, [facultyDept, semester, section]);
+    if (currentScope) {
+      loadStudentsForAttendance();
+    }
+  }, [selectedIndex, teachingAssignments]);
+
+  if (!loading && teachingAssignments.length === 0) {
+    return (
+      <div className="p-8 max-w-xl mx-auto my-12 bg-white dark:bg-slate-900 rounded-3xl border border-rose-500/30 shadow-2xl text-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-rose-500/10 text-rose-600 flex items-center justify-center mx-auto font-black text-2xl border border-rose-500/20">
+          🔒
+        </div>
+        <h2 className="text-xl font-black text-slate-900 dark:text-white">Scope Access Restricted</h2>
+        <p className="text-sm font-bold text-rose-600 dark:text-rose-400">
+          You are not authorized to access this academic scope.
+        </p>
+        <p className="text-xs text-slate-400 leading-relaxed">
+          No active teaching assignment has been provided by your Head of Department for your account ({faculty?.email}).
+        </p>
+      </div>
+    );
+  }
 
   const handleStatusToggle = (studentId, status) => {
     setAttendanceMap(prev => ({ ...prev, [studentId]: status }));
@@ -837,29 +629,35 @@ const FacultyAttendance = ({ faculty }) => {
   );
 };
 
-// 5. INTERNAL MARKS (AUTOMATIC FACULTY DEPARTMENT LOCK)
+// 5. INTERNAL MARKS (AUTOMATIC FACULTY TEACHING SCOPE LOCK)
 const FacultyMarks = ({ faculty }) => {
-  const facultyDept = getFacultyDept(faculty);
-
-  const [semester, setSemester] = useState('Semester 6');
-  const [section, setSection] = useState('Section A');
-  const [subject, setSubject] = useState('Neural Networks & Deep Learning');
-
+  const [teachingAssignments, setTeachingAssignments] = useState([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [marksMap, setMarksMap] = useState({});
   const { showToast } = useAuth();
 
-  const availableSubjects = getSubjectsForBranch(facultyDept).length > 0 
-    ? getSubjectsForBranch(facultyDept) 
-    : ['Data Structures', 'Operating Systems', 'Database Management Systems', 'Neural Networks', 'Computer Networks'];
+  useEffect(() => {
+    const fetchAssigns = async () => {
+      setLoading(true);
+      const assigns = await mockDB.getFacultyAssignments(faculty?.uid || faculty?.id || faculty?.email);
+      const activeOnly = assigns.filter(a => a.status === 'active' || a.status === 'Active');
+      setTeachingAssignments(activeOnly);
+      setLoading(false);
+    };
+    fetchAssigns();
+  }, [faculty]);
+
+  const currentScope = teachingAssignments[selectedIndex] || null;
 
   useEffect(() => {
     const loadMarks = async () => {
+      if (!currentScope) return;
       try {
         setLoading(true);
-        const data = await mockDB.getStudentsByBranchAndSemester(facultyDept, semester, section);
+        const data = await mockDB.getStudentsByBranchAndSemester(currentScope.department, currentScope.semester, currentScope.section);
         setStudents(data);
 
         const map = {};
@@ -878,8 +676,25 @@ const FacultyMarks = ({ faculty }) => {
         setLoading(false);
       }
     };
-    loadMarks();
-  }, [facultyDept, semester, section]);
+    if (currentScope) loadMarks();
+  }, [selectedIndex, teachingAssignments]);
+
+  if (!loading && teachingAssignments.length === 0) {
+    return (
+      <div className="p-8 max-w-xl mx-auto my-12 bg-white dark:bg-slate-900 rounded-3xl border border-rose-500/30 shadow-2xl text-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-rose-500/10 text-rose-600 flex items-center justify-center mx-auto font-black text-2xl border border-rose-500/20">
+          🔒
+        </div>
+        <h2 className="text-xl font-black text-slate-900 dark:text-white">Scope Access Restricted</h2>
+        <p className="text-sm font-bold text-rose-600 dark:text-rose-400">
+          You are not authorized to access this academic scope.
+        </p>
+        <p className="text-xs text-slate-400 leading-relaxed">
+          No active teaching assignment has been provided by your Head of Department for your account ({faculty?.email}).
+        </p>
+      </div>
+    );
+  }
 
   const handleMarkChange = (uid, field, val) => {
     const num = Math.max(0, Math.min(field === 'assignments' ? 10 : 20, Number(val) || 0));
@@ -1057,10 +872,10 @@ const FacultyAssignments = ({ faculty }) => {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [subject, setSubject] = useState('Neural Networks & Deep Learning');
-  const [semester, setSemester] = useState('Semester 6');
-  const [section, setSection] = useState('Section A');
-  const [dueDate, setDueDate] = useState('2026-08-30');
+  const [subject, setSubject] = useState(faculty?.assignedSubject || faculty?.subject || 'Neural Networks & Deep Learning');
+  const [semester, setSemester] = useState(faculty?.assignedSemester || faculty?.semester || 'Semester 1');
+  const [section, setSection] = useState(faculty?.assignedSection || faculty?.section || 'Section A');
+  const [dueDate, setDueDate] = useState(new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0]);
   const [file, setFile] = useState(null);
 
   const { showToast } = useAuth();
@@ -1087,7 +902,19 @@ const FacultyAssignments = ({ faculty }) => {
 
   const handleCreateAssignment = async (e) => {
     e.preventDefault();
-    if (!title || !subject || !dueDate) return;
+    if (!title || !subject || !dueDate) {
+      showToast('Please fill in all required fields (title, subject, due date).', 'error');
+      return;
+    }
+
+    if (!file) {
+      showToast('Please select an assignment file to upload.', 'error');
+      return;
+    }
+
+    console.log("[Assignment] Selected file:", file?.name);
+    console.log("[Assignment] File type:", file?.type);
+    console.log("[Assignment] File size:", file?.size);
 
     try {
       setUploading(true);
@@ -1111,7 +938,7 @@ const FacultyAssignments = ({ faculty }) => {
       await loadAssignments();
     } catch (e) {
       console.error("Assignment upload error:", e);
-      showToast('Failed to upload assignment.', 'error');
+      showToast(e.message || 'File upload failed. Please try again.', 'error');
     } finally {
       setUploading(false);
     }
@@ -1203,7 +1030,8 @@ const FacultyAssignments = ({ faculty }) => {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t">
             <input
               type="file"
-              onChange={(e) => setFile(e.target.files[0])}
+              key={file ? 'assign-file-selected' : 'assign-file-empty'}
+              onChange={(e) => setFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
               className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 rounded-xl text-xs"
             />
 
@@ -1271,8 +1099,9 @@ const FacultyNotes = ({ faculty }) => {
 
   const [topic, setTopic] = useState('');
   const [description, setDescription] = useState('');
-  const [subject, setSubject] = useState('Neural Networks & Deep Learning');
-  const [semester, setSemester] = useState('Semester 6');
+  const [subject, setSubject] = useState(faculty?.assignedSubject || faculty?.subject || 'Neural Networks & Deep Learning');
+  const [semester, setSemester] = useState(faculty?.assignedSemester || faculty?.semester || 'Semester 1');
+  const [section, setSection] = useState(faculty?.assignedSection || faculty?.section || 'Section A');
   const [file, setFile] = useState(null);
 
   const { showToast } = useAuth();
@@ -1299,13 +1128,25 @@ const FacultyNotes = ({ faculty }) => {
 
   const handleUploadNotes = async (e) => {
     e.preventDefault();
-    if (!topic || !subject) return;
+    if (!topic || !subject) {
+      showToast('Please fill in required fields (topic, subject).', 'error');
+      return;
+    }
+
+    if (!file) {
+      showToast('Please select a study note file to upload.', 'error');
+      return;
+    }
+
+    console.log("[Study Notes] Selected file:", file?.name);
+    console.log("[Study Notes] File type:", file?.type);
+    console.log("[Study Notes] File size:", file?.size);
 
     try {
       setUploading(true);
       await mockDB.uploadNote(
         faculty?.uid,
-        faculty?.fullName || 'Faculty',
+        faculty?.fullName || faculty?.full_name || 'Faculty',
         facultyDept,
         semester,
         subject,
@@ -1313,17 +1154,18 @@ const FacultyNotes = ({ faculty }) => {
         description,
         file?.name || 'notes.pdf',
         file,
-        'Section A'
+        section,
+        faculty?.email || ''
       );
 
-      showToast(`Study notes published & linked to ${facultyDept}!`, 'success');
+      showToast(`Study notes published & linked to ${facultyDept} (${semester})!`, 'success');
       setTopic('');
       setDescription('');
       setFile(null);
       await loadNotes();
     } catch (e) {
       console.error("Notes upload error:", e);
-      showToast('Failed to upload notes.', 'error');
+      showToast(e.message || 'File upload failed. Please try again.', 'error');
     } finally {
       setUploading(false);
     }
@@ -1352,7 +1194,7 @@ const FacultyNotes = ({ faculty }) => {
         </div>
 
         <form onSubmit={handleUploadNotes} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div>
               <label className="text-[10px] text-slate-400 uppercase font-black block mb-1">Topic Title *</label>
               <input
@@ -1361,21 +1203,40 @@ const FacultyNotes = ({ faculty }) => {
                 placeholder="e.g. Unit 3 - Convolutional Neural Networks Architecture"
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 rounded-xl font-bold"
               />
             </div>
 
             <div>
               <label className="text-[10px] text-slate-400 uppercase font-black block mb-1">Subject *</label>
-              <select value={subject} onChange={(e) => setSubject(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border rounded-xl font-bold">
-                {availableSubjects.map(s => <option key={s} value={s}>{s}</option>)}
+              <select value={subject} onChange={(e) => setSubject(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl font-bold">
+                {availableSubjects.map(s => (
+                  <option key={s} value={s} className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-800">
+                    {s}
+                  </option>
+                ))}
               </select>
             </div>
 
             <div>
               <label className="text-[10px] text-slate-400 uppercase font-black block mb-1">Target Semester *</label>
-              <select value={semester} onChange={(e) => setSemester(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border rounded-xl font-bold">
-                {KBN_SEMESTERS.map(s => <option key={s} value={s}>{s}</option>)}
+              <select value={semester} onChange={(e) => setSemester(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl font-bold">
+                {KBN_SEMESTERS.map(s => (
+                  <option key={s} value={s} className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-800">
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[10px] text-slate-400 uppercase font-black block mb-1">Target Section *</label>
+              <select value={section} onChange={(e) => setSection(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl font-bold">
+                <option value="Section A" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-800">Section A</option>
+                <option value="Section B" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-800">Section B</option>
+                <option value="Section C" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-800">Section C</option>
+                <option value="EM" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-800">Section EM</option>
+                <option value="All" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-800">All Sections</option>
               </select>
             </div>
           </div>
@@ -1387,15 +1248,16 @@ const FacultyNotes = ({ faculty }) => {
               placeholder="Overview of lecture slides or reference PDF..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 rounded-xl font-medium"
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
             <input
               type="file"
-              onChange={(e) => setFile(e.target.files[0])}
-              className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 rounded-xl text-xs"
+              key={file ? 'notes-file-selected' : 'notes-file-empty'}
+              onChange={(e) => setFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
+              className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-gray-900 dark:text-gray-100 rounded-xl text-xs"
             />
 
             <button
@@ -1615,21 +1477,110 @@ const FacultyLeaves = ({ faculty }) => {
 
   const { showToast } = useAuth();
 
-  const loadLeaves = async () => {
-    try {
-      setLoading(true);
-      const data = await mockDB.getFacultyLeaves(faculty?.uid);
-      setLeaves(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadLeaves();
-  }, [faculty]);
+    if (!faculty) return;
+    setLoading(true);
+
+    const facultyUid = faculty.uid || faculty.id;
+    const facultyEmail = faculty.email;
+    let unsubscribe = null;
+
+    const setupLeavesListener = async () => {
+      try {
+        // 1. Real-time Firebase Subscription (Query Match on facultyId)
+        if (isFirebaseConfigured && db) {
+          try {
+            const leavesRef = collection(db, 'facultyLeaves');
+            const q = query(
+              leavesRef,
+              where('facultyId', '==', facultyUid)
+            );
+
+            // 2. Real-time Update via onSnapshot
+            unsubscribe = onSnapshot(q, (snapshot) => {
+              const fsLeaves = [];
+              snapshot.forEach((docSnap) => {
+                const d = docSnap.data();
+                fsLeaves.push({
+                  id: docSnap.id,
+                  ...d
+                });
+              });
+
+              // Merge with local storage fallback entries
+              const localLeaves = JSON.parse(localStorage.getItem('acad_faculty_leaves') || '[]');
+              const myLocalLeaves = localLeaves.filter(l =>
+                (facultyUid && (l.facultyId === facultyUid || l.id === facultyUid)) ||
+                (facultyEmail && l.email === facultyEmail)
+              );
+
+              const mergedMap = new Map();
+              [...fsLeaves, ...myLocalLeaves].forEach(item => {
+                const key = item.id || item.leaveId;
+                if (key && !mergedMap.has(key)) {
+                  mergedMap.set(key, item);
+                }
+              });
+
+              const mergedList = Array.from(mergedMap.values());
+
+              // 3. Timestamp Sorting (newest first)
+              mergedList.sort((a, b) => {
+                const dateA = new Date(a.submittedAt || a.startDate || a.fromDate || 0);
+                const dateB = new Date(b.submittedAt || b.startDate || b.fromDate || 0);
+                return dateB - dateA;
+              });
+
+              setLeaves(mergedList);
+              setLoading(false);
+            }, (error) => {
+              // 4. Debugging: Log any Firestore errors or missing composite index warnings
+              console.error("[Firestore onSnapshot Error in FacultyLeaves]:", error);
+              fallbackLocalLeaves();
+            });
+
+            return;
+          } catch (fsErr) {
+            console.error("[Firestore Query Setup Error in FacultyLeaves]:", fsErr);
+          }
+        }
+
+        fallbackLocalLeaves();
+      } catch (err) {
+        console.error("[Error in setupLeavesListener]:", err);
+        setLoading(false);
+      }
+    };
+
+    const fallbackLocalLeaves = async () => {
+      try {
+        const data = await mockDB.getFacultyLeavesForHOD(facultyDept || 'All');
+        const myLeaves = data.filter(l =>
+          (facultyUid && (l.facultyId === facultyUid || l.id === facultyUid)) ||
+          (facultyEmail && l.email === facultyEmail)
+        );
+
+        // 3. Timestamp Sorting (newest first)
+        myLeaves.sort((a, b) => {
+          const dateA = new Date(a.submittedAt || a.startDate || a.fromDate || 0);
+          const dateB = new Date(b.submittedAt || b.startDate || b.fromDate || 0);
+          return dateB - dateA;
+        });
+
+        setLeaves(myLeaves);
+      } catch (e) {
+        console.error("[Error in fallbackLocalLeaves]:", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    setupLeavesListener();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [faculty, facultyDept]);
 
   const handleApplyLeave = async (e) => {
     e.preventDefault();
@@ -1637,19 +1588,36 @@ const FacultyLeaves = ({ faculty }) => {
 
     try {
       setApplying(true);
-      await mockDB.applyFacultyLeave(faculty?.uid, {
+      const days = Math.max(1, Math.ceil((new Date(toDate) - new Date(fromDate)) / (1000 * 60 * 60 * 24)) + 1);
+      const newLeave = await mockDB.applyFacultyLeave({
         leaveType,
-        fromDate,
-        toDate,
-        reason,
-        facultyName: faculty?.fullName || 'Faculty',
-        department: facultyDept
-      });
+        startDate: fromDate,
+        endDate: toDate,
+        totalDays: isNaN(days) ? 1 : days,
+        reason
+      }, faculty);
+
+      // 2. Real-time local state update immediately after submission
+      if (newLeave) {
+        setLeaves(prev => {
+          const exists = prev.some(l => l.id === newLeave.id || l.leaveId === newLeave.leaveId);
+          if (exists) return prev;
+          const updated = [newLeave, ...prev];
+          updated.sort((a, b) => {
+            const dateA = new Date(a.submittedAt || a.startDate || a.fromDate || 0);
+            const dateB = new Date(b.submittedAt || b.startDate || b.fromDate || 0);
+            return dateB - dateA;
+          });
+          return updated;
+        });
+      }
 
       showToast('Faculty leave application submitted to HOD successfully.', 'success');
       setReason('');
-      loadLeaves();
-    } catch (_) {
+      setFromDate('');
+      setToDate('');
+    } catch (err) {
+      console.error("[Error Submitting Faculty Leave]:", err);
       showToast('Could not submit leave application.', 'error');
     } finally {
       setApplying(false);
@@ -1667,7 +1635,7 @@ const FacultyLeaves = ({ faculty }) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label className="text-[10px] text-slate-400 uppercase font-black block mb-1">Leave Type</label>
-              <select value={leaveType} onChange={(e) => setLeaveType(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold">
+              <select value={leaveType} onChange={(e) => setLeaveType(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl font-bold">
                 <option value="Casual Leave">Casual Leave</option>
                 <option value="Sick Leave">Sick Leave</option>
                 <option value="Earned Leave">Earned Leave</option>
@@ -1677,12 +1645,12 @@ const FacultyLeaves = ({ faculty }) => {
 
             <div>
               <label className="text-[10px] text-slate-400 uppercase font-black block mb-1">From Date</label>
-              <input type="date" required value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold" />
+              <input type="date" required value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl font-bold" />
             </div>
 
             <div>
               <label className="text-[10px] text-slate-400 uppercase font-black block mb-1">To Date</label>
-              <input type="date" required value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold" />
+              <input type="date" required value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl font-bold" />
             </div>
           </div>
 
@@ -1694,7 +1662,7 @@ const FacultyLeaves = ({ faculty }) => {
               placeholder="State clear purpose for leave application..."
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl font-medium"
             />
           </div>
 
@@ -1720,7 +1688,7 @@ const FacultyLeaves = ({ faculty }) => {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 text-[10px]">
+                <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-600 dark:text-slate-300 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 text-[10px]">
                   <th className="px-5 py-3">Leave Type</th>
                   <th className="px-5 py-3 text-center">From - To Date</th>
                   <th className="px-5 py-3">Reason</th>
@@ -1730,10 +1698,12 @@ const FacultyLeaves = ({ faculty }) => {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-bold text-slate-800 dark:text-slate-200">
                 {leaves.map(l => (
-                  <tr key={l.id || l.leaveId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
+                  <tr key={l.id || l.leaveId || Math.random()} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
                     <td className="px-5 py-4 font-black text-slate-900 dark:text-white">{l.leaveType}</td>
-                    <td className="px-5 py-4 text-center">{l.fromDate} to {l.toDate}</td>
-                    <td className="px-5 py-4 text-slate-500 font-normal">{l.reason}</td>
+                    <td className="px-5 py-4 text-center text-slate-900 dark:text-white font-mono">
+                      {l.startDate || l.fromDate || 'N/A'} to {l.endDate || l.toDate || 'N/A'}
+                    </td>
+                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300 font-normal">{l.reason}</td>
                     <td className="px-5 py-4 text-center">
                       <span className={`px-3 py-1 rounded-xl text-[9.5px] font-black uppercase ${
                         l.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30' :
@@ -1743,7 +1713,7 @@ const FacultyLeaves = ({ faculty }) => {
                         {l.status}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-right text-[11px] text-slate-400 font-normal italic">
+                    <td className="px-5 py-4 text-right text-[11px] text-slate-500 dark:text-slate-400 font-normal italic">
                       {l.status === 'Approved' ? `Approved by: ${l.approvedBy || 'HOD Dr. Alan Turing'}` :
                        l.status === 'Rejected' ? `Reason: ${l.rejectionReason || 'Exceeds casual leave quota'}` : 'Pending HOD Review'}
                     </td>

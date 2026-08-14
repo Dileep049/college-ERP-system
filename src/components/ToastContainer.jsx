@@ -3,9 +3,9 @@ import { useAuth } from '../context/AuthContext';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
 
 export const ToastContainer = () => {
-  const { toasts, removeToast } = useAuth();
+  const { toasts = [], removeToast } = useAuth();
 
-  if (toasts.length === 0) return null;
+  if (!toasts || !Array.isArray(toasts) || toasts.length === 0) return null;
 
   const getToastStyle = (type) => {
     switch (type) {

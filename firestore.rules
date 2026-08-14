@@ -1,115 +1,224 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper checks
-    function isAuth() { return request.auth != null; }
-    function getUserRole(uid) { return get(/databases/$(database)/documents/profiles/$(uid)).data.role; }
-    function isAdmin() { return isAuth() && getUserRole(request.auth.uid) == 'admin'; }
-    function isPrincipal() { return isAuth() && getUserRole(request.auth.uid) == 'principal'; }
-    function isHOD() { return isAuth() && getUserRole(request.auth.uid) == 'hod'; }
-    function isFaculty() { return isAuth() && getUserRole(request.auth.uid) == 'faculty'; }
-
-    match /profiles/{uid} {
-      allow read: if isAuth();
-      allow write: if isAdmin();
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
     }
-    match /academic_calendar/{id} {
-      allow read: if isAuth();
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data;
+    }
+
+    function isRole(roleName) {
+      return isAuthenticated() && (
+        getUserData().role == roleName || 
+        getUserData().role == roleName.lower()
+      );
+    }
+
+    function isAdmin() {
+      return isRole('admin');
+    }
+
+    function isPrincipal() {
+      return isRole('principal') || isAdmin();
+    }
+
+    function isHOD() {
+      return isRole('hod') || isPrincipal();
+    }
+
+    function isFaculty() {
+      return isRole('faculty') || isHOD();
+    }
+
+    function isPlacementOfficer() {
+      return isRole('placement') || isAdmin();
+    }
+
+    function isCounsellor() {
+      return isRole('counsellor') || isHOD();
+    }
+
+    // Profiles Collection
+    match /profiles/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin() || isPrincipal() || isHOD());
+    }
+
+    // Students Collection
+    match /students/{studentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (isAdmin() || isPrincipal() || isHOD());
+    }
+
+    // Assignments
+    match /assignments/{assignmentId} {
+      allow read: if isAuthenticated();
+      allow write: if isFaculty();
+    }
+
+    // Assignment Submissions
+    match /assignment_submissions/{submissionId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // Study Notes
+    match /notes/{noteId} {
+      allow read: if isAuthenticated();
+      allow write: if isFaculty();
+    }
+
+    // Attendance Records
+    match /attendance/{attendanceId} {
+      allow read: if isAuthenticated();
+      allow write: if isFaculty();
+    }
+
+    // Attendance Edit Requests
+    match /attendance_edit_requests/{requestId} {
+      allow read: if isAuthenticated();
+      allow write: if isFaculty();
+    }
+
+    // Internal Marks
+    match /internal_marks/{markId} {
+      allow read: if isAuthenticated();
+      allow write: if isFaculty();
+    }
+
+    // Assignment Marks
+    match /assignment_marks/{markId} {
+      allow read: if isAuthenticated();
+      allow write: if isFaculty();
+    }
+
+    // Placement Drives
+    match /placement_drives/{driveId} {
+      allow read: if isAuthenticated();
+      allow write: if isPlacementOfficer();
+    }
+
+    // Placement Applications
+    match /placement_applications/{appId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // Placement Companies, Interviews, Trainings
+    match /placement_companies/{companyId} {
+      allow read: if isAuthenticated();
+      allow write: if isPlacementOfficer();
+    }
+    match /placement_interviews/{interviewId} {
+      allow read: if isAuthenticated();
+      allow write: if isPlacementOfficer();
+    }
+    match /placement_trainings/{trainingId} {
+      allow read: if isAuthenticated();
+      allow write: if isPlacementOfficer();
+    }
+
+    // Leave Requests
+    match /leave_requests/{leaveId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // Subject Allocations (HOD assignments)
+    match /subject_allocations/{allocId} {
+      allow read: if isAuthenticated();
+      allow write: if isHOD();
+    }
+
+    // Academic Calendar, Timetables, Classrooms
+    match /academic_calendar/{calId} {
+      allow read: if isAuthenticated();
+      allow write: if isPrincipal() || isAdmin();
+    }
+    match /timetables/{ttId} {
+      allow read: if isAuthenticated();
+      allow write: if isHOD() || isPrincipal() || isAdmin();
+    }
+    match /classrooms/{roomId} {
+      allow read: if isAuthenticated();
+      allow write: if isHOD() || isPrincipal() || isAdmin();
+    }
+
+    // Announcements
+    match /announcements/{annId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // Notifications
+    match /notifications/{notifId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // Audit & Backup Logs
+    match /audit_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    match /backup_logs/{logId} {
+      allow read: if isAuthenticated();
       allow write: if isAdmin() || isPrincipal();
     }
-    match /timetables/{id} {
-      allow read: if isAuth();
-      allow write: if isAdmin() || isHOD();
+
+    // Counselling Meetings & Logs
+    match /counselling_meetings/{meetingId} {
+      allow read: if isAuthenticated();
+      allow write: if isCounsellor() || isHOD();
     }
-    match /classrooms/{id} {
-      allow read: if isAuth();
-      allow write: if isAdmin() || isHOD();
+    match /counselling_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow write: if isCounsellor() || isHOD();
     }
-    match /faculty_schedule/{id} {
-      allow read: if isAuth();
-      allow write: if isAdmin() || isHOD();
+    match /parent_meetings/{meetingId} {
+      allow read: if isAuthenticated();
+      allow write: if isCounsellor() || isHOD();
     }
-    match /student_schedule/{id} {
-      allow read: if isAuth();
-      allow write: if isAdmin() || isHOD();
+
+    // Library & Document Requests & Grievances
+    match /books/{bookId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
     }
-    match /assignments/{id} {
-      allow read: if isAuth();
-      allow write: if isAdmin() || isFaculty();
+    match /issued_books/{issueId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
     }
-    match /notes/{id} {
-      allow read: if isAuth();
-      allow write: if isAdmin() || isFaculty() || isHOD();
+    match /document_requests/{reqId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
     }
-    match /placement_drives/{id} {
-      allow read: if isAuth();
-      allow write: if isAuth();
+    match /grievances/{grievanceId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
     }
-    match /placement_applications/{id} {
-      allow read: if isAuth();
-      allow write: if isAuth();
+
+    // Ward Counsellor Assignments
+    match /wardCounsellorAssignments/{assignmentId} {
+      allow read: if isAuthenticated();
+      allow write: if isHOD() || isAdmin() || isPrincipal();
     }
-    match /placement_interviews/{id} {
-      allow read: if isAuth();
-      allow write: if isAuth();
+
+    // Faculty Teaching Assignments
+    match /facultyAssignments/{assignmentId} {
+      allow read: if isAuthenticated();
+      allow write: if isHOD() || isAdmin() || isPrincipal();
     }
-    match /placement_companies/{id} {
-      allow read: if isAuth();
-      allow write: if isAuth();
-    }
-    match /placement_trainings/{id} {
-      allow read: if isAuth();
-      allow write: if isAuth();
-    }
-    match /assignment_submissions/{id} {
-      allow read: if isAuth() && (resource.data.studentId == request.auth.uid || isFaculty() || isAdmin());
-      allow create: if isAuth() && request.resource.data.studentId == request.auth.uid;
-      allow update: if isAuth() && (resource.data.studentId == request.auth.uid || isFaculty());
-      allow delete: if isAdmin();
-    }
-    match /assignment_marks/{id} {
-      allow read: if isAuth() && (resource.data.studentId == request.auth.uid || isFaculty() || isAdmin());
-      allow write: if isFaculty() || isAdmin();
-    }
-    match /backup_logs/{id} {
-      allow read, write: if isAdmin();
-    }
-    match /students/{uid} {
-      allow read: if isAuth();
-      allow write: if isAdmin();
-    }
-    match /parents/{uid} {
-      allow read: if isAuth();
-      allow write: if isAdmin();
-    }
-    match /subject_allocations/{id} {
-      allow read: if isAuth();
-      allow write: if isAdmin() || isHOD();
-    }
-    match /attendance/{id} {
-      allow read: if isAuth();
-      allow write: if isAdmin() || isHOD() || isFaculty();
-    }
-    match /notifications/{id} {
-      allow read: if isAuth();
-      allow write: if isAdmin() || isFaculty() || isHOD();
-    }
-    match /leave_requests/{id} {
-      allow read: if isAuth();
-      allow create: if isAuth();
-      allow update: if isAuth() && (getUserRole(request.auth.uid) == 'counsellor' || isHOD() || isAdmin());
-    }
-    match /attendance_edit_requests/{id} {
-      allow read: if isAuth();
-      allow write: if isAuth();
-    }
-    match /internal_marks/{id} {
-      allow read: if isAuth();
-      allow write: if isFaculty() || isAdmin() || isHOD();
-    }
-    match /audit_logs/{id} {
-      allow read: if isAdmin() || isHOD();
-      allow write: if isAuth();
+
+    // Faculty Leaves
+    match /facultyLeaves/{leaveId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
     }
   }
 }
+

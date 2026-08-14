@@ -490,7 +490,7 @@ const ParentNotes = ({ child }) => {
 
   useEffect(() => {
     const load = async () => {
-      const data = await mockDB.getNotes(child?.department || 'CSE', child?.semester || 'VI');
+      const data = await mockDB.getNotes(child?.department || child?.branch || 'CSE', child?.semester, child?.section);
       setNotes(data);
     };
     load();

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Link, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { ThemeToggle } from './ThemeToggle';
 import {
   LayoutDashboard,
   Calendar,
@@ -44,6 +45,18 @@ export const DashboardLayout = ({ children }) => {
   const [isUploading, setIsUploading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Lock body scroll when mobile sidebar is open (Sidebar Scroll Bleed Fix)
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [sidebarOpen]);
 
   const handlePhotoSelect = (e) => {
     const file = e.target.files[0];
@@ -177,8 +190,17 @@ export const DashboardLayout = ({ children }) => {
       { label: 'Counsellor Panel', path: '/counsellor/dashboard', icon: LayoutDashboard },
       { label: 'Parent Meetings', path: '/counsellor/parent-meetings', icon: Users },
       { label: 'Counselling Wards', path: '/counsellor/wards', icon: UserCheck },
+      { label: 'Student Leaves', path: '/counsellor/student-leaves', icon: Calendar },
       { label: 'Analytics Reports', path: '/counsellor/reports', icon: FileText },
-      { label: 'Leave Approvals', path: '/counsellor/leaves', icon: Calendar }
+      { label: 'Profile Settings', path: '/ward-counsellor/profile', icon: User }
+    ],
+    ward_counsellor: [
+      { label: 'Counsellor Panel', path: '/counsellor/dashboard', icon: LayoutDashboard },
+      { label: 'Parent Meetings', path: '/counsellor/parent-meetings', icon: Users },
+      { label: 'Counselling Wards', path: '/counsellor/wards', icon: UserCheck },
+      { label: 'Student Leaves', path: '/counsellor/student-leaves', icon: Calendar },
+      { label: 'Analytics Reports', path: '/counsellor/reports', icon: FileText },
+      { label: 'Profile Settings', path: '/ward-counsellor/profile', icon: User }
     ],
     librarian: [
       { label: 'Library Analytics', path: '/librarian/analytics', icon: LayoutDashboard },
@@ -272,8 +294,8 @@ export const DashboardLayout = ({ children }) => {
         />
       )}
 
-      {/* Sidebar for desktop */}
-      <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800/80 transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:static lg:h-screen lg:flex lg:flex-col`}>
+      {/* Sidebar for desktop & mobile */}
+      <aside className={`fixed inset-y-0 left-0 z-40 w-64 h-screen h-[100dvh] overflow-y-auto bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800/80 transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:static lg:h-screen lg:flex lg:flex-col`}>
         
         {/* Brand header */}
         <div className="h-16 flex items-center px-6 border-b border-slate-200 dark:border-slate-800/80">
@@ -292,29 +314,36 @@ export const DashboardLayout = ({ children }) => {
         </div>
 
         {/* Profile Card in Sidebar */}
-        <div className="p-4 mx-4 my-5 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-800/40 dark:to-slate-800/60 border border-slate-200/60 dark:border-slate-850">
-          <div className="flex items-center gap-3">
-            {user.profilePhotoUrl ? (
-              <img src={user.profilePhotoUrl} alt={user.fullName} className="w-10 h-10 rounded-xl object-cover border border-blue-500/30 shadow-md" />
-            ) : (
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-sky-400 text-white flex items-center justify-center font-bold text-sm shadow-md">
-                {user.fullName.split(' ').map(n => n[0]).join('')}
+        {(() => {
+          const userName = user.fullName || user.name || user.displayName || 'User';
+          const userInitials = userName.split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'U';
+          const userEmail = user.email || '';
+          return (
+            <div className="p-4 mx-4 my-5 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-800/40 dark:to-slate-800/60 border border-slate-200/60 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                {user.profilePhotoUrl ? (
+                  <img src={user.profilePhotoUrl} alt={userName} className="w-10 h-10 rounded-xl object-cover border border-blue-500/30 shadow-md" />
+                ) : (
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-sky-400 text-white flex items-center justify-center font-bold text-sm shadow-md">
+                    {userInitials}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{userName}</p>
+                  <p className="text-[10.5px] font-medium text-slate-500 dark:text-slate-400 truncate mt-0.5">{userEmail}</p>
+                </div>
               </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-slate-800 dark:text-slate-250 truncate">{user.fullName}</p>
-              <p className="text-[10.5px] font-medium text-slate-450 dark:text-slate-400 truncate mt-0.5">{user.email}</p>
+              <div className="mt-3 flex items-center justify-between">
+                <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase ${getRoleBadgeStyle(user.role)}`}>
+                  {user.role}
+                </span>
+                <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 truncate max-w-[90px]">
+                  {user.department && user.department !== 'N/A' ? user.department : ''}
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="mt-3 flex items-center justify-between">
-            <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase ${getRoleBadgeStyle(user.role)}`}>
-              {user.role}
-            </span>
-            <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 truncate max-w-[90px]">
-              {user.department && user.department !== 'N/A' ? user.department : ''}
-            </span>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* Navigation links */}
         <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
@@ -377,13 +406,7 @@ export const DashboardLayout = ({ children }) => {
             </div>
 
             {/* Dark/Light mode toggle */}
-            <button
-              onClick={toggleTheme}
-              className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/60 text-slate-500 dark:text-slate-400 transition-colors"
-              title="Toggle Theme"
-            >
-              {theme === 'dark' ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-slate-600" />}
-            </button>
+            <ThemeToggle />
 
             {/* Notifications panel */}
             <div className="relative">
@@ -396,94 +419,101 @@ export const DashboardLayout = ({ children }) => {
             <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-800 hidden sm:block"></div>
 
             {/* Quick Profile Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center gap-2 hover:bg-slate-500/10 dark:hover:bg-slate-800 p-1.5 rounded-xl transition-all"
-              >
-                {user.profilePhotoUrl ? (
-                  <img src={user.profilePhotoUrl} alt="User Avatar" className="w-8 h-8 rounded-lg object-cover border border-purple-500" />
-                ) : (
-                  <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
-                    {user.fullName.split(' ').map(n => n[0]).slice(0, 2).join('')}
-                  </div>
-                )}
-                <span className="text-xs font-semibold text-slate-650 dark:text-slate-300 hidden md:block select-none">{user.fullName.split(' ')[0]}</span>
-              </button>
-
-              {showProfileMenu && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)}></div>
-                  <div className="absolute right-0 mt-2 w-60 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl z-50 p-2 animate-fade-in text-xs font-semibold">
-                    <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800/80 flex items-center gap-3">
-                      {user.profilePhotoUrl ? (
-                        <img src={user.profilePhotoUrl} alt="Profile" className="w-10 h-10 rounded-xl object-cover border border-purple-500 shrink-0" />
-                      ) : (
-                        <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-black text-sm shrink-0">
-                          {user.fullName.split(' ').map(n => n[0]).slice(0, 2).join('')}
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-black text-slate-800 dark:text-slate-200 truncate">{user.fullName}</p>
-                        <p className="text-[10px] text-purple-600 dark:text-purple-400 font-bold uppercase truncate">{user.role === 'hod' ? `HOD • ${user.department || 'CSE'}` : user.role}</p>
-                        <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
+            {(() => {
+              const userName = user.fullName || user.name || user.displayName || 'User';
+              const userInitials = userName.split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'U';
+              const firstName = userName.split(' ')[0] || 'User';
+              return (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowProfileMenu(!showProfileMenu)}
+                    className="flex items-center gap-2 hover:bg-slate-500/10 dark:hover:bg-slate-800 p-1.5 rounded-xl transition-all"
+                  >
+                    {user.profilePhotoUrl ? (
+                      <img src={user.profilePhotoUrl} alt="User Avatar" className="w-8 h-8 rounded-lg object-cover border border-purple-500" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
+                        {userInitials}
                       </div>
-                    </div>
+                    )}
+                    <span className="text-xs font-semibold text-slate-800 dark:text-white hidden md:block select-none">{firstName}</span>
+                  </button>
 
-                    <div className="py-1 border-b border-slate-100 dark:border-slate-800 space-y-0.5">
-                      <button
-                        onClick={() => {
-                          setShowProfileMenu(false);
-                          setShowPhotoModal(true);
-                        }}
-                        className="flex w-full items-center gap-2.5 px-3 py-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 rounded-xl transition-colors font-bold"
-                      >
-                        <Upload size={14} />
-                        <span>Change Photo</span>
-                      </button>
+                  {showProfileMenu && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)}></div>
+                      <div className="absolute right-0 mt-2 w-60 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl z-50 p-2 animate-fade-in text-xs font-semibold">
+                        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800/80 flex items-center gap-3">
+                          {user.profilePhotoUrl ? (
+                            <img src={user.profilePhotoUrl} alt="Profile" className="w-10 h-10 rounded-xl object-cover border border-purple-500 shrink-0" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-black text-sm shrink-0">
+                              {userInitials}
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-black text-slate-900 dark:text-white truncate">{userName}</p>
+                            <p className="text-[10px] text-purple-600 dark:text-purple-400 font-bold uppercase truncate">{user.role === 'hod' ? `HOD • ${user.department || 'CSE'}` : user.role}</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
+                          </div>
+                        </div>
 
-                      {user.role === 'hod' && (
-                        <>
-                          <Link
-                            to="/hod/settings"
-                            onClick={() => setShowProfileMenu(false)}
-                            className="flex w-full items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-purple-950/20 hover:text-purple-600 rounded-xl transition-colors font-bold"
+                        <div className="py-1 border-b border-slate-100 dark:border-slate-800 space-y-0.5">
+                          <button
+                            onClick={() => {
+                              setShowProfileMenu(false);
+                              setShowPhotoModal(true);
+                            }}
+                            className="flex w-full items-center gap-2.5 px-3 py-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 rounded-xl transition-colors font-bold"
                           >
-                            <UserCheck size={14} />
-                            <span>My Profile</span>
-                          </Link>
-                          <Link
-                            to="/hod/settings"
-                            onClick={() => setShowProfileMenu(false)}
-                            className="flex w-full items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-purple-950/20 hover:text-purple-600 rounded-xl transition-colors font-bold"
-                          >
-                            <Building2 size={14} />
-                            <span>Department Settings</span>
-                          </Link>
-                        </>
-                      )}
-                    </div>
+                            <Upload size={14} />
+                            <span>Change Photo</span>
+                          </button>
 
-                    <div className="p-1 mt-1">
-                      <button
-                        onClick={handleLogout}
-                        className="flex w-full items-center gap-3 px-3 py-2 font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl transition-colors"
-                      >
-                        <LogOut size={14} />
-                        <span>Sign Out</span>
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+                          {user.role === 'hod' && (
+                            <>
+                              <Link
+                                to="/hod/settings"
+                                onClick={() => setShowProfileMenu(false)}
+                                className="flex w-full items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-purple-950/20 hover:text-purple-600 rounded-xl transition-colors font-bold"
+                              >
+                                <UserCheck size={14} />
+                                <span>My Profile</span>
+                              </Link>
+                              <Link
+                                to="/hod/settings"
+                                onClick={() => setShowProfileMenu(false)}
+                                className="flex w-full items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-purple-950/20 hover:text-purple-600 rounded-xl transition-colors font-bold"
+                              >
+                                <Building2 size={14} />
+                                <span>Department Settings</span>
+                              </Link>
+                            </>
+                          )}
+                        </div>
+
+                        <div className="p-1 mt-1">
+                          <button
+                            onClick={handleLogout}
+                            className="flex w-full items-center gap-3 px-3 py-2 font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl transition-colors"
+                          >
+                            <LogOut size={14} />
+                            <span>Sign Out</span>
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </header>
 
         {/* Content Panel */}
         <main className="flex-1 overflow-y-auto p-3 sm:p-6 bg-slate-50 dark:bg-slate-950/40 min-w-0 w-full">
           <div className="max-w-7xl mx-auto animate-fade-in min-w-0 w-full">
-            {children}
+            {children || <Outlet />}
           </div>
         </main>
       </div>

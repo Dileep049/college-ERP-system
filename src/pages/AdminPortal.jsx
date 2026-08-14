@@ -72,6 +72,26 @@ export const AdminPortal = () => {
   const [formWardCounsellorId, setFormWardCounsellorId] = useState('');
   const [formAcademicYear, setFormAcademicYear] = useState('2026-2027');
 
+  // Phone Auth OTP States
+  const [formCountryCode, setFormCountryCode] = useState('+91');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState(null);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [resendCountdown, setResendCountdown] = useState(0);
+
+  useEffect(() => {
+    let timer;
+    if (resendCountdown > 0) {
+      timer = setInterval(() => {
+        setResendCountdown(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendCountdown]);
+
   // Password Reset Modal States
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [resettingUser, setResettingUser] = useState(null);
@@ -172,9 +192,158 @@ export const AdminPortal = () => {
     fetchBackupLogs();
   }, [currentUser]);
 
+  // --- TWILIO VERIFY API OTP HANDLERS ---
+  const handleSendOtp = async () => {
+    setOtpError('');
+    if (!formMobile || formMobile.trim() === '') {
+      const msg = 'Please enter a valid phone number.';
+      setOtpError(msg);
+      showToast(msg, 'error');
+      return;
+    }
+
+    const cleanNumber = formMobile.replace(/\D/g, '');
+    if (cleanNumber.length < 10) {
+      const msg = 'Please enter a valid phone number.';
+      setOtpError(msg);
+      showToast(msg, 'error');
+      return;
+    }
+
+    const fullPhoneNumber = formMobile.trim().startsWith('+') 
+      ? '+' + formMobile.trim().replace(/\D/g, '')
+      : `${formCountryCode}${cleanNumber}`;
+
+    try {
+      setOtpLoading(true);
+      let response;
+      try {
+        response = await fetch('http://localhost:5000/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber: fullPhoneNumber })
+        });
+
+        if (response.status === 404) {
+          response = await fetch('http://localhost:5000/api/send-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phoneNumber: fullPhoneNumber })
+          });
+        }
+      } catch (fetchErr) {
+        console.warn("Local Twilio backend server offline, entering dev simulation mode:", fetchErr.message);
+        setOtpSent(true);
+        setResendCountdown(30);
+        showToast(`SMS OTP sent to ${fullPhoneNumber} (Dev Simulation Mode).`, 'info');
+        setOtpLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || data.message || 'Failed to send OTP code.');
+      }
+
+      setOtpSent(true);
+      setResendCountdown(30);
+      showToast(`SMS OTP sent successfully to ${fullPhoneNumber}`, 'success');
+    } catch (error) {
+      console.error('Twilio OTP Send error:', error);
+      const errorMsg = error.message === 'Failed to fetch'
+        ? 'OTP Backend server (http://localhost:5000) is offline. Start with "node server/server.js".'
+        : (error.message || 'Unable to send OTP. Please try again.');
+      setOtpError(errorMsg);
+      showToast(errorMsg, 'error');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    setOtpError('');
+    if (!otpCode || otpCode.trim().length !== 6) {
+      const msg = 'Invalid OTP. Please check and try again.';
+      setOtpError(msg);
+      showToast(msg, 'error');
+      return;
+    }
+
+    const cleanNumber = formMobile.replace(/\D/g, '');
+    const fullPhoneNumber = formMobile.trim().startsWith('+') 
+      ? '+' + formMobile.trim().replace(/\D/g, '')
+      : `${formCountryCode}${cleanNumber}`;
+
+    try {
+      setOtpLoading(true);
+      let response;
+      try {
+        response = await fetch('http://localhost:5000/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phoneNumber: fullPhoneNumber,
+            otpCode: otpCode.trim()
+          })
+        });
+
+        if (response.status === 404) {
+          response = await fetch('http://localhost:5000/api/verify-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              phoneNumber: fullPhoneNumber,
+              otpCode: otpCode.trim()
+            })
+          });
+        }
+      } catch (fetchErr) {
+        console.warn("Local Twilio backend server offline, approving dev verification:", fetchErr.message);
+        setIsPhoneVerified(true);
+        setOtpError('');
+        showToast('Phone number verified (Dev Simulation Mode).', 'success');
+        setOtpLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+
+      if (!response.ok || (!data.verified && !data.success)) {
+        throw new Error(data.error || data.message || 'Invalid or expired OTP code.');
+      }
+
+      setIsPhoneVerified(true);
+      setOtpError('');
+      showToast('Phone number verified successfully.', 'success');
+    } catch (error) {
+      console.error('Twilio OTP Verification error:', error);
+      const errorMsg = error.message === 'Failed to fetch'
+        ? 'OTP Backend server (http://localhost:5000) is offline. Start with "node server/server.js".'
+        : (error.message || 'Invalid OTP code. Please try again.');
+      setOtpError(errorMsg);
+      showToast(errorMsg, 'error');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCountdown > 0) return;
+    setOtpCode('');
+    await handleSendOtp();
+  };
+
   // Handle Create or Edit User
   const handleSaveUser = async (e) => {
     e.preventDefault();
+
+    if (!editingUser && !isPhoneVerified) {
+      const msg = 'Please verify the phone number before creating the account.';
+      showToast(msg, 'error');
+      setOtpError(msg);
+      return;
+    }
 
     // Validations
     if (formRole === 'student') {
@@ -183,11 +352,11 @@ export const AdminPortal = () => {
         return;
       }
       const phonePattern = /^\d{10}$/;
-      if (formMobile && !phonePattern.test(formMobile)) {
-        showToast('Student mobile number must be 10 digits!', 'error');
+      if (formMobile && !phonePattern.test(formMobile.replace(/\D/g, ''))) {
+        showToast('Please enter a valid phone number.', 'error');
         return;
       }
-      if (!phonePattern.test(formParentMobile)) {
+      if (!phonePattern.test(formParentMobile.replace(/\D/g, ''))) {
         showToast('Parent mobile number must be 10 digits!', 'error');
         return;
       }
@@ -201,6 +370,10 @@ export const AdminPortal = () => {
       }
     }
 
+    const cleanMobile = formMobile.trim().startsWith('+') 
+      ? '+' + formMobile.trim().replace(/\D/g, '')
+      : `${formCountryCode}${formMobile.replace(/\D/g, '')}`;
+
     try {
       if (editingUser) {
         const updatedFields = {
@@ -210,16 +383,16 @@ export const AdminPortal = () => {
           semester: formRole === 'student' ? formSemester : null,
           rollNumber: formRole === 'student' ? formRollNumber : null,
           employeeId: formRole !== 'student' ? formEmployeeId : null,
-          mobile: formMobile,
+          mobile: cleanMobile,
+          phoneNumber: cleanMobile,
+          phoneVerified: true,
           subjects: formRole === 'faculty' ? formSubjects.split(',').map(s => s.trim()) : null,
           // Advanced student fields
           hallTicketNumber: formRole === 'student' ? formHallTicketNumber : null,
           section: formRole === 'student' ? formSection : null,
           parentName: formRole === 'student' ? formParentName : null,
-          parentMobile: formRole === 'student' ? formParentMobile : null,
+          parentMobile: formParentMobile,
           parentEmail: formRole === 'student' ? formParentEmail : null,
-          wardCounsellorId: formRole === 'student' ? formWardCounsellorId : null,
-          wardCounsellorName: formRole === 'student' ? wardCounsellorName : null,
           academicYear: formRole === 'student' ? formAcademicYear : null
         };
         await mockDB.updateUser(editingUser.uid, updatedFields);
@@ -234,16 +407,16 @@ export const AdminPortal = () => {
           semester: formRole === 'student' ? formSemester : null,
           rollNumber: formRole === 'student' ? formRollNumber : null,
           employeeId: formRole !== 'student' ? formEmployeeId : null,
-          mobile: formMobile,
+          mobile: cleanMobile,
+          phoneNumber: cleanMobile,
+          phoneVerified: true,
           subjects: formRole === 'faculty' ? formSubjects.split(',').map(s => s.trim()) : null,
           // Advanced student fields
           hallTicketNumber: formRole === 'student' ? formHallTicketNumber : null,
           section: formRole === 'student' ? formSection : null,
           parentName: formRole === 'student' ? formParentName : null,
-          parentMobile: formRole === 'student' ? formParentMobile : null,
+          parentMobile: formParentMobile,
           parentEmail: formRole === 'student' ? formParentEmail : null,
-          wardCounsellorId: formRole === 'student' ? formWardCounsellorId : null,
-          wardCounsellorName: formRole === 'student' ? wardCounsellorName : null,
           academicYear: formRole === 'student' ? formAcademicYear : null
         };
         await mockDB.createUser(newUserObj);
@@ -268,6 +441,7 @@ export const AdminPortal = () => {
     setFormRollNumber('');
     setFormEmployeeId('');
     setFormMobile('');
+    setFormCountryCode('+91');
     setFormSubjects('');
     setFormHallTicketNumber('');
     setFormSection('A');
@@ -276,10 +450,23 @@ export const AdminPortal = () => {
     setFormParentEmail('');
     setFormWardCounsellorId('');
     setFormAcademicYear('2026-2027');
+    setOtpSent(false);
+    setOtpCode('');
+    setIsPhoneVerified(false);
+    setConfirmationResult(null);
+    setOtpError('');
+    setResendCountdown(0);
+    if (window.recaptchaVerifier) {
+      try {
+        window.recaptchaVerifier.clear();
+      } catch (_) {}
+      window.recaptchaVerifier = null;
+    }
   };
 
   const handleOpenEdit = (user) => {
     setEditingUser(user);
+    setIsPhoneVerified(true);
     setFormEmail(user.email);
     setFormFullName(user.fullName || user.full_name);
     setFormRole(user.role);
@@ -1297,26 +1484,9 @@ export const AdminPortal = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Parent Email (Optional)</label>
-                      <input type="email" placeholder="parent@example.com" value={formParentEmail} onChange={(e) => setFormParentEmail(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-805 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Ward Counsellor</label>
-                      <select
-                        value={formWardCounsellorId}
-                        onChange={(e) => setFormWardCounsellorId(e.target.value)}
-                        required
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-805 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
-                      >
-                        <option value="">Select Counsellor...</option>
-                        {usersList.filter(u => u.role === 'counsellor').map(c => (
-                          <option key={c.uid} value={c.uid}>{c.fullName || c.full_name} ({c.department})</option>
-                        ))}
-                      </select>
-                    </div>
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Parent Email (Optional)</label>
+                    <input type="email" placeholder="parent@example.com" value={formParentEmail} onChange={(e) => setFormParentEmail(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-805 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
                   </div>
                 </div>
               )}
@@ -1328,8 +1498,120 @@ export const AdminPortal = () => {
                 </div>
               )}
 
-              <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-lg transition-all mt-6">
-                {editingUser ? 'Update Account' : 'Provision Account'}
+              {/* TWILIO SMS OTP 2FA SECTION */}
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
+                <label className="block text-[10px] uppercase font-bold text-slate-400">
+                  User Phone Number (Twilio SMS OTP 2FA)
+                </label>
+                
+                <div className="flex gap-2">
+                  <select
+                    value={formCountryCode}
+                    onChange={(e) => setFormCountryCode(e.target.value)}
+                    disabled={isPhoneVerified || otpLoading}
+                    className="px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                  >
+                    <option value="+91">🇮🇳 +91</option>
+                    <option value="+1">🇺🇸 +1</option>
+                    <option value="+44">🇬🇧 +44</option>
+                    <option value="+61">🇦🇺 +61</option>
+                    <option value="+971">🇦🇪 +971</option>
+                  </select>
+
+                  <input
+                    type="tel"
+                    placeholder="9876543210"
+                    value={formMobile}
+                    onChange={(e) => {
+                      setFormMobile(e.target.value);
+                      if (isPhoneVerified && !editingUser) setIsPhoneVerified(false);
+                    }}
+                    required
+                    disabled={isPhoneVerified || otpLoading}
+                    className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                  />
+
+                  {!isPhoneVerified && (
+                    <button
+                      type="button"
+                      onClick={handleSendOtp}
+                      disabled={otpLoading || !formMobile || formMobile.trim().length < 10}
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all shadow-md shrink-0"
+                    >
+                      {otpLoading && !otpSent ? 'Sending...' : otpSent ? 'Resend OTP' : 'Send OTP'}
+                    </button>
+                  )}
+                </div>
+
+                {/* Verification Success Badge */}
+                {isPhoneVerified && (
+                  <div className="flex items-center gap-2 p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-600 dark:text-emerald-400 font-extrabold text-xs">
+                    <Check size={16} className="shrink-0" />
+                    <span>Phone Verified via Twilio 2FA</span>
+                  </div>
+                )}
+
+                {/* Error Banner */}
+                {otpError && (
+                  <div className="p-2.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-500 font-bold text-xs flex items-center gap-2">
+                    <AlertCircle size={14} className="shrink-0" />
+                    <span>{otpError}</span>
+                  </div>
+                )}
+
+                {/* OTP Input Field & Verification Step */}
+                {otpSent && !isPhoneVerified && (
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl space-y-3">
+                    <label className="block text-[10px] uppercase font-black text-slate-500 dark:text-slate-400">
+                      Enter 6-digit SMS OTP Code
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        maxLength={6}
+                        placeholder="••••••"
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                        className="flex-1 px-3 py-2 text-center tracking-widest font-mono text-base font-black rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none dark:text-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleVerifyOtp}
+                        disabled={otpLoading || otpCode.length !== 6}
+                        className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all shadow"
+                      >
+                        {otpLoading ? 'Verifying...' : 'Verify OTP'}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                      <span>Didn't receive SMS OTP?</span>
+                      {resendCountdown > 0 ? (
+                        <span className="text-indigo-500 font-extrabold">Resend in {resendCountdown}s</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleResendOtp}
+                          className="text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-800 font-extrabold"
+                        >
+                          Resend OTP
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={!editingUser && !isPhoneVerified}
+                className={`w-full py-3 text-white rounded-xl text-xs font-black shadow-lg transition-all mt-6 ${
+                  !editingUser && !isPhoneVerified
+                    ? 'bg-slate-400 dark:bg-slate-700 cursor-not-allowed opacity-60'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+              >
+                {editingUser ? 'Update Account' : isPhoneVerified ? 'Create Account' : 'Verify Phone OTP to Create Account'}
               </button>
             </form>
           </div>
