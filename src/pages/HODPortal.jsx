@@ -2222,12 +2222,16 @@ const HODAuditLogs = ({ hod }) => {
 };
 
 const HODSettings = ({ hod }) => {
-  const [profile, setProfile] = useState({
-    mobile: hod?.mobile || '9876543210',
-    officeRoom: hod?.officeRoom || 'Room 304, Tech Block',
-    officeHours: hod?.officeHours || 'Mon - Fri: 10:00 AM - 4:00 PM',
-    profilePhotoUrl: hod?.profilePhotoUrl || null
-  });
+  const { user, showToast, updateProfilePhoto } = useAuth();
+  const currentHOD = hod || user || {};
+
+  const [fullName, setFullName] = useState(currentHOD.fullName || currentHOD.name || 'Dr. Alan Turing');
+  const [email, setEmail] = useState(currentHOD.email || 'hod.cse@kbn.edu');
+  const [mobile, setMobile] = useState(currentHOD.mobile || currentHOD.phone || '+91 98765 43210');
+  const [officeRoom, setOfficeRoom] = useState(currentHOD.officeRoom || 'Room 304, Tech Block - Floor 3');
+  const [officeHours, setOfficeHours] = useState(currentHOD.officeHours || 'Mon - Fri: 10:00 AM - 4:00 PM');
+  const [bio, setBio] = useState(currentHOD.bio || 'Managing departmental curriculum, academic faculty allocations, laboratory infrastructures, and student research projects.');
+  const [photoUrl, setPhotoUrl] = useState(currentHOD.profilePhotoUrl || currentHOD.photo || '');
 
   const [stats, setStats] = useState({
     facultyCount: 25,
@@ -2239,17 +2243,15 @@ const HODSettings = ({ hod }) => {
   });
 
   const [previewPhoto, setPreviewPhoto] = useState(null);
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const { showToast } = useAuth();
 
   useEffect(() => {
     const loadStats = async () => {
-      const s = await mockDB.getHODProfileStats(hod?.department);
+      const s = await mockDB.getHODProfileStats(currentHOD?.department);
       setStats(s);
     };
     loadStats();
-  }, [hod]);
+  }, [currentHOD]);
 
   const handlePhotoSelect = (e) => {
     const file = e.target.files[0];
@@ -2257,40 +2259,34 @@ const HODSettings = ({ hod }) => {
 
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!validTypes.includes(file.type)) {
-      return alert('Invalid file format. Supported formats: JPG, JPEG, PNG, WEBP');
+      showToast('Invalid file format. Supported formats: JPG, JPEG, PNG, WEBP', 'error');
+      return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      return alert('File size exceeds maximum limit of 5 MB.');
+      showToast('File size exceeds maximum limit of 5 MB.', 'error');
+      return;
     }
 
     const reader = new FileReader();
     reader.onloadend = () => {
       setPreviewPhoto(reader.result);
-      setShowPreviewModal(true);
+      setPhotoUrl(reader.result);
+      showToast('Photo selected! Click Save Profile Changes to apply.', 'info');
     };
     reader.readAsDataURL(file);
   };
 
-  const handleSavePhoto = async () => {
-    try {
-      setIsSaving(true);
-      await mockDB.updateHODProfile(hod.uid, { profilePhotoUrl: previewPhoto }, hod);
-      setProfile(prev => ({ ...prev, profilePhotoUrl: previewPhoto }));
-      setShowPreviewModal(false);
-      showToast('Profile photo updated successfully!', 'success');
-    } catch (_) {
-      showToast('Failed to update profile photo.', 'error');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const handleRemovePhoto = async () => {
-    if (confirm('Are you sure you want to remove your profile photo?')) {
-      await mockDB.updateHODProfile(hod.uid, { profilePhotoUrl: null }, hod);
-      setProfile(prev => ({ ...prev, profilePhotoUrl: null }));
-      showToast('Profile photo removed.', 'info');
+    if (window.confirm('Are you sure you want to remove your profile photo?')) {
+      try {
+        if (updateProfilePhoto) await updateProfilePhoto(null);
+        setPhotoUrl('');
+        setPreviewPhoto(null);
+        showToast('Profile photo removed.', 'info');
+      } catch (_) {
+        showToast('Could not remove photo.', 'error');
+      }
     }
   };
 
@@ -2298,7 +2294,29 @@ const HODSettings = ({ hod }) => {
     e.preventDefault();
     try {
       setIsSaving(true);
-      await mockDB.updateHODProfile(hod.uid, profile, hod);
+      const updated = {
+        ...currentHOD,
+        fullName,
+        name: fullName,
+        email,
+        mobile,
+        phone: mobile,
+        officeRoom,
+        officeHours,
+        bio,
+        profilePhotoUrl: photoUrl || currentHOD.profilePhotoUrl,
+        photo: photoUrl || currentHOD.photo
+      };
+
+      if (previewPhoto && updateProfilePhoto) {
+        try {
+          await updateProfilePhoto(previewPhoto);
+        } catch (_) {}
+      }
+
+      await mockDB.updateHODProfile(currentHOD.uid || currentHOD.id, updated, currentHOD);
+      localStorage.setItem('acad_user', JSON.stringify(updated));
+      localStorage.setItem('acad_current_user', JSON.stringify(updated));
       showToast('HOD profile details updated successfully!', 'success');
     } catch (_) {
       showToast('Could not save profile changes.', 'error');
@@ -2307,27 +2325,28 @@ const HODSettings = ({ hod }) => {
     }
   };
 
-  const hodInitials = hod?.fullName ? hod.fullName.split(' ').map(n => n[0]).slice(0, 2).join('') : 'AT';
+  const activePhoto = previewPhoto || photoUrl || currentHOD.profilePhotoUrl;
+  const hodInitials = fullName ? fullName.split(' ').map(n => n[0]).slice(0, 2).join('') : 'AT';
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
-      {/* Profile Banner */}
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="space-y-6 text-xs font-semibold bg-transparent text-white font-sans max-w-4xl mx-auto">
+      
+      {/* Universal Glass Banner */}
+      <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-blue-900/40 to-indigo-900/40 backdrop-blur-xl border border-white/10 text-white shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
-          {/* Profile Photo / Default Initials Avatar */}
-          <div className="relative group">
-            {profile.profilePhotoUrl ? (
+          <div className="relative group shrink-0">
+            {activePhoto ? (
               <img
-                src={profile.profilePhotoUrl}
+                src={activePhoto}
                 alt="HOD Profile"
-                className="w-20 h-20 rounded-3xl object-cover border-2 border-purple-500 shadow-lg"
+                className="w-20 h-20 rounded-2xl object-cover border-2 border-purple-400/60 shadow-lg"
               />
             ) : (
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white font-black text-2xl flex items-center justify-center border-2 border-purple-500 shadow-lg">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-purple-600/80 to-indigo-600/80 text-white font-black text-2xl flex items-center justify-center border-2 border-purple-400/40 shadow-lg">
                 {hodInitials}
               </div>
             )}
-            <label className="absolute bottom-0 right-0 p-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-md cursor-pointer">
+            <label className="absolute bottom-0 right-0 p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md cursor-pointer transition-all hover:scale-105">
               <Upload size={14} />
               <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" onChange={handlePhotoSelect} className="hidden" />
             </label>
@@ -2335,26 +2354,26 @@ const HODSettings = ({ hod }) => {
 
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-black text-slate-900 dark:text-white">{hod?.fullName || 'Dr. Alan Turing'}</h2>
-              <span className="px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600 text-[10px] font-black uppercase">
+              <h2 className="text-xl font-black text-white drop-shadow-md">{fullName}</h2>
+              <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-black uppercase border border-purple-400/30">
                 HOD
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">{hod?.department || 'Computer Science and Engineering'}</p>
-            <p className="text-xs font-mono text-purple-600 dark:text-purple-400 mt-1">{hod?.email || 'hod.cse@kbn.edu'}</p>
+            <p className="text-xs text-gray-200 font-semibold mt-0.5">{currentHOD?.department || 'Computer Science and Engineering'}</p>
+            <p className="text-xs font-mono text-cyan-300 mt-1">{email}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {profile.profilePhotoUrl && (
+          {activePhoto && (
             <button
               onClick={handleRemovePhoto}
-              className="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 rounded-xl font-bold text-xs"
+              className="px-3.5 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 rounded-xl font-bold text-xs cursor-pointer transition-all"
             >
               Remove Photo
             </button>
           )}
-          <label className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs shadow-lg shadow-purple-500/20 cursor-pointer flex items-center gap-1.5">
+          <label className="px-4 py-2.5 bg-blue-600/80 hover:bg-blue-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-blue-500/30 border border-blue-400/40 cursor-pointer flex items-center gap-1.5 transition-all hover:scale-[1.02]">
             <Upload size={14} />
             <span>Change Profile Photo</span>
             <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" onChange={handlePhotoSelect} className="hidden" />
@@ -2362,156 +2381,134 @@ const HODSettings = ({ hod }) => {
         </div>
       </div>
 
-      {/* Department Summary Statistics */}
-      <div className="p-6 bg-slate-900 text-white rounded-3xl shadow-xl space-y-4">
-        <h3 className="text-sm font-black text-purple-300 uppercase tracking-wider">Department Summary Statistics</h3>
+      {/* Department Summary Statistics Card */}
+      <div className="p-6 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white space-y-4">
+        <h3 className="text-xs font-black text-cyan-300 uppercase tracking-wider">Department Live Operations Summary</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 text-center">
-          <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md">
-            <span className="text-[9.5px] text-slate-300 block font-bold">Total Faculty</span>
-            <span className="text-xl font-black">{stats.facultyCount}</span>
+          <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+            <span className="text-[9.5px] text-gray-300 block font-bold">Total Faculty</span>
+            <span className="text-xl font-black text-white">{stats.facultyCount}</span>
           </div>
-          <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md">
-            <span className="text-[9.5px] text-slate-300 block font-bold">Total Students</span>
-            <span className="text-xl font-black text-purple-300">{stats.studentCount}</span>
+          <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+            <span className="text-[9.5px] text-gray-300 block font-bold">Total Students</span>
+            <span className="text-xl font-black text-cyan-300">{stats.studentCount}</span>
           </div>
-          <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md">
-            <span className="text-[9.5px] text-slate-300 block font-bold">Sections</span>
-            <span className="text-xl font-black">{stats.sectionsCount}</span>
+          <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+            <span className="text-[9.5px] text-gray-300 block font-bold">Sections</span>
+            <span className="text-xl font-black text-white">{stats.sectionsCount}</span>
           </div>
-          <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md col-span-2 sm:col-span-1">
-            <span className="text-[9.5px] text-slate-300 block font-bold">Ward Counsellor</span>
+          <div className="p-3 bg-white/5 rounded-xl border border-white/10 col-span-2 sm:col-span-1">
+            <span className="text-[9.5px] text-gray-300 block font-bold">Ward Counsellor</span>
             <span className="text-xs font-black text-emerald-300 truncate block mt-1">{stats.wardCounsellorName}</span>
           </div>
-          <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md">
-            <span className="text-[9.5px] text-slate-300 block font-bold">Attendance %</span>
+          <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+            <span className="text-[9.5px] text-gray-300 block font-bold">Attendance %</span>
             <span className="text-xl font-black text-emerald-400">{stats.attendancePercentage}%</span>
           </div>
-          <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md">
-            <span className="text-[9.5px] text-slate-300 block font-bold">Pending Leaves</span>
+          <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+            <span className="text-[9.5px] text-gray-300 block font-bold">Pending Leaves</span>
             <span className="text-xl font-black text-amber-300">{stats.pendingLeavesCount}</span>
           </div>
         </div>
       </div>
 
-      {/* Profile Details Form */}
-      <form onSubmit={handleSaveProfileFields} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-5">
-        <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
-          <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Edit HOD Profile Information</h3>
-          <p className="text-xs text-slate-400">Update contact details and office availability. Official role and department are read-only.</p>
+      {/* Profile Details Form Card */}
+      <form onSubmit={handleSaveProfileFields} className="bg-black/40 backdrop-blur-md p-6 md:p-8 rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white hover:border-white/20 transition-all space-y-6">
+        <div className="border-b border-white/10 pb-3">
+          <span className="text-[10px] font-extrabold tracking-widest uppercase text-cyan-300 bg-cyan-500/20 px-2.5 py-0.5 rounded-md border border-cyan-400/30">
+            Profile Credentials
+          </span>
+          <h3 className="text-base font-black text-white drop-shadow-md mt-1.5 font-display">
+            Personal Information & Office Configuration
+          </h3>
+          <p className="text-xs text-gray-300 font-medium mt-0.5">
+            Update personal contact details, office availability hours, and vision statement.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Read-Only Fields */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Full Name */}
           <div>
-            <label className="block text-slate-400 uppercase text-[10px] font-bold mb-1">Role (Read-Only)</label>
+            <label className="block text-gray-300 uppercase text-[10px] font-extrabold tracking-wider mb-1.5">Full Name *</label>
             <input
               type="text"
-              value="Head of Department (HOD)"
-              disabled
-              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/50 text-slate-500 font-bold cursor-not-allowed"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all font-semibold text-xs"
             />
           </div>
 
+          {/* Official Email */}
           <div>
-            <label className="block text-slate-400 uppercase text-[10px] font-bold mb-1">Department (Read-Only)</label>
+            <label className="block text-gray-300 uppercase text-[10px] font-extrabold tracking-wider mb-1.5">Official Email *</label>
             <input
-              type="text"
-              value={hod?.department || 'Computer Science and Engineering (CSE)'}
-              disabled
-              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/50 text-slate-500 font-bold cursor-not-allowed"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all font-semibold text-xs"
             />
           </div>
 
+          {/* Mobile Number */}
           <div>
-            <label className="block text-slate-400 uppercase text-[10px] font-bold mb-1">Employee ID (Read-Only)</label>
+            <label className="block text-gray-300 uppercase text-[10px] font-extrabold tracking-wider mb-1.5">Mobile Number *</label>
             <input
               type="text"
-              value={hod?.employeeId || 'HOD-CSE-01'}
-              disabled
-              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/50 text-slate-500 font-bold cursor-not-allowed"
+              value={mobile}
+              onChange={(e) => setMobile(e.target.value)}
+              required
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all font-semibold text-xs"
             />
           </div>
 
+          {/* Office Room */}
           <div>
-            <label className="block text-slate-400 uppercase text-[10px] font-bold mb-1">Official Email (Read-Only)</label>
+            <label className="block text-gray-300 uppercase text-[10px] font-extrabold tracking-wider mb-1.5">Office Room Location</label>
             <input
               type="text"
-              value={hod?.email || 'hod.cse@kbn.edu'}
-              disabled
-              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/50 text-slate-500 font-bold cursor-not-allowed"
+              value={officeRoom}
+              onChange={(e) => setOfficeRoom(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all font-semibold text-xs"
             />
           </div>
 
-          {/* Editable Fields */}
-          <div>
-            <label className="block text-slate-700 dark:text-slate-300 uppercase text-[10px] font-bold mb-1">Mobile Number</label>
-            <input
-              type="text"
-              value={profile.mobile}
-              onChange={(e) => setProfile({ ...profile, mobile: e.target.value })}
-              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-700 dark:text-slate-300 uppercase text-[10px] font-bold mb-1">Office Room Location</label>
-            <input
-              type="text"
-              value={profile.officeRoom}
-              onChange={(e) => setProfile({ ...profile, officeRoom: e.target.value })}
-              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold"
-            />
-          </div>
-
+          {/* Office Hours */}
           <div className="md:col-span-2">
-            <label className="block text-slate-700 dark:text-slate-300 uppercase text-[10px] font-bold mb-1">Office Hours / Availability</label>
+            <label className="block text-gray-300 uppercase text-[10px] font-extrabold tracking-wider mb-1.5">Office Hours / Availability</label>
             <input
               type="text"
-              value={profile.officeHours}
-              onChange={(e) => setProfile({ ...profile, officeHours: e.target.value })}
-              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold"
+              value={officeHours}
+              onChange={(e) => setOfficeHours(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all font-semibold text-xs"
             />
+          </div>
+
+          {/* Bio */}
+          <div className="md:col-span-2">
+            <label className="block text-gray-300 uppercase text-[10px] font-extrabold tracking-wider mb-1.5">Departmental Vision & Bio</label>
+            <textarea
+              rows={3}
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all font-semibold text-xs resize-none"
+            ></textarea>
           </div>
         </div>
 
-        <div className="flex justify-end pt-2">
+        <div className="flex justify-end pt-4 border-t border-white/10">
           <button
             type="submit"
             disabled={isSaving}
-            className="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-purple-500/20"
+            className="px-8 py-3.5 bg-blue-600/80 hover:bg-blue-600 border border-blue-400/40 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-500/30 cursor-pointer transition-all hover:scale-[1.02]"
           >
             {isSaving ? 'Saving Changes...' : 'Save Profile Changes'}
           </button>
         </div>
       </form>
-
-      {/* Image Preview Modal */}
-      {showPreviewModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 max-w-sm w-full rounded-3xl p-6 space-y-4 border border-slate-200 dark:border-slate-800 shadow-2xl text-center">
-            <h3 className="text-base font-black text-slate-900 dark:text-white">Profile Photo Preview</h3>
-            <div className="w-32 h-32 rounded-3xl overflow-hidden mx-auto border-4 border-purple-600 shadow-xl">
-              <img src={previewPhoto} alt="Preview" className="w-full h-full object-cover" />
-            </div>
-            <p className="text-xs text-slate-400 font-medium">Do you want to apply this image as your HOD profile photo?</p>
-            <div className="flex justify-center gap-2 pt-2">
-              <button
-                onClick={() => setShowPreviewModal(false)}
-                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSavePhoto}
-                disabled={isSaving}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-purple-500/20"
-              >
-                Save Photo
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
+
+export default HODPortal;

@@ -1685,11 +1685,25 @@ const PrincipalReports = () => {
   );
 };
 
-// 12. PRINCIPAL SETTINGS & PROFILE PHOTO MANAGEMENT
+// 12. PRINCIPAL SETTINGS & PROFILE MANAGEMENT
 const PrincipalSettings = ({ principal }) => {
-  const { updateProfilePhoto } = useAuth();
+  const { user, showToast, updateProfilePhoto } = useAuth();
+  const currentUser = principal || user || {};
+
+  // Profile Form State
+  const [fullName, setFullName] = useState(currentUser.fullName || currentUser.name || 'Dr. Arthur Pendelton');
+  const [email, setEmail] = useState(currentUser.email || 'principal@kbn.edu');
+  const [phone, setPhone] = useState(currentUser.phone || currentUser.phoneNumber || '+91 98450 11223');
+  const [designation, setDesignation] = useState(currentUser.designation || 'Principal & Institutional Executive');
+  const [qualifications, setQualifications] = useState(currentUser.qualifications || 'Ph.D. in Computer Science & Engineering, M.Tech, B.Tech');
+  const [officeRoom, setOfficeRoom] = useState(currentUser.officeRoom || 'Room 101, Executive Chambers, Administrative Block');
+  const [bio, setBio] = useState(currentUser.bio || 'Leading academic excellence, NIRF accreditation, strategic industry alliances, and state-of-the-art campus research initiatives across all engineering disciplines.');
+  
+  // Photo State
   const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoUrl, setPhotoUrl] = useState(currentUser.profilePhotoUrl || currentUser.photo || '');
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
 
   const handlePhotoSelect = (e) => {
@@ -1698,112 +1712,346 @@ const PrincipalSettings = ({ principal }) => {
 
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!validTypes.includes(file.type)) {
-      return alert('Invalid file format. Please select a JPG, JPEG, PNG, or WEBP image.');
+      showToast('Invalid file format. Please select a JPG, JPEG, PNG, or WEBP image.', 'error');
+      return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      return alert('File size exceeds maximum limit of 5 MB.');
+      showToast('File size exceeds maximum limit of 5 MB.', 'error');
+      return;
     }
 
     const reader = new FileReader();
     reader.onloadend = () => {
       setPhotoPreview(reader.result);
-      setMessage('');
+      setPhotoUrl(reader.result);
+      setMessage('New photo selected. Click "Confirm Photo" or "Save Changes" to apply.');
     };
     reader.readAsDataURL(file);
   };
 
   const handleSavePhoto = async () => {
-    if (!photoPreview) return;
+    if (!photoPreview && !photoUrl) return;
     try {
       setIsUploading(true);
-      await updateProfilePhoto(photoPreview);
+      const chosenPhoto = photoPreview || photoUrl;
+      await updateProfilePhoto(chosenPhoto);
       setPhotoPreview(null);
       setMessage('Profile photo updated successfully!');
+      showToast('Principal profile photo updated!', 'success');
       setTimeout(() => setMessage(''), 4000);
     } catch (e) {
-      alert('Failed to upload photo. Please try again.');
+      showToast('Failed to upload photo. Please try again.', 'error');
     } finally {
       setIsUploading(false);
     }
   };
 
   const handleRestoreDefault = async () => {
-    if (confirm('Are you sure you want to restore the default initial avatar (DA)?')) {
+    if (window.confirm('Are you sure you want to restore the default initial avatar?')) {
       try {
         setIsUploading(true);
         await updateProfilePhoto(null);
         setPhotoPreview(null);
+        setPhotoUrl('');
         setMessage('Default avatar restored!');
+        showToast('Default initial avatar restored.', 'info');
         setTimeout(() => setMessage(''), 4000);
       } catch (e) {
-        alert('Failed to restore avatar.');
+        showToast('Failed to restore avatar.', 'error');
       } finally {
         setIsUploading(false);
       }
     }
   };
 
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      const updatedUser = {
+        ...currentUser,
+        fullName,
+        name: fullName,
+        email,
+        phone,
+        phoneNumber: phone,
+        designation,
+        qualifications,
+        officeRoom,
+        bio,
+        profilePhotoUrl: photoUrl || currentUser.profilePhotoUrl,
+        photo: photoUrl || currentUser.photo
+      };
+
+      if (photoPreview && updateProfilePhoto) {
+        try {
+          await updateProfilePhoto(photoPreview);
+        } catch (_) {}
+      }
+
+      localStorage.setItem('acad_user', JSON.stringify(updatedUser));
+      localStorage.setItem('acad_current_user', JSON.stringify(updatedUser));
+      showToast('Principal profile information updated successfully!', 'success');
+      setMessage('Profile changes saved successfully!');
+      setTimeout(() => setMessage(''), 4000);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to save profile changes.', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const activePhoto = photoPreview || photoUrl || currentUser.profilePhotoUrl;
+  const initialLetters = fullName ? fullName.split(' ').map(n => n[0]).slice(0, 2).join('') : 'AP';
+
   return (
-    <div className="space-y-6 text-xs font-semibold">
+    <div className="space-y-6 text-xs font-semibold bg-transparent text-white font-sans max-w-4xl mx-auto">
       
-      {/* Profile Photo Management Card */}
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-6">
+      {/* Universal Glass Banner */}
+      <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-blue-900/40 to-indigo-900/40 backdrop-blur-xl border border-white/10 text-white shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-black text-slate-900 dark:text-white">Principal Profile & Photo Management</h2>
-          <p className="text-xs text-slate-400">Manage your official Principal profile photo displayed across the Institutional Console</p>
+          <span className="text-[10px] font-extrabold tracking-widest uppercase text-cyan-300 bg-cyan-500/20 px-3 py-0.5 rounded-full border border-cyan-400/30 drop-shadow-md">
+            Institutional Governance
+          </span>
+          <h3 className="text-xl md:text-2xl font-black text-white drop-shadow-md mt-1.5 font-display">
+            Executive Profile & Institutional Settings
+          </h3>
+          <p className="text-xs text-gray-200 font-semibold drop-shadow-sm mt-0.5">
+            Manage your executive credentials, official contact channels, qualifications, and system presence
+          </p>
         </div>
+        <div className="p-3 bg-blue-500/20 border border-blue-400/30 rounded-2xl shrink-0 self-start md:self-auto">
+          <ShieldCheck size={28} className="text-cyan-300" />
+        </div>
+      </div>
 
-        {message && (
-          <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-2xl text-xs font-bold">
-            {message}
-          </div>
-        )}
+      {message && (
+        <div className="p-4 bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 rounded-2xl text-xs font-bold flex items-center gap-2 backdrop-blur-md shadow-lg">
+          <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+          <span>{message}</span>
+        </div>
+      )}
 
-        <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/40 dark:border-slate-800">
-          <div className="relative group">
-            {photoPreview ? (
-              <img src={photoPreview} alt="Preview" className="w-24 h-24 rounded-2xl object-cover border-2 border-purple-500 shadow-lg" />
-            ) : principal?.profilePhotoUrl ? (
-              <img src={principal.profilePhotoUrl} alt="Principal" className="w-24 h-24 rounded-2xl object-cover border-2 border-purple-500/40 shadow-lg" />
+      {/* Main Glass Settings Card */}
+      <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-3xl p-6 md:p-8 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white hover:border-white/20 transition-all space-y-8">
+        
+        {/* Profile Photo & Quick Credentials Section */}
+        <div className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-2xl bg-white/5 border border-white/10">
+          <div className="relative group shrink-0">
+            {activePhoto ? (
+              <img
+                src={activePhoto}
+                alt="Principal"
+                className="w-28 h-28 rounded-3xl object-cover border-2 border-cyan-400/60 shadow-xl"
+              />
             ) : (
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-600 text-slate-950 font-black text-2xl flex items-center justify-center shadow-lg border-2 border-amber-400/50">
-                {principal?.fullName ? principal.fullName.split(' ').map(n => n[0]).join('') : 'DA'}
+              <div className="w-28 h-28 rounded-3xl bg-gradient-to-tr from-amber-500/80 to-amber-700/80 text-white font-black text-3xl flex items-center justify-center shadow-xl border-2 border-amber-400/50">
+                {initialLetters}
               </div>
             )}
+            <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-slate-900 shadow"></span>
           </div>
 
           <div className="space-y-3 text-center sm:text-left flex-1">
             <div>
-              <h3 className="text-sm font-black text-slate-900 dark:text-white">{principal?.fullName || 'Dr. Arthur Pendelton'}</h3>
-              <p className="text-xs text-purple-600 font-bold">Principal (Institutional Executive)</p>
-              <p className="text-[11px] text-slate-400">{principal?.email || 'principal@kbn.edu'}</p>
+              <div className="flex items-center justify-center sm:justify-start gap-2">
+                <h3 className="text-base md:text-lg font-black text-white drop-shadow-md">{fullName}</h3>
+                <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-black uppercase border border-cyan-400/30">
+                  Principal
+                </span>
+              </div>
+              <p className="text-xs text-cyan-300 font-semibold">{designation}</p>
+              <p className="text-[11px] text-gray-300 font-mono mt-0.5">{email}</p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
-              <label className="px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs shadow-md cursor-pointer flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-2.5 justify-center sm:justify-start">
+              <label className="px-4 py-2.5 bg-blue-600/80 hover:bg-blue-600 border border-blue-400/40 text-white rounded-xl font-bold text-xs shadow-lg shadow-blue-500/30 cursor-pointer flex items-center gap-2 transition-all hover:scale-[1.02]">
                 <Camera size={14} />
-                <span>{principal?.profilePhotoUrl ? 'Change Photo' : 'Upload Photo'}</span>
+                <span>{activePhoto ? 'Change Photo' : 'Upload Photo'}</span>
                 <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" onChange={handlePhotoSelect} className="hidden" />
               </label>
 
               {photoPreview && (
-                <button onClick={handleSavePhoto} disabled={isUploading} className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleSavePhoto}
+                  disabled={isUploading}
+                  className="px-4 py-2.5 bg-emerald-600/80 hover:bg-emerald-600 border border-emerald-400/40 text-white rounded-xl font-bold text-xs shadow-lg shadow-emerald-500/30 flex items-center gap-2 cursor-pointer transition-all hover:scale-[1.02]"
+                >
                   <Upload size={14} />
-                  <span>{isUploading ? 'Uploading...' : 'Confirm Upload'}</span>
+                  <span>{isUploading ? 'Uploading...' : 'Confirm Photo'}</span>
                 </button>
               )}
 
-              {(principal?.profilePhotoUrl || photoPreview) && (
-                <button onClick={handleRestoreDefault} disabled={isUploading} className="px-3.5 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 rounded-xl font-bold text-xs flex items-center gap-1.5">
+              {activePhoto && (
+                <button
+                  type="button"
+                  onClick={handleRestoreDefault}
+                  disabled={isUploading}
+                  className="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/15 text-gray-300 hover:text-white rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all"
+                >
                   <RotateCcw size={14} />
-                  <span>Restore Default Avatar</span>
+                  <span>Restore Initial</span>
                 </button>
               )}
             </div>
-            <p className="text-[9.5px] text-slate-400">Supported formats: JPG, JPEG, PNG, WEBP (Max 5 MB)</p>
+            <p className="text-[10px] text-gray-400 font-medium">Supported formats: JPG, JPEG, PNG, WEBP (Max 5 MB)</p>
           </div>
         </div>
+
+        {/* 2. PERSONAL INFORMATION UPDATE FORM */}
+        <form onSubmit={handleSaveProfile} className="space-y-6">
+          <div className="border-b border-white/10 pb-3">
+            <span className="text-[10px] font-extrabold tracking-widest uppercase text-cyan-300 bg-cyan-500/20 px-2.5 py-0.5 rounded-md border border-cyan-400/30">
+              Personal Credentials
+            </span>
+            <h4 className="text-base font-black text-white drop-shadow-md mt-1.5 font-display">
+              Personal Information Update
+            </h4>
+            <p className="text-xs text-gray-300 font-medium mt-0.5">
+              Update your institutional leadership identity, official channels, qualifications, and vision
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Full Name */}
+            <div>
+              <label className="block text-gray-300 text-[10px] font-extrabold uppercase tracking-wider mb-1.5">
+                Full Name *
+              </label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+                placeholder="Dr. Arthur Pendelton"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all font-semibold text-xs"
+              />
+            </div>
+
+            {/* Email Address */}
+            <div>
+              <label className="block text-gray-300 text-[10px] font-extrabold uppercase tracking-wider mb-1.5">
+                Official Email Address *
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="principal@kbn.edu"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all font-semibold text-xs"
+              />
+            </div>
+
+            {/* Contact Phone */}
+            <div>
+              <label className="block text-gray-300 text-[10px] font-extrabold uppercase tracking-wider mb-1.5">
+                Contact Phone Number *
+              </label>
+              <input
+                type="text"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+                placeholder="+91 98450 11223"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all font-semibold text-xs"
+              />
+            </div>
+
+            {/* Designation */}
+            <div>
+              <label className="block text-gray-300 text-[10px] font-extrabold uppercase tracking-wider mb-1.5">
+                Designation / Institutional Title
+              </label>
+              <input
+                type="text"
+                value={designation}
+                onChange={(e) => setDesignation(e.target.value)}
+                placeholder="Principal & Institutional Executive"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all font-semibold text-xs"
+              />
+            </div>
+
+            {/* Qualifications */}
+            <div>
+              <label className="block text-gray-300 text-[10px] font-extrabold uppercase tracking-wider mb-1.5">
+                Academic Qualifications
+              </label>
+              <input
+                type="text"
+                value={qualifications}
+                onChange={(e) => setQualifications(e.target.value)}
+                placeholder="Ph.D. in Computer Science, M.Tech"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all font-semibold text-xs"
+              />
+            </div>
+
+            {/* Office Room */}
+            <div>
+              <label className="block text-gray-300 text-[10px] font-extrabold uppercase tracking-wider mb-1.5">
+                Office Location / Executive Chambers
+              </label>
+              <input
+                type="text"
+                value={officeRoom}
+                onChange={(e) => setOfficeRoom(e.target.value)}
+                placeholder="Room 101, Executive Chambers, Admin Block"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all font-semibold text-xs"
+              />
+            </div>
+
+            {/* Photo URL option */}
+            <div className="md:col-span-2">
+              <label className="block text-gray-300 text-[10px] font-extrabold uppercase tracking-wider mb-1.5">
+                Profile Photo Direct Image URL (Optional)
+              </label>
+              <input
+                type="text"
+                value={photoUrl}
+                onChange={(e) => {
+                  setPhotoUrl(e.target.value);
+                  setPhotoPreview(null);
+                }}
+                placeholder="https://images.unsplash.com/..."
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all font-semibold text-xs"
+              />
+            </div>
+
+            {/* Bio / Overview */}
+            <div className="md:col-span-2">
+              <label className="block text-gray-300 text-[10px] font-extrabold uppercase tracking-wider mb-1.5">
+                Institutional Vision & Executive Bio
+              </label>
+              <textarea
+                rows={3}
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Share your leadership message or institutional vision..."
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all font-semibold text-xs resize-none"
+              ></textarea>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-[11px] text-gray-400 flex items-center gap-1.5">
+              <ShieldCheck size={14} className="text-cyan-400" />
+              <span>All updates sync with your session and institutional records immediately.</span>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="w-full sm:w-auto px-8 py-3.5 bg-blue-600/80 hover:bg-blue-600 border border-blue-400/40 text-white rounded-xl font-bold text-xs shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 cursor-pointer transition-all hover:scale-[1.02]"
+            >
+              <UserCheck size={16} />
+              <span>{isSaving ? 'Saving Changes...' : 'Save Profile Changes'}</span>
+            </button>
+          </div>
+        </form>
+
       </div>
 
     </div>
