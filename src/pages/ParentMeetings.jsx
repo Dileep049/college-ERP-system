@@ -384,14 +384,14 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
     <div className="max-w-7xl mx-auto space-y-8 p-4 sm:p-6 lg:p-8">
       
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-purple-700 via-indigo-700 to-blue-700 text-white shadow-2xl shadow-purple-500/10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-indigo-900/50 to-purple-900/50 backdrop-blur-xl border border-white/10 text-white shadow-lg">
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/15 backdrop-blur-md rounded-full text-xs font-bold border border-white/20">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-bold border border-white/20">
             <Users size={14} className="text-amber-300" />
             <span>Parent-Teacher Counselling Module</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Parent Meetings Desk</h1>
-          <p className="text-xs sm:text-sm font-medium text-purple-100/90 max-w-xl">
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">Parent Meetings Desk</h1>
+          <p className="text-xs sm:text-sm font-medium text-purple-200/90 max-w-xl">
             Schedule, track, and manage official parent-teacher counselling sessions for your assigned ward students.
           </p>
         </div>
@@ -403,184 +403,184 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
               setSelectedStudentId(students[0].uid || students[0].id || '');
             }
           }}
-          className="px-5 py-3 rounded-2xl bg-white hover:bg-slate-100 text-purple-900 font-extrabold text-xs shadow-xl transition-all flex items-center justify-center gap-2 hover:scale-105"
+          className="px-5 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-xs shadow-lg border border-purple-400/30 transition-all flex items-center justify-center gap-2"
         >
-          <Plus size={18} className="text-purple-700" />
+          <Plus size={18} className="text-white" />
           <span>Schedule New Meeting</span>
         </button>
       </div>
 
       {/* Metrics Counter Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-lg space-y-1">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="p-5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg space-y-1">
+          <div className="flex items-center justify-between text-gray-400">
             <span className="text-[11px] font-bold uppercase tracking-wider">Total Scheduled</span>
-            <Calendar size={18} className="text-purple-500" />
+            <Calendar size={18} className="text-purple-400" />
           </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white">{meetings.length}</p>
+          <p className="text-2xl font-black text-white">{meetings.length}</p>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-lg space-y-1">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="p-5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg space-y-1">
+          <div className="flex items-center justify-between text-gray-400">
             <span className="text-[11px] font-bold uppercase tracking-wider">Upcoming</span>
-            <Clock size={18} className="text-blue-500" />
+            <Clock size={18} className="text-blue-400" />
           </div>
-          <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{upcomingMeetings.length}</p>
+          <p className="text-2xl font-black text-blue-400">{upcomingMeetings.length}</p>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-lg space-y-1">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="p-5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg space-y-1">
+          <div className="flex items-center justify-between text-gray-400">
             <span className="text-[11px] font-bold uppercase tracking-wider">Completed</span>
-            <CheckCircle2 size={18} className="text-emerald-500" />
+            <CheckCircle2 size={18} className="text-emerald-400" />
           </div>
-          <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{completedCount}</p>
+          <p className="text-2xl font-black text-emerald-400">{completedCount}</p>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-lg space-y-1">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="p-5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg space-y-1">
+          <div className="flex items-center justify-between text-gray-400">
             <span className="text-[11px] font-bold uppercase tracking-wider">No-Shows</span>
-            <XCircle size={18} className="text-rose-500" />
+            <XCircle size={18} className="text-rose-400" />
           </div>
-          <p className="text-2xl font-black text-rose-600 dark:text-rose-400">{noShowCount}</p>
+          <p className="text-2xl font-black text-rose-400">{noShowCount}</p>
         </div>
       </div>
 
       {/* Toolbar: Search & Filter */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg">
         <div className="relative w-full sm:w-80">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by student name or reason..."
-            className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-xs font-semibold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500/30"
+            className="w-full pl-10 pr-4 py-2 rounded-xl border border-white/10 bg-white/5 text-xs font-semibold text-white placeholder-gray-400 outline-none focus:bg-white/10 focus:ring-1 focus:ring-blue-400 transition-all"
           />
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+          <span className="text-xs font-bold text-gray-400 flex items-center gap-1">
             <Filter size={14} /> Mode:
           </span>
           <select
             value={modeFilter}
             onChange={(e) => setModeFilter(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-xs font-bold text-slate-800 dark:text-white outline-none"
+            className="px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs font-bold text-white focus:bg-white/10 focus:ring-1 focus:ring-blue-400 outline-none transition-all"
           >
-            <option value="ALL">All Modes</option>
-            <option value="Campus Visit">Campus Visit</option>
-            <option value="Phone Call">Phone Call</option>
-            <option value="Virtual">Virtual</option>
+            <option value="ALL" className="bg-slate-900 text-white">All Modes</option>
+            <option value="Campus Visit" className="bg-slate-900 text-white">Campus Visit</option>
+            <option value="Phone Call" className="bg-slate-900 text-white">Phone Call</option>
+            <option value="Virtual" className="bg-slate-900 text-white">Virtual</option>
           </select>
         </div>
       </div>
 
       {/* DASHBOARD TABLE 1: UPCOMING MEETINGS (status === "Scheduled") */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+      <div className="p-6 rounded-3xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg space-y-6">
+        <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div>
-            <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <Calendar size={18} className="text-purple-600 dark:text-purple-400" />
+            <h2 className="text-base font-black text-white flex items-center gap-2">
+              <Calendar size={18} className="text-purple-400" />
               <span>Upcoming Meetings</span>
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-gray-400 mt-0.5">
               Scheduled parent meetings requiring completion or status update
             </p>
           </div>
-          <span className="px-3 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold rounded-xl border border-purple-500/20 text-xs">
+          <span className="px-3 py-1 bg-purple-500/20 text-purple-300 font-bold rounded-xl border border-purple-500/30 text-xs">
             {upcomingMeetings.length} Scheduled
           </span>
         </div>
 
         {loading ? (
-          <div className="py-12 text-center text-slate-400 flex items-center justify-center gap-2">
-            <RefreshCw size={18} className="animate-spin text-purple-600" />
+          <div className="py-12 text-center text-gray-400 flex items-center justify-center gap-2">
+            <RefreshCw size={18} className="animate-spin text-purple-400" />
             <span className="text-xs font-bold">Loading meetings...</span>
           </div>
         ) : upcomingMeetings.length === 0 ? (
           <div className="py-12 text-center space-y-3">
-            <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto text-xl font-bold">
+            <div className="w-14 h-14 rounded-full bg-white/5 border border-white/10 text-gray-400 flex items-center justify-center mx-auto text-xl font-bold">
               📅
             </div>
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">No meetings currently scheduled.</p>
+            <p className="text-xs font-bold text-gray-400">No meetings currently scheduled.</p>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow"
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-lg border border-purple-400/30 transition-all"
             >
               Schedule New Meeting
             </button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-medium border-collapse">
+          <div className="w-full max-w-full overflow-x-hidden border border-white/10 rounded-2xl">
+            <table className="w-full text-left text-xs font-medium border-collapse table-fixed">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-bold uppercase text-[10px]">
-                  <th className="py-3 px-4">Student</th>
-                  <th className="py-3 px-4">Date & Time</th>
-                  <th className="py-3 px-4">Meeting Mode</th>
-                  <th className="py-3 px-4">Primary Reason</th>
-                  <th className="py-3 px-4">Notes</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                <tr className="bg-white/5 border-b border-white/10 text-gray-400 font-bold uppercase text-[10px]">
+                  <th className="w-[26%] py-3 px-4">Student</th>
+                  <th className="w-[18%] py-3 px-4">Date & Time</th>
+                  <th className="w-[16%] py-3 px-4">Meeting Mode</th>
+                  <th className="w-[18%] py-3 px-4">Primary Reason</th>
+                  <th className="w-[12%] py-3 px-4">Notes</th>
+                  <th className="w-[10%] py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+              <tbody className="divide-y divide-white/5">
                 {upcomingMeetings.map((m, idx) => (
-                  <tr key={`${m.id || m.meetingId || 'up'}-${idx}`} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3.5 px-4">
+                  <tr key={`${m.id || m.meetingId || 'up'}-${idx}`} className="hover:bg-white/5 transition-colors">
+                    <td className="py-3.5 px-4 align-middle">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center font-bold text-xs">
+                        <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-xs shrink-0">
                           {m.studentName ? m.studentName[0].toUpperCase() : 'S'}
                         </div>
-                        <div>
-                          <p className="font-bold text-slate-900 dark:text-white">{m.studentName}</p>
-                          <p className="text-[10px] text-slate-400">{m.studentRoll || m.department || 'Student'}</p>
+                        <div className="min-w-0">
+                          <p className="font-bold text-white whitespace-normal break-words">{m.studentName}</p>
+                          <p className="text-[10px] text-cyan-300 font-mono whitespace-normal break-words">{m.studentRoll || m.department || 'Student'}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <div className="font-bold text-slate-800 dark:text-slate-200">{m.date}</div>
-                      <div className="text-[10px] text-purple-600 font-bold">{m.time}</div>
+                    <td className="py-3.5 px-4 align-middle">
+                      <div className="font-bold text-gray-200">{m.date}</div>
+                      <div className="text-[10px] text-purple-300 font-bold">{m.time}</div>
                     </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                        {m.mode === 'Campus Visit' && <Building2 size={12} className="inline mr-1 text-purple-500" />}
-                        {m.mode === 'Phone Call' && <Phone size={12} className="inline mr-1 text-blue-500" />}
-                        {m.mode === 'Virtual' && <Video size={12} className="inline mr-1 text-emerald-500" />}
+                    <td className="py-3.5 px-4 align-middle">
+                      <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/5 text-gray-200 border border-white/10 inline-flex items-center">
+                        {m.mode === 'Campus Visit' && <Building2 size={12} className="inline mr-1 text-purple-300" />}
+                        {m.mode === 'Phone Call' && <Phone size={12} className="inline mr-1 text-blue-300" />}
+                        {m.mode === 'Virtual' && <Video size={12} className="inline mr-1 text-emerald-300" />}
                         {m.mode}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4">
-                      <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                    <td className="py-3.5 px-4 align-middle">
+                      <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
                         {m.reason}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 max-w-xs truncate text-slate-500 dark:text-slate-400">
+                    <td className="py-3.5 px-4 text-gray-400 whitespace-normal break-words align-middle">
                       {m.notes || '—'}
                     </td>
-                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                    <td className="py-3.5 px-4 text-right align-middle">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => handleUpdateStatus(m.id, 'Completed')}
                           disabled={submitting}
                           title="Mark as Completed"
-                          className="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold text-[11px] transition-all flex items-center gap-1 border border-emerald-500/20"
+                          className="px-2 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-bold text-[11px] transition-all flex items-center gap-1 border border-emerald-500/30"
                         >
-                          <CheckCircle2 size={13} /> Completed
+                          <CheckCircle2 size={13} />
                         </button>
 
                         <button
                           onClick={() => handleUpdateStatus(m.id, 'No-Show')}
                           disabled={submitting}
                           title="Mark as No-Show"
-                          className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-[11px] transition-all flex items-center gap-1 border border-amber-500/20"
+                          className="px-2 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold text-[11px] transition-all flex items-center gap-1 border border-amber-500/30"
                         >
-                          <XCircle size={13} /> No-Show
+                          <XCircle size={13} />
                         </button>
 
                         <button
                           onClick={() => handleDeleteMeeting(m.id)}
                           title="Delete Meeting"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all"
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -595,66 +595,66 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
       </div>
 
       {/* DASHBOARD TABLE 2: MEETING HISTORY / COMPLETED MEETINGS */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+      <div className="p-6 rounded-3xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg space-y-6">
+        <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div>
-            <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <FileText size={18} className="text-emerald-600 dark:text-emerald-400" />
+            <h2 className="text-base font-black text-white flex items-center gap-2">
+              <FileText size={18} className="text-emerald-400" />
               <span>Meeting History & Logged Records</span>
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-gray-400 mt-0.5">
               Completed, No-Show, or archived parent counselling logs
             </p>
           </div>
-          <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold rounded-xl border border-emerald-500/20 text-xs">
+          <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 font-bold rounded-xl border border-emerald-500/30 text-xs">
             {pastMeetings.length} Records
           </span>
         </div>
 
         {pastMeetings.length === 0 ? (
-          <p className="py-8 text-center text-xs font-semibold text-slate-400">
+          <p className="py-8 text-center text-xs font-semibold text-gray-400">
             No past meeting history logged yet.
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-medium border-collapse">
+          <div className="w-full max-w-full overflow-x-hidden border border-white/10 rounded-2xl">
+            <table className="w-full text-left text-xs font-medium border-collapse table-fixed">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-bold uppercase text-[10px]">
-                  <th className="py-3 px-4">Student</th>
-                  <th className="py-3 px-4">Date & Time</th>
-                  <th className="py-3 px-4">Mode</th>
-                  <th className="py-3 px-4">Primary Reason</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4">Notes</th>
+                <tr className="bg-white/5 border-b border-white/10 text-gray-400 font-bold uppercase text-[10px]">
+                  <th className="w-[25%] py-3 px-4">Student</th>
+                  <th className="w-[18%] py-3 px-4">Date & Time</th>
+                  <th className="w-[15%] py-3 px-4">Mode</th>
+                  <th className="w-[20%] py-3 px-4">Primary Reason</th>
+                  <th className="w-[12%] py-3 px-4">Status</th>
+                  <th className="w-[10%] py-3 px-4">Notes</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+              <tbody className="divide-y divide-white/5">
                 {pastMeetings.map((m, idx) => (
-                  <tr key={`${m.id || m.meetingId || 'past'}-${idx}`} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
+                  <tr key={`${m.id || m.meetingId || 'past'}-${idx}`} className="hover:bg-white/5 transition-colors">
+                    <td className="py-3.5 px-4 font-bold text-white whitespace-normal break-words align-middle">
                       {m.studentName}
                     </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap text-slate-700 dark:text-slate-300 font-semibold">
-                      {m.date} <span className="text-slate-400 text-[11px]">({m.time})</span>
+                    <td className="py-3.5 px-4 text-gray-300 font-semibold align-middle">
+                      {m.date} <span className="text-gray-400 text-[11px]">({m.time})</span>
                     </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
+                    <td className="py-3.5 px-4 text-gray-300 align-middle">
                       {m.mode}
                     </td>
-                    <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
+                    <td className="py-3.5 px-4 text-gray-300 whitespace-normal break-words align-middle">
                       {m.reason}
                     </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
+                    <td className="py-3.5 px-4 align-middle">
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase inline-block ${
                         m.status === 'Completed'
-                          ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                           : m.status === 'No-Show'
-                          ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
-                          : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                          : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                       }`}>
                         {m.status}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 max-w-xs truncate text-slate-500 dark:text-slate-400">
+                    <td className="py-3.5 px-4 text-gray-400 whitespace-normal break-words align-middle">
                       {m.notes || '—'}
                     </td>
                   </tr>
@@ -667,18 +667,18 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
 
       {/* SCHEDULE MEETING MODAL FORM */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-black/60 backdrop-blur-2xl rounded-2xl border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.8)] max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200">
             
             {/* Modal Header */}
-            <div className="p-6 bg-gradient-to-r from-purple-700 to-indigo-700 text-white flex items-center justify-between">
+            <div className="p-6 border-b border-white/10 text-white flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-black tracking-tight">Schedule Parent Meeting</h3>
-                <p className="text-xs text-purple-100/90 mt-0.5">Fill in session details to schedule</p>
+                <h3 className="text-lg font-black tracking-tight text-white">Schedule Parent Meeting</h3>
+                <p className="text-xs text-purple-200/90 mt-0.5">Fill in session details to schedule</p>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1.5 rounded-full hover:bg-white/20 text-white/80 hover:text-white transition-all"
+                className="p-1.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
               >
                 <X size={18} />
               </button>
@@ -689,17 +689,17 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
               
               {/* 1. Dynamic Student Selector Dropdown */}
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1.5">
+                <label className="block text-gray-300 font-bold mb-1.5">
                   Select Student (From Assigned Scope) *
                 </label>
                 <select
                   value={selectedStudentId}
                   onChange={(e) => setSelectedStudentId(e.target.value)}
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-purple-500/30"
+                  className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white font-bold outline-none focus:bg-white/10 focus:ring-1 focus:ring-blue-400 transition-all"
                 >
                   {students.length === 0 ? (
-                    <option value="">No students found in assigned scope</option>
+                    <option value="" className="bg-slate-900 text-white">No students found in assigned scope</option>
                   ) : (
                     students.map((s, idx) => {
                       const uidKey = s.uid || s.id || s.email;
@@ -707,7 +707,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
                       const sRoll = s.rollNumber || s.roll || s.studentId ? ` (${s.rollNumber || s.roll || s.studentId})` : '';
                       const sBranch = s.department || s.branch ? ` - ${s.department || s.branch}` : '';
                       return (
-                        <option key={`${uidKey}-${idx}`} value={uidKey}>
+                        <option key={`${uidKey}-${idx}`} value={uidKey} className="bg-slate-900 text-white">
                           {sName}{sRoll}{sBranch}
                         </option>
                       );
@@ -719,7 +719,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
               {/* 2. Date & Time Inputs */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1.5">
+                  <label className="block text-gray-300 font-bold mb-1.5">
                     Meeting Date *
                   </label>
                   <input
@@ -727,12 +727,12 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
                     value={meetingDate}
                     onChange={(e) => setMeetingDate(e.target.value)}
                     required
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500/30"
+                    className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white outline-none focus:bg-white/10 focus:ring-1 focus:ring-blue-400 transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1.5">
+                  <label className="block text-gray-300 font-bold mb-1.5">
                     Meeting Time *
                   </label>
                   <input
@@ -740,47 +740,47 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
                     value={meetingTime}
                     onChange={(e) => setMeetingTime(e.target.value)}
                     required
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500/30"
+                    className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white outline-none focus:bg-white/10 focus:ring-1 focus:ring-blue-400 transition-all"
                   />
                 </div>
               </div>
 
               {/* 3. Meeting Mode Dropdown */}
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1.5">
+                <label className="block text-gray-300 font-bold mb-1.5">
                   Meeting Mode *
                 </label>
                 <select
                   value={meetingMode}
                   onChange={(e) => setMeetingMode(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-purple-500/30"
+                  className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white font-bold outline-none focus:bg-white/10 focus:ring-1 focus:ring-blue-400 transition-all"
                 >
-                  <option value="Campus Visit">Campus Visit</option>
-                  <option value="Phone Call">Phone Call</option>
-                  <option value="Virtual">Virtual</option>
+                  <option value="Campus Visit" className="bg-slate-900 text-white">Campus Visit</option>
+                  <option value="Phone Call" className="bg-slate-900 text-white">Phone Call</option>
+                  <option value="Virtual" className="bg-slate-900 text-white">Virtual</option>
                 </select>
               </div>
 
               {/* 4. Primary Reason Dropdown */}
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1.5">
+                <label className="block text-gray-300 font-bold mb-1.5">
                   Primary Reason *
                 </label>
                 <select
                   value={primaryReason}
                   onChange={(e) => setPrimaryReason(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-purple-500/30"
+                  className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white font-bold outline-none focus:bg-white/10 focus:ring-1 focus:ring-blue-400 transition-all"
                 >
-                  <option value="Low Attendance">Low Attendance</option>
-                  <option value="Poor Academic Performance">Poor Academic Performance</option>
-                  <option value="Disciplinary Issue">Disciplinary Issue</option>
-                  <option value="Routine Update">Routine Update</option>
+                  <option value="Low Attendance" className="bg-slate-900 text-white">Low Attendance</option>
+                  <option value="Poor Academic Performance" className="bg-slate-900 text-white">Poor Academic Performance</option>
+                  <option value="Disciplinary Issue" className="bg-slate-900 text-white">Disciplinary Issue</option>
+                  <option value="Routine Update" className="bg-slate-900 text-white">Routine Update</option>
                 </select>
               </div>
 
               {/* 5. Additional Notes Textarea */}
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1.5">
+                <label className="block text-gray-300 font-bold mb-1.5">
                   Additional Notes
                 </label>
                 <textarea
@@ -788,16 +788,16 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Enter agenda points or notes for parent discussion..."
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none resize-none leading-relaxed focus:ring-2 focus:ring-purple-500/30"
+                  className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white outline-none resize-none leading-relaxed focus:bg-white/10 focus:ring-1 focus:ring-blue-400 transition-all placeholder-gray-400"
                 />
               </div>
 
               {/* Modal Action Buttons */}
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
+              <div className="pt-4 border-t border-white/10 flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+                  className="px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white font-bold hover:bg-white/10 transition-colors"
                 >
                   Cancel
                 </button>
@@ -805,7 +805,7 @@ export const ParentMeetings = ({ counsellor: propCounsellor }) => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold shadow-lg shadow-purple-500/25 flex items-center gap-2 disabled:opacity-50 transition-all"
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold shadow-lg border border-purple-400/30 flex items-center gap-2 disabled:opacity-50 transition-all"
                 >
                   {submitting ? <RefreshCw size={14} className="animate-spin" /> : <Plus size={14} />}
                   <span>Schedule Meeting</span>

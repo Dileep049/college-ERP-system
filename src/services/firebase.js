@@ -200,8 +200,8 @@ const DEFAULT_USERS = [
   { uid: 'coun-cse', email: 'counsellor.cse@kbn.edu', fullName: 'Dr. Bruce Banner', role: 'counsellor', department: 'B.Sc. Computer Science (CS)', employeeId: 'WC-CSE-01', contactNumber: '9876543210' },
   { uid: 'place-1', email: 'placement@kbn.edu', fullName: 'Placement Officer', role: 'placement', department: 'Placement Cell', employeeId: 'PO-01' },
   { uid: 'lib-1', email: 'librarian@kbn.edu', fullName: 'Chief Librarian', role: 'librarian', department: 'Library', employeeId: 'LIB-01' },
-  { uid: 'stud-cse', email: 'student.cse@kbn.edu', fullName: 'John Doe', role: 'student', department: 'B.Sc. Computer Science (CS)', semester: 'Semester 6', rollNumber: 'CSE-2023-001', counsellorId: 'coun-cse', counsellorName: 'Dr. Bruce Banner' },
-  { uid: 'parent-1', email: 'parent@kbn.edu', fullName: 'Richard Doe', role: 'parent', department: 'B.Sc. Computer Science (CS)', rollNumber: 'CSE-2023-001' }
+  { uid: 'stud-245901', email: '245901@kbn.edu', fullName: 'AVALA ANAND BABU', studentName: 'AVALA ANAND BABU', role: 'student', department: 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)', semester: 'Semester 6', section: 'Section A', rollNumber: '245901', counsellorId: 'coun-cse', counsellorName: 'Dr. Bruce Banner', attendancePercentage: 82, attendance: 82, internalMarks: 38, submissions: '100%', academicStatus: 'Good' },
+  { uid: 'parent-245901', email: 'parent.245901@kbn.edu', fullName: 'AVALA VENKATESWARLU', role: 'parent', department: 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)', rollNumber: '245901' }
 ];
 
 
@@ -265,17 +265,6 @@ export const RAW_UPLOADED_STUDENTS = [
 
 export const SEEDED_STUDENTS = RAW_UPLOADED_STUDENTS.map((st, idx) => {
   const fullDept = 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)';
-  const sems = [
-    'Semester 1',
-    'Semester 2',
-    'Semester 3',
-    'Semester 4',
-    'Semester 5',
-    'Semester 6'
-  ];
-  const semester = sems[idx % 6];
-  const section = (Math.floor(idx / 6) % 2 === 0) ? 'Section A' : 'Section B';
-
   return {
     uid: `stud-${st.rollNumber}`,
     studentId: `stud-${st.rollNumber}`,
@@ -285,8 +274,8 @@ export const SEEDED_STUDENTS = RAW_UPLOADED_STUDENTS.map((st, idx) => {
     department: fullDept,
     branch: fullDept,
     course: 'B.Sc',
-    semester: semester,
-    section: section,
+    semester: 'Semester 6',
+    section: 'Section A',
     collegeEmail: `${st.rollNumber}@kbn.edu`,
     email: `${st.rollNumber}@kbn.edu`,
     phoneNumber: `98765${st.rollNumber}`,
@@ -294,9 +283,13 @@ export const SEEDED_STUDENTS = RAW_UPLOADED_STUDENTS.map((st, idx) => {
     status: 'Active',
     role: 'student',
     profilePhoto: `https://api.dicebear.com/7.x/avataaars/svg?seed=${st.rollNumber}`,
-    attendancePercentage: 82 + (idx % 12),
+    attendancePercentage: 82,
+    attendance: 82,
+    internalMarks: 38,
+    submissions: '100%',
+    academicStatus: 'Good',
     cgpa: (7.2 + (idx % 25) * 0.1).toFixed(1),
-    backlogs: idx % 7 === 0 ? 1 : 0,
+    backlogs: 0,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -2155,6 +2148,30 @@ export const mockDB = {
       return true;
     };
 
+    const isDummyStudent = (u) => {
+      if (!u) return true;
+      const name = (u.fullName || u.studentName || u.name || '').toLowerCase().trim();
+      const roll = (u.rollNumber || u.roll || u.usn || '').toLowerCase().trim();
+      if (!name && !roll) return true;
+      if (
+        name.includes('john doe') ||
+        name.includes('alex smith') ||
+        name.includes('emma watson') ||
+        name.includes('richard doe') ||
+        name.includes('abcd') ||
+        name.includes('dummy') ||
+        name === 'test' ||
+        name.startsWith('test student') ||
+        roll.includes('abcd') ||
+        roll.includes('test') ||
+        roll === '1234' ||
+        roll === 'cse-2023-001'
+      ) {
+        return true;
+      }
+      return false;
+    };
+
     let allStudents = [];
     if (isFirebaseConfigured && db) {
       try {
@@ -2170,7 +2187,7 @@ export const mockDB = {
 
     const map = new Map();
     [...SEEDED_STUDENTS, ...DEFAULT_USERS, ...localUsers, ...localStudents, ...allStudents].forEach(u => {
-      if (u && (u.role === 'student' || u.rollNumber)) {
+      if (u && (u.role === 'student' || u.rollNumber) && !isDummyStudent(u)) {
         const key = u.rollNumber || u.uid || u.id;
         if (key) map.set(key, u);
       }
@@ -2188,6 +2205,31 @@ export const mockDB = {
 
   getStudents: async (department = null) => {
     await mockDB.delay(50);
+
+    const isDummyStudent = (u) => {
+      if (!u) return true;
+      const name = (u.fullName || u.studentName || u.name || '').toLowerCase().trim();
+      const roll = (u.rollNumber || u.roll || u.usn || '').toLowerCase().trim();
+      if (!name && !roll) return true;
+      if (
+        name.includes('john doe') ||
+        name.includes('alex smith') ||
+        name.includes('emma watson') ||
+        name.includes('richard doe') ||
+        name.includes('abcd') ||
+        name.includes('dummy') ||
+        name === 'test' ||
+        name.startsWith('test student') ||
+        roll.includes('abcd') ||
+        roll.includes('test') ||
+        roll === '1234' ||
+        roll === 'cse-2023-001'
+      ) {
+        return true;
+      }
+      return false;
+    };
+
     let allUsers = [];
     if (isFirebaseConfigured && db) {
       try {
@@ -2202,7 +2244,7 @@ export const mockDB = {
     
     const map = new Map();
     [...SEEDED_STUDENTS, ...DEFAULT_USERS, ...localUsers, ...localStudents, ...allUsers].forEach(u => {
-      if (u && (u.role === 'student' || u.rollNumber)) {
+      if (u && (u.role === 'student' || u.rollNumber) && !isDummyStudent(u)) {
         const key = u.rollNumber || u.uid || u.id;
         if (key) map.set(key, u);
       }

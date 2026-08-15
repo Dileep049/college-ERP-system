@@ -1,40 +1,52 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   3D DESIGN SYSTEM TOKENS & COLOR MATRIX (ACADEMIA ERP)
+   SUPER ULTRA-ADVANCED FUTURISTIC DESIGN SYSTEM (ACADEMIA ERP)
    ========================================================================== */
 
 :root {
-  /* Canvas & Backgrounds */
+  /* Canvas & Backgrounds (Light Mode) */
   --bg-primary: #f8fafc;
   --bg-secondary: #f1f5f9;
   --bg-tertiary: #e2e8f0;
+  --bg-space: #f8fafc;
+
+  /* Surfaces & Glassmorphism */
   --card-bg: #ffffff;
   --surface: #ffffff;
   --surface-elevated: #ffffff;
-  --surface-glass: rgba(255, 255, 255, 0.9);
+  --surface-glass: rgba(255, 255, 255, 0.85);
+  --surface-glass-hover: rgba(255, 255, 255, 0.95);
   --surface-glass-strong: rgba(255, 255, 255, 0.98);
-  
+
   /* Text & Typography */
-  --text-primary: #0f172a;
+  --text-primary: #0a0f1d;
   --text-secondary: #334155;
   --text-muted: #64748b;
   --text-inverted: #ffffff;
 
-  /* Borders & Dividers */
+  /* Borders & Glows */
   --border-color: #e2e8f0;
   --border: #e2e8f0;
   --border-subtle: #f1f5f9;
   --border-highlight: rgba(255, 255, 255, 0.95);
+  --border-glow: rgba(59, 130, 246, 0.35);
   --border-focus: #2563eb;
 
-  /* Primary Accent Brand */
+  /* Futuristic Cyber Palette Accents */
+  --accent-blue: #2563eb;
+  --accent-cyan: #0891b2;
+  --accent-purple: #7c3aed;
+  --accent-magenta: #db2777;
+
   --accent: #2563eb;
   --accent-hover: #1d4ed8;
   --accent-active: #1e40af;
   --accent-subtle: #eff6ff;
-  --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+  --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #7c3aed 100%);
+  --accent-cyan-gradient: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%);
   --accent-glow: rgba(37, 99, 235, 0.25);
+  --cyan-glow: rgba(6, 182, 212, 0.3);
 
   /* Status Colors */
   --success: #10b981;
@@ -67,22 +79,23 @@
   --purple-text: #5b21b6;
   --purple-gradient: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
 
-  /* 3D Shadows & Layering */
-  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  /* Shadows & Holographic Layering */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
-  
-  /* 3D Tactile Depths & Bevels */
-  --shadow-3d-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(15, 23, 42, 0.06), 0 12px 24px -6px rgba(15, 23, 42, 0.08);
-  --shadow-3d-hover: 0 2px 3px rgba(0, 0, 0, 0.04), 0 8px 20px rgba(15, 23, 42, 0.08), 0 20px 32px -8px rgba(15, 23, 42, 0.12);
+  --shadow-glow: 0 0 25px rgba(37, 99, 235, 0.2);
+  --shadow-cyan-glow: 0 0 25px rgba(6, 182, 212, 0.25);
+
+  --shadow-3d-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(15, 23, 42, 0.06), 0 12px 24px -6px rgba(15, 23, 42, 0.08);
+  --shadow-3d-hover: 0 2px 3px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(15, 23, 42, 0.08), 0 20px 32px -8px rgba(15, 23, 42, 0.12);
   --inner-bevel-top: inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
   --inner-bevel-depth: inset 0 -2px 0 0 rgba(0, 0, 0, 0.05);
 
   /* Button 3D Edges */
   --btn-edge-primary: #1d4ed8;
   --btn-edge-secondary: #cbd5e1;
+  --btn-edge-cyan: #0e7490;
   --btn-edge-success: #047857;
   --btn-edge-warning: #b45309;
   --btn-edge-danger: #b91c1c;
@@ -92,43 +105,65 @@
   --input-border: #cbd5e1;
   --input-focus-border: #2563eb;
   --input-focus-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2), inset 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  /* Geometry & Animation Tokens */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ==========================================================================
-   DARK THEME PALETTE & 3D DEPTH TOKENS
+   FUTURISTIC DARK THEME (DEEP SPACE, AURORA & NEON CYBER)
    ========================================================================== */
 
-html.dark, body.dark, .dark {
-  /* Canvas & Backgrounds */
-  --bg-primary: #090d16;
-  --bg-secondary: #0f172a;
-  --bg-tertiary: #1e293b;
-  --card-bg: #131b2e;
-  --surface: #131b2e;
-  --surface-elevated: #18223a;
-  --surface-glass: rgba(19, 27, 46, 0.85);
-  --surface-glass-strong: rgba(24, 34, 58, 0.95);
+html.dark,
+body.dark,
+.dark {
+  /* Canvas & Deep Space Background */
+  --bg-primary: #050811;
+  --bg-secondary: #0a0f1d;
+  --bg-tertiary: #111827;
+  --bg-space: #050811;
+
+  /* Surfaces & Translucent Glass */
+  --card-bg: rgba(13, 19, 36, 0.75);
+  --surface: #0d1424;
+  --surface-elevated: #111a30;
+  --surface-glass: rgba(13, 20, 36, 0.7);
+  --surface-glass-hover: rgba(18, 28, 50, 0.85);
+  --surface-glass-strong: rgba(15, 23, 42, 0.95);
 
   /* Text & Typography */
   --text-primary: #f8fafc;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
-  --text-inverted: #0f172a;
+  --text-inverted: #050811;
 
-  /* Borders & Dividers */
-  --border-color: #1e293b;
-  --border: #1e293b;
-  --border-subtle: #152033;
-  --border-highlight: rgba(255, 255, 255, 0.08);
-  --border-focus: #60a5fa;
+  /* Borders & Glowing Edges */
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-highlight: rgba(255, 255, 255, 0.12);
+  --border-glow: rgba(59, 130, 246, 0.5);
+  --border-focus: #38bdf8;
 
-  /* Primary Accent Brand */
+  /* Futuristic Cyber Palette Accents */
+  --accent-blue: #3b82f6;
+  --accent-cyan: #22d3ee;
+  --accent-purple: #a855f7;
+  --accent-magenta: #f43f5e;
+
   --accent: #3b82f6;
   --accent-hover: #60a5fa;
   --accent-active: #2563eb;
-  --accent-subtle: rgba(59, 130, 246, 0.12);
-  --accent-gradient: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%);
-  --accent-glow: rgba(59, 130, 246, 0.35);
+  --accent-subtle: rgba(59, 130, 246, 0.15);
+  --accent-gradient: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #8b5cf6 100%);
+  --accent-cyan-gradient: linear-gradient(135deg, #22d3ee 0%, #0284c7 100%);
+  --accent-glow: rgba(59, 130, 246, 0.4);
+  --cyan-glow: rgba(34, 211, 238, 0.4);
 
   /* Status Colors */
   --success: #34d399;
@@ -155,41 +190,42 @@ html.dark, body.dark, .dark {
   --info-text: #7dd3fc;
   --info-gradient: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
 
-  --purple: #a78bfa;
-  --purple-bg: rgba(139, 92, 246, 0.15);
-  --purple-border: rgba(139, 92, 246, 0.35);
-  --purple-text: #c4b5fd;
-  --purple-gradient: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
+  --purple: #c084fc;
+  --purple-bg: rgba(168, 85, 247, 0.15);
+  --purple-border: rgba(168, 85, 247, 0.35);
+  --purple-text: #e9d5ff;
+  --purple-gradient: linear-gradient(135deg, #c084fc 0%, #7e22ce 100%);
 
-  /* 3D Shadows & Layering */
-  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  /* Shadows & Holographic Layering */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.8), 0 8px 10px -6px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 30px rgba(59, 130, 246, 0.35);
+  --shadow-cyan-glow: 0 0 30px rgba(34, 211, 238, 0.35);
 
-  /* 3D Tactile Depths & Bevels */
-  --shadow-3d-card: 0 1px 2px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.4), 0 16px 32px -8px rgba(0, 0, 0, 0.6);
-  --shadow-3d-hover: 0 2px 3px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.5), 0 24px 40px -10px rgba(0, 0, 0, 0.8);
+  --shadow-3d-card: 0 1px 2px rgba(0, 0, 0, 0.6), 0 4px 20px rgba(0, 0, 0, 0.5), 0 16px 32px -8px rgba(0, 0, 0, 0.7);
+  --shadow-3d-hover: 0 2px 3px rgba(0, 0, 0, 0.6), 0 8px 28px rgba(0, 0, 0, 0.6), 0 24px 40px -10px rgba(0, 0, 0, 0.9);
   --inner-bevel-top: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
-  --inner-bevel-depth: inset 0 -2px 0 0 rgba(0, 0, 0, 0.4);
+  --inner-bevel-depth: inset 0 -2px 0 0 rgba(0, 0, 0, 0.5);
 
   /* Button 3D Edges */
   --btn-edge-primary: #1e3a8a;
-  --btn-edge-secondary: #0f172a;
+  --btn-edge-secondary: #0a0f1d;
+  --btn-edge-cyan: #0891b2;
   --btn-edge-success: #064e3b;
   --btn-edge-warning: #78350f;
   --btn-edge-danger: #7f1d1d;
 
   /* Form Elements */
-  --input-bg: #0f172a;
-  --input-border: #334155;
-  --input-focus-border: #60a5fa;
-  --input-focus-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25), inset 0 1px 2px rgba(0, 0, 0, 0.4);
+  --input-bg: rgba(13, 20, 36, 0.8);
+  --input-border: rgba(255, 255, 255, 0.1);
+  --input-focus-border: #38bdf8;
+  --input-focus-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25), inset 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 /* ==========================================================================
-   GLOBAL RESET & SMOOTH TYPOGRAPHY WITH GUARANTEED CONTRAST
+   GLOBAL RESET & TYPOGRAPHY WITH GUARANTEED CONTRAST
    ========================================================================== */
 
 * {
@@ -202,35 +238,152 @@ body {
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color var(--transition-normal), color var(--transition-normal);
   margin: 0;
   padding: 0;
   overflow-x: hidden;
 }
 
+/* Ambient Aurora Nebula & Futuristic Laboratory Backgrounds */
+.bg-aurora-mesh {
+  background-image:
+    radial-gradient(at 15% 15%, rgba(59, 130, 246, 0.12) 0px, transparent 50%),
+    radial-gradient(at 85% 10%, rgba(139, 92, 246, 0.12) 0px, transparent 50%),
+    radial-gradient(at 50% 90%, rgba(6, 182, 212, 0.1) 0px, transparent 55%);
+}
+
+.dark .bg-aurora-mesh {
+  background-image:
+    radial-gradient(at 15% 15%, rgba(59, 130, 246, 0.22) 0px, transparent 50%),
+    radial-gradient(at 85% 10%, rgba(168, 85, 247, 0.2) 0px, transparent 50%),
+    radial-gradient(at 50% 90%, rgba(34, 211, 238, 0.16) 0px, transparent 55%);
+}
+
+.bg-futuristic-lab {
+  background-image:
+    linear-gradient(to bottom, rgba(248, 250, 252, 0.92), rgba(241, 245, 249, 0.96)),
+    url('/futuristic_lab_bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.dark .bg-futuristic-lab {
+  background-image:
+    linear-gradient(to bottom, rgba(5, 8, 17, 0.88), rgba(5, 8, 17, 0.94)),
+    url('/futuristic_lab_bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.bg-campus-scenic {
+  background-image:
+    linear-gradient(to bottom, rgba(248, 250, 252, 0.88), rgba(241, 245, 249, 0.94)),
+    url('/college_campus_bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.dark .bg-campus-scenic {
+  background-image:
+    linear-gradient(to bottom, rgba(5, 8, 17, 0.86), rgba(5, 8, 17, 0.93)),
+    url('/college_campus_bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+/* Static Dark Cinematic Hero Background */
+.hero-dark-bg {
+  background-image: linear-gradient(to bottom, rgba(5, 5, 5, 0.8), rgba(15, 23, 42, 0.9)), url('/image2.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+/* Vibrant Daytime Physical Glass Campus Background */
+.campus-hero-bg {
+  background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4)), url('/campus-bg.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+/* Deep Cinematic Mountain & Crystal-Clear Lake Background */
+.mountain-lake-bg {
+  background-image: linear-gradient(to bottom, rgba(10, 15, 30, 0.25), rgba(10, 15, 30, 0.55)), url('/nature-bg.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.ultra-glass-panel {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25), inset 0 1px 1px 0 rgba(255, 255, 255, 0.35);
+  border-radius: 1.25rem;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ultra-glass-panel:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.13);
+  border-color: rgba(255, 255, 255, 0.32);
+  box-shadow: 0 16px 40px 0 rgba(0, 0, 0, 0.35), inset 0 1px 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.ultra-glass-button {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.2), inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
+  transition: all 0.25s ease-out;
+}
+
+.ultra-glass-button:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
+}
+
 /* Guaranteed Readable Headings and Text */
-h1, h2, h3, h4, h5, h6, .font-display, .card-title {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-display,
+.card-title {
   font-family: 'Outfit', 'Inter', system-ui, sans-serif;
   letter-spacing: -0.02em;
   color: var(--text-primary);
 }
 
-p, .card-description {
+p,
+.card-description {
   color: var(--text-secondary);
 }
 
-.card-muted, .text-muted {
+.card-muted,
+.text-muted {
   color: var(--text-muted);
 }
 
 .card-link {
-  color: var(--accent);
+  color: var(--accent-cyan);
 }
 
-/* Custom 3D Scrollbars */
+/* Custom Futuristic Scrollbars */
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -240,91 +393,112 @@ p, .card-description {
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 9999px;
-  border: 2px solid var(--bg-primary);
+  border: 1px solid var(--border);
 }
 
 .dark ::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
   background: #334155;
-  border: 2px solid var(--bg-primary);
 }
 
 ::selection {
-  background: rgba(59, 130, 246, 0.3);
+  background: rgba(56, 189, 248, 0.35);
   color: inherit;
 }
 
 /* ==========================================================================
-   REUSABLE 3D CARD SYSTEM (GUARANTEED CONTRAST & RESPONSIVENESS)
+   FUTURISTIC GLASSMORPHISM CARDS & PANELS
    ========================================================================== */
 
+.glass-card,
 .card-3d {
-  background-color: var(--surface) !important;
+  background-color: var(--card-bg) !important;
   color: var(--text-primary) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);
-  border-radius: 1.25rem;
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-3d-card), var(--inner-bevel-top);
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease;
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-normal);
   position: relative;
   overflow: hidden;
   box-sizing: border-box;
 }
 
+.glass-card-elevated,
 .card-3d-elevated {
   background-color: var(--surface-elevated) !important;
   color: var(--text-primary) !important;
-  border: 1px solid var(--border);
-  border-radius: 1.5rem;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-highlight);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-3d-card), var(--inner-bevel-top), var(--inner-bevel-depth);
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
   position: relative;
   box-sizing: border-box;
 }
 
+.glass-card-interactive,
 .card-3d-interactive {
-  background-color: var(--surface) !important;
+  background-color: var(--card-bg) !important;
   color: var(--text-primary) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);
-  border-radius: 1.25rem;
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-3d-card), var(--inner-bevel-top);
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease;
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-normal);
   cursor: pointer;
   box-sizing: border-box;
   text-decoration: none;
   display: flex;
 }
 
+.glass-card-interactive:hover,
 .card-3d-interactive:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-3d-hover), var(--inner-bevel-top), 0 0 20px var(--accent-glow);
-  border-color: rgba(59, 130, 246, 0.4);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-3d-hover), var(--inner-bevel-top), var(--shadow-glow);
+  border-color: rgba(56, 189, 248, 0.45);
 }
 
+.glass-card-interactive:active,
 .card-3d-interactive:active {
   transform: translateY(-1px);
   box-shadow: var(--shadow-3d-card), var(--inner-bevel-top);
 }
 
-/* Frosted Glass 3D Card */
+.glass-card-glass,
 .card-3d-glass {
   background-color: var(--surface-glass) !important;
   color: var(--text-primary) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--border-highlight);
-  border-radius: 1.25rem;
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-3d-card), var(--inner-bevel-top);
   box-sizing: border-box;
 }
 
-/* Stat Metric 3D Card */
+/* Stat Metric 3D Futuristic Card */
 .stat-card-3d {
-  background-color: var(--surface) !important;
+  background-color: var(--card-bg) !important;
   color: var(--text-primary) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);
-  border-radius: 1.25rem;
+  border-radius: var(--radius-xl);
   padding: 1.25rem 1.5rem;
   box-shadow: var(--shadow-3d-card), var(--inner-bevel-top);
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease;
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-normal);
   position: relative;
   overflow: hidden;
   box-sizing: border-box;
@@ -332,7 +506,8 @@ p, .card-description {
 
 .stat-card-3d:hover {
   transform: translateY(-3px);
-  box-shadow: var(--shadow-3d-hover), var(--inner-bevel-top);
+  box-shadow: var(--shadow-3d-hover), var(--inner-bevel-top), var(--shadow-cyan-glow);
+  border-color: rgba(34, 211, 238, 0.4);
 }
 
 .stat-card-3d::after {
@@ -340,33 +515,36 @@ p, .card-description {
   position: absolute;
   top: 0;
   right: 0;
-  width: 60px;
-  height: 60px;
-  background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent 70%);
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.15), transparent 70%);
   pointer-events: none;
 }
 
 /* Explicit Card Typography Rules */
 .card-3d .card-title,
 .card-3d-interactive .card-title,
-.card-3d-elevated .card-title {
+.card-3d-elevated .card-title,
+.glass-card .card-title {
   color: var(--text-primary) !important;
 }
 
 .card-3d .card-description,
 .card-3d-interactive .card-description,
-.card-3d-elevated .card-description {
+.card-3d-elevated .card-description,
+.glass-card .card-description {
   color: var(--text-secondary) !important;
 }
 
 .card-3d .card-link,
 .card-3d-interactive .card-link,
-.card-3d-elevated .card-link {
-  color: var(--accent) !important;
+.card-3d-elevated .card-link,
+.glass-card .card-link {
+  color: var(--accent-cyan) !important;
 }
 
 /* ==========================================================================
-   TACTILE 3D BUTTONS (EXPLICIT HIGH CONTRAST)
+   FUTURISTIC BUTTONS (TACTILE 3D WITH GLOW)
    ========================================================================== */
 
 .btn-3d {
@@ -378,11 +556,11 @@ p, .card-description {
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.25rem;
-  border-radius: 0.75rem;
+  border-radius: var(--radius-md);
   border: 1px solid transparent;
   cursor: pointer;
   user-select: none;
-  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1), filter 0.15s ease, background 0.15s ease;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast), background var(--transition-fast);
   text-decoration: none;
   box-sizing: border-box;
 }
@@ -394,18 +572,18 @@ p, .card-description {
   box-shadow: none !important;
 }
 
-/* Primary 3D Button */
+/* Primary Electric Blue Button */
 .btn-3d-primary {
   background: var(--accent-gradient) !important;
   color: #ffffff !important;
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 3px 0 0 var(--btn-edge-primary), 0 4px 10px 0 var(--accent-glow), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 3px 0 0 var(--btn-edge-primary), 0 4px 14px 0 var(--accent-glow), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
 }
 
 .btn-3d-primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 5px 0 0 var(--btn-edge-primary), 0 8px 16px 0 var(--accent-glow), inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
-  filter: brightness(1.05);
+  box-shadow: 0 5px 0 0 var(--btn-edge-primary), 0 8px 20px 0 var(--accent-glow), inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
+  filter: brightness(1.08);
   color: #ffffff !important;
 }
 
@@ -415,7 +593,28 @@ p, .card-description {
   color: #ffffff !important;
 }
 
-/* Secondary / Neutral 3D Button */
+/* Neon Cyan Cyber Button */
+.btn-3d-cyan {
+  background: var(--accent-cyan-gradient) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 3px 0 0 var(--btn-edge-cyan), 0 4px 14px 0 var(--cyan-glow), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+}
+
+.btn-3d-cyan:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0 0 var(--btn-edge-cyan), 0 8px 20px 0 var(--cyan-glow), inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
+  filter: brightness(1.08);
+  color: #ffffff !important;
+}
+
+.btn-3d-cyan:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 0 var(--btn-edge-cyan);
+  color: #ffffff !important;
+}
+
+/* Secondary / Frosted Glass Button */
 .btn-3d-secondary {
   background-color: var(--surface-elevated) !important;
   color: var(--text-primary) !important;
@@ -441,19 +640,19 @@ p, .card-description {
   background: var(--success-gradient) !important;
   color: #ffffff !important;
   border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 3px 0 0 var(--btn-edge-success), 0 4px 10px 0 rgba(16, 185, 129, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+  box-shadow: 0 3px 0 0 var(--btn-edge-success), 0 4px 12px 0 rgba(16, 185, 129, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
 }
 
 .btn-3d-success:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 5px 0 0 var(--btn-edge-success), 0 8px 16px 0 rgba(16, 185, 129, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
-  filter: brightness(1.05);
+  box-shadow: 0 5px 0 0 var(--btn-edge-success), 0 8px 18px 0 rgba(16, 185, 129, 0.45);
+  filter: brightness(1.06);
   color: #ffffff !important;
 }
 
 .btn-3d-success:active:not(:disabled) {
   transform: translateY(2px);
-  box-shadow: 0 1px 0 0 var(--btn-edge-success), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 0 0 var(--btn-edge-success);
   color: #ffffff !important;
 }
 
@@ -462,19 +661,19 @@ p, .card-description {
   background: var(--danger-gradient) !important;
   color: #ffffff !important;
   border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 3px 0 0 var(--btn-edge-danger), 0 4px 10px 0 rgba(239, 68, 68, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+  box-shadow: 0 3px 0 0 var(--btn-edge-danger), 0 4px 12px 0 rgba(239, 68, 68, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
 }
 
 .btn-3d-danger:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 5px 0 0 var(--btn-edge-danger), 0 8px 16px 0 rgba(239, 68, 68, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
-  filter: brightness(1.05);
+  box-shadow: 0 5px 0 0 var(--btn-edge-danger), 0 8px 18px 0 rgba(239, 68, 68, 0.45);
+  filter: brightness(1.06);
   color: #ffffff !important;
 }
 
 .btn-3d-danger:active:not(:disabled) {
   transform: translateY(2px);
-  box-shadow: 0 1px 0 0 var(--btn-edge-danger), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 0 0 var(--btn-edge-danger);
   color: #ffffff !important;
 }
 
@@ -483,13 +682,13 @@ p, .card-description {
   background: var(--warning-gradient) !important;
   color: #ffffff !important;
   border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 3px 0 0 var(--btn-edge-warning), 0 4px 10px 0 rgba(245, 158, 11, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+  box-shadow: 0 3px 0 0 var(--btn-edge-warning), 0 4px 12px 0 rgba(245, 158, 11, 0.35);
 }
 
 .btn-3d-warning:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 5px 0 0 var(--btn-edge-warning), 0 8px 16px 0 rgba(245, 158, 11, 0.4);
-  filter: brightness(1.05);
+  box-shadow: 0 5px 0 0 var(--btn-edge-warning), 0 8px 18px 0 rgba(245, 158, 11, 0.45);
+  filter: brightness(1.06);
   color: #ffffff !important;
 }
 
@@ -517,48 +716,60 @@ p, .card-description {
 }
 
 /* ==========================================================================
-   3D FORM INPUTS & SELECTS
+   FUTURISTIC FORM INPUTS & GLASS CAPSULES
    ========================================================================== */
 
-.input-3d, .select-3d, .textarea-3d {
+.input-3d,
+.select-3d,
+.textarea-3d,
+.glass-input {
   width: 100%;
   background-color: var(--input-bg) !important;
   color: var(--text-primary) !important;
   border: 1px solid var(--input-border);
-  border-radius: 0.75rem;
+  border-radius: var(--radius-md);
   padding: 0.625rem 0.875rem;
   font-size: 0.875rem;
   font-family: inherit;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05), var(--shadow-sm);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1), var(--shadow-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
   outline: none;
   box-sizing: border-box;
 }
 
-.input-3d::placeholder, .textarea-3d::placeholder {
+.input-3d::placeholder,
+.textarea-3d::placeholder,
+.glass-input::placeholder {
   color: var(--text-muted) !important;
   opacity: 0.75;
 }
 
-.input-3d:focus, .select-3d:focus, .textarea-3d:focus {
+.input-3d:focus,
+.select-3d:focus,
+.textarea-3d:focus,
+.glass-input:focus {
   border-color: var(--input-focus-border);
   box-shadow: var(--input-focus-shadow);
 }
 
-.input-3d:disabled, .select-3d:disabled, .textarea-3d:disabled {
+.input-3d:disabled,
+.select-3d:disabled,
+.textarea-3d:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   background-color: var(--bg-secondary) !important;
 }
 
 /* ==========================================================================
-   3D TABLE SYSTEM (ELEVATED, RESPONSIVE, CLEAR)
+   FUTURISTIC GLASS TABLES
    ========================================================================== */
 
 .table-3d-container {
-  background-color: var(--surface) !important;
+  background-color: var(--card-bg) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);
-  border-radius: 1.25rem;
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-3d-card), var(--inner-bevel-top);
   overflow-x: auto;
   position: relative;
@@ -593,15 +804,15 @@ p, .card-description {
 }
 
 .table-3d thead th:first-child {
-  border-top-left-radius: 1.25rem;
+  border-top-left-radius: var(--radius-xl);
 }
 
 .table-3d thead th:last-child {
-  border-top-right-radius: 1.25rem;
+  border-top-right-radius: var(--radius-xl);
 }
 
 .table-3d tbody tr {
-  transition: background-color 0.15s ease;
+  transition: background-color var(--transition-fast);
 }
 
 .table-3d tbody tr:hover {
@@ -620,15 +831,15 @@ p, .card-description {
 }
 
 .table-3d tbody tr:last-child td:first-child {
-  border-bottom-left-radius: 1.25rem;
+  border-bottom-left-radius: var(--radius-xl);
 }
 
 .table-3d tbody tr:last-child td:last-child {
-  border-bottom-right-radius: 1.25rem;
+  border-bottom-right-radius: var(--radius-xl);
 }
 
 /* ==========================================================================
-   3D STATUS BADGES & PILLS
+   FUTURISTIC STATUS BADGES & NEON PILLS
    ========================================================================== */
 
 .badge-3d {
@@ -675,6 +886,13 @@ p, .card-description {
   border-color: var(--purple-border);
 }
 
+.badge-neon-cyan {
+  background: rgba(6, 182, 212, 0.15);
+  color: var(--accent-cyan);
+  border-color: rgba(6, 182, 212, 0.35);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+}
+
 .badge-3d-neutral {
   background: var(--bg-secondary);
   color: var(--text-secondary);
@@ -682,15 +900,15 @@ p, .card-description {
 }
 
 /* ==========================================================================
-   3D MODALS & OVERLAYS (RESPONSIVE VIEWPORT FIT)
+   FUTURISTIC MODALS & BLUR BACKDROPS
    ========================================================================== */
 
 .modal-3d-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(9, 13, 22, 0.75);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(5, 8, 17, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   z-index: 50;
   display: flex;
   align-items: center;
@@ -703,9 +921,11 @@ p, .card-description {
 .modal-3d-content {
   background-color: var(--surface-elevated) !important;
   color: var(--text-primary) !important;
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
   border: 1px solid var(--border-highlight);
-  border-radius: 1.5rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4), var(--inner-bevel-top);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), var(--inner-bevel-top), var(--shadow-glow);
   max-width: 36rem;
   width: 100%;
   max-height: 90vh;
@@ -716,7 +936,7 @@ p, .card-description {
 }
 
 /* ==========================================================================
-   NAVIGATION & SIDEBAR 3D UTILITIES
+   FLOATING GLASS SIDEBAR & HEADER
    ========================================================================== */
 
 .sidebar-3d-nav-item {
@@ -724,12 +944,12 @@ p, .card-description {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  border-radius: 0.875rem;
+  border-radius: var(--radius-md);
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text-secondary) !important;
   text-decoration: none;
-  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  transition: transform var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
   position: relative;
 }
 
@@ -742,7 +962,7 @@ p, .card-description {
 .sidebar-3d-nav-item.active {
   background: var(--accent-gradient) !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 14px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow: 0 4px 18px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.35);
   font-weight: 700;
 }
 
@@ -751,22 +971,27 @@ p, .card-description {
   color: #ffffff !important;
 }
 
-/* Navbar 3D floating header */
+/* Navbar floating glass header */
 .navbar-3d {
   background-color: var(--surface-glass) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.05);
 }
 
 /* ==========================================================================
-   KEYFRAME ANIMATIONS
+   KEYFRAME ANIMATIONS & PULSES
    ========================================================================== */
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
@@ -774,6 +999,7 @@ p, .card-description {
     opacity: 0;
     transform: translateY(12px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -785,6 +1011,7 @@ p, .card-description {
     opacity: 0;
     transform: scale(0.94) translateY(8px);
   }
+
   100% {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -799,13 +1026,16 @@ p, .card-description {
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Subtle 3D Pulse for Badges/Indicators */
+/* Subtle 3D Pulse for Indicators */
 @keyframes pulseGlow {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.5);
   }
+
   50% {
-    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0);
+    box-shadow: 0 0 0 7px rgba(56, 189, 248, 0);
   }
 }
 
@@ -819,18 +1049,26 @@ p, .card-description {
 
 /* Tablet (768px - 1199px) */
 @media (min-width: 768px) and (max-width: 1199px) {
-  .card-3d, .card-3d-elevated, .card-3d-interactive {
+
+  .card-3d,
+  .card-3d-elevated,
+  .card-3d-interactive,
+  .glass-card {
     padding: 1.5rem;
-    border-radius: 1.25rem;
+    border-radius: var(--radius-xl);
   }
 }
 
 /* Mobile (<= 767px) */
 @media (max-width: 767px) {
-  .card-3d, .card-3d-elevated, .card-3d-interactive {
+
+  .card-3d,
+  .card-3d-elevated,
+  .card-3d-interactive,
+  .glass-card {
     width: 100%;
     max-width: 100%;
-    border-radius: 1.25rem;
+    border-radius: var(--radius-lg);
     padding: 1.25rem;
     box-sizing: border-box;
   }
@@ -838,7 +1076,7 @@ p, .card-description {
   .stat-card-3d {
     width: 100%;
     padding: 1rem;
-    border-radius: 1rem;
+    border-radius: var(--radius-lg);
   }
 
   .modal-3d-content {
@@ -846,11 +1084,11 @@ p, .card-description {
     max-width: calc(100vw - 1rem);
     max-height: calc(100vh - 2rem);
     padding: 1.25rem;
-    border-radius: 1.25rem;
+    border-radius: var(--radius-lg);
   }
 
   .table-3d-container {
-    border-radius: 1rem;
+    border-radius: var(--radius-lg);
     margin-left: 0;
     margin-right: 0;
     width: 100%;
@@ -864,9 +1102,13 @@ p, .card-description {
 
 /* Small Mobile (<= 480px) */
 @media (max-width: 480px) {
-  .card-3d, .card-3d-elevated, .card-3d-interactive {
+
+  .card-3d,
+  .card-3d-elevated,
+  .card-3d-interactive,
+  .glass-card {
     padding: 1rem;
-    border-radius: 1rem;
+    border-radius: var(--radius-md);
   }
 
   .modal-3d-content {
@@ -874,3 +1116,82 @@ p, .card-description {
   }
 }
 
+/* ==========================================================================
+   GLOBAL DARK TINTED GLASSMORPHISM DESIGN SYSTEM OVERRIDES
+   Ensures ALL secondary pages, inner views, tables, and forms blend seamlessly
+   with nature-bg.png and guarantee extreme text contrast.
+   ========================================================================== */
+
+/* 1. Global Data Tables in Dashboard */
+.table-glass,
+table {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: #ffffff;
+}
+
+.table-3d-container,
+.table-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+thead th {
+  padding: 0.75rem 0.5rem;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9ca3af;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background-color 0.2s ease;
+}
+
+tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+tbody tr:last-child {
+  border-bottom: none;
+}
+
+tbody td {
+  padding: 0.75rem 0.5rem;
+  color: #e5e7eb;
+  font-size: 0.875rem;
+  font-weight: 500;
+  vertical-align: middle;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 2. Global Dark Glass Card & Panel Containers */
+.glass-panel,
+.glass-container,
+.card-glass-dark {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+  color: #ffffff !important;
+}
+
+.glass-panel:hover,
+.card-glass-dark:hover {
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}

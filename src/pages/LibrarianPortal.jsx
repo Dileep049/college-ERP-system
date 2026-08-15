@@ -119,102 +119,105 @@ const LibrarianInventory = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-xs font-semibold font-sans text-white">
       
       {/* Title Banner */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-teal-600 to-indigo-650 text-white shadow-xl flex items-center justify-between">
+      <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-teal-900/50 to-emerald-900/50 backdrop-blur-xl border border-teal-500/30 text-white shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-extrabold font-display">Library Inventory & Asset Management</h2>
-          <p className="text-sm text-teal-100 mt-1">Librarian: Madam Pince • KBN Central Catalog</p>
+          <span className="px-3.5 py-1 bg-teal-500/20 text-teal-200 border border-teal-400/30 text-[10px] font-black uppercase tracking-wider rounded-full drop-shadow-md inline-block mb-2">
+            Central Catalog
+          </span>
+          <h2 className="text-2xl md:text-3xl font-extrabold font-display drop-shadow-[0_4px_4px_rgba(0,0,0,1)] text-white">Library Inventory & Asset Management</h2>
+          <p className="text-xs text-gray-100 font-medium drop-shadow-md mt-0.5">Librarian: Madam Pince • KBN Central Catalog Registry</p>
         </div>
-        <div className="p-3.5 bg-white/10 rounded-2xl border border-white/10">
-          <Library size={24} />
+        <div className="p-4 bg-white/10 rounded-2xl border border-white/20 shadow-md backdrop-blur-md shrink-0">
+          <Library size={26} className="text-teal-300 drop-shadow" />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 text-xs font-semibold">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         
         {/* Book Catalog Form */}
-        <div className="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl self-start">
-          <h3 className="text-sm font-extrabold text-slate-850 dark:text-white uppercase tracking-wider mb-5">
+        <div className="lg:col-span-2 p-6 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] self-start space-y-4 text-white">
+          <h3 className="text-sm font-extrabold text-gray-100 uppercase tracking-wider drop-shadow-md border-b border-white/15 pb-3">
             {editingBookId ? 'Edit Textbook Record' : 'Register New Textbook'}
           </h3>
           <form onSubmit={handleCreateOrUpdate} className="space-y-4 text-xs">
             <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Book Title</label>
+              <label className="block text-gray-300 mb-1.5 uppercase font-bold text-[10px]">Book Title</label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g., Fundamentals of Computer Networks"
                 required
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-medium"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-medium text-xs shadow-inner"
               />
             </div>
 
             <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Author name(s)</label>
+              <label className="block text-gray-300 mb-1.5 uppercase font-bold text-[10px]">Author name(s)</label>
               <input
                 type="text"
                 value={author}
                 onChange={(e) => setAuthor(e.target.value)}
                 placeholder="e.g., Andrew S. Tanenbaum"
                 required
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-medium"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-medium text-xs shadow-inner"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">ISBN Number</label>
+                <label className="block text-gray-300 mb-1.5 uppercase font-bold text-[10px]">ISBN Number</label>
                 <input
                   type="text"
                   value={isbn}
                   onChange={(e) => setIsbn(e.target.value)}
                   placeholder="e.g., 978-01321"
                   required
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-medium"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-medium text-xs shadow-inner"
                 />
               </div>
               <div>
-                <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Subject Category</label>
+                <label className="block text-gray-300 mb-1.5 uppercase font-bold text-[10px]">Subject Category</label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-bold"
+                  className="w-full px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white text-xs focus:outline-none focus:bg-white/10 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-bold cursor-pointer"
                 >
-                  <option value="CSE">CSE</option>
-                  <option value="CSE (AI & ML)">CSE (AI & ML)</option>
-                  <option value="CSE (Data Science)">CSE (Data Science)</option>
-                  <option value="ECE">ECE</option>
-                  <option value="EEE">EEE</option>
-                  <option value="Mechanical">Mechanical</option>
-                  <option value="Civil">Civil</option>
-                  <option value="BCA">BCA</option>
-                  <option value="BBA">BBA</option>
-                  <option value="MBA">MBA</option>
-                  <option value="MCA">MCA</option>
+                  <option value="CSE" className="bg-slate-900 text-white">CSE</option>
+                  <option value="CSE (AI & ML)" className="bg-slate-900 text-white">CSE (AI & ML)</option>
+                  <option value="CSE (Data Science)" className="bg-slate-900 text-white">CSE (Data Science)</option>
+                  <option value="ECE" className="bg-slate-900 text-white">ECE</option>
+                  <option value="EEE" className="bg-slate-900 text-white">EEE</option>
+                  <option value="Mechanical" className="bg-slate-900 text-white">Mechanical</option>
+                  <option value="Civil" className="bg-slate-900 text-white">Civil</option>
+                  <option value="BCA" className="bg-slate-900 text-white">BCA</option>
+                  <option value="BBA" className="bg-slate-900 text-white">BBA</option>
+                  <option value="MBA" className="bg-slate-900 text-white">MBA</option>
+                  <option value="MCA" className="bg-slate-900 text-white">MCA</option>
                 </select>
               </div>
             </div>
 
             <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Total Copies Count</label>
+              <label className="block text-gray-300 mb-1.5 uppercase font-bold text-[10px]">Total Copies Count</label>
               <input
                 type="number"
                 min="1"
                 value={totalCopies}
                 onChange={(e) => setTotalCopies(e.target.value)}
                 required
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-medium"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-medium text-xs shadow-inner"
               />
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 pt-2">
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex-1 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold transition-all shadow-md shadow-teal-500/10 flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-teal-500/25 border border-teal-400/40 flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.02]"
               >
                 <Plus size={14} />
                 <span>{editingBookId ? 'Save Edits' : 'Register Book'}</span>
@@ -230,7 +233,7 @@ const LibrarianInventory = () => {
                     setCategory('CSE');
                     setTotalCopies(5);
                   }}
-                  className="px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-400 rounded-xl font-bold"
+                  className="px-4 py-3 bg-white/10 hover:bg-white/20 text-gray-200 rounded-xl font-bold transition-all"
                 >
                   Cancel
                 </button>
@@ -240,58 +243,58 @@ const LibrarianInventory = () => {
         </div>
 
         {/* Textbook Table List */}
-        <div className="lg:col-span-3 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex flex-col justify-between">
+        <div className="lg:col-span-3 p-6 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex flex-col justify-between text-white">
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-4">
-              <span className="text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Catalog Inventory</span>
-              <button onClick={loadBooks} className="p-1.5 bg-slate-50 dark:bg-slate-800 text-slate-500 rounded-lg"><RefreshCw size={12} /></button>
+            <div className="flex items-center justify-between border-b border-white/15 pb-4">
+              <span className="text-xs font-extrabold text-gray-200 uppercase tracking-wider">Catalog Inventory</span>
+              <button onClick={loadBooks} className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all border border-white/10"><RefreshCw size={12} /></button>
             </div>
 
             <div className="relative">
-              <Search size={14} className="absolute left-3.5 top-3 text-slate-400" />
+              <Search size={14} className="absolute left-3.5 top-3 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search catalog by title, author, isbn..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white"
+                className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 text-xs focus:outline-none focus:bg-white/10 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-medium shadow-inner"
               />
             </div>
 
             {loading ? (
-              <div className="py-20 text-center animate-pulse text-slate-450">Loading books list...</div>
+              <div className="py-20 text-center animate-pulse text-gray-400">Loading books list...</div>
             ) : filteredBooks.length === 0 ? (
-              <div className="py-20 text-center text-slate-450 dark:text-slate-500">No books found matching search filters.</div>
+              <div className="py-20 text-center text-gray-400">No books found matching search filters.</div>
             ) : (
-              <div className="border border-slate-100 dark:border-slate-850 rounded-2xl overflow-hidden overflow-x-auto">
-                <table className="w-full text-left border-collapse text-[11px]">
+              <div className="w-full max-w-full overflow-hidden border border-white/10 rounded-2xl bg-black/40 backdrop-blur-md shadow-lg">
+                <table className="w-full table-fixed text-left border-collapse text-[11px]">
                   <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800/80 text-slate-400 font-bold uppercase tracking-wider">
-                      <th className="px-4 py-3">Book Info</th>
-                      <th className="px-4 py-3">Category</th>
-                      <th className="px-4 py-3 text-center">Circulation</th>
-                      <th className="px-4 py-3 text-center">Actions</th>
+                    <tr className="bg-white/5 border-b border-white/10 text-gray-400 font-bold uppercase tracking-wider text-[10px]">
+                      <th className="w-[45%] px-4 py-3">Book Info</th>
+                      <th className="w-[20%] px-4 py-3">Category</th>
+                      <th className="w-[20%] px-4 py-3 text-center whitespace-nowrap">Circulation</th>
+                      <th className="w-[15%] px-4 py-3 text-center whitespace-nowrap">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-800 dark:text-slate-250 font-bold">
+                  <tbody className="divide-y divide-white/5 font-semibold text-gray-200">
                     {filteredBooks.map(book => (
-                      <tr key={book.bookId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
-                        <td className="px-4 py-3">
-                          <h4 className="font-extrabold text-slate-850 dark:text-slate-100 text-xs">{book.title}</h4>
-                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">{book.author} • ISBN: {book.isbn}</p>
+                      <tr key={book.bookId} className="hover:bg-white/5 transition-colors">
+                        <td className="px-4 py-3 align-middle">
+                          <h4 className="font-bold text-white text-xs drop-shadow-sm break-words">{book.title}</h4>
+                          <p className="text-[10px] text-gray-400 font-normal mt-0.5 break-words">{book.author} • ISBN: {book.isbn}</p>
                         </td>
-                        <td className="px-4 py-3">{book.category}</td>
-                        <td className="px-4 py-3 text-center">
-                          <span className={`px-2 py-0.5 rounded text-[9.5px] font-black ${
-                            book.availableCopies === 0 ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'
+                        <td className="px-4 py-3 align-middle break-words">{book.category}</td>
+                        <td className="px-4 py-3 text-center align-middle whitespace-nowrap">
+                          <span className={`px-2.5 py-1 rounded-full text-[9.5px] font-black inline-block ${
+                            book.availableCopies === 0 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                           }`}>
                             {book.availableCopies} / {book.totalCopies} available
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-3 text-center align-middle whitespace-nowrap">
                           <div className="flex justify-center gap-2">
-                            <button onClick={() => handleEdit(book)} className="p-1.5 bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 rounded-lg"><Edit size={12} /></button>
-                            <button onClick={() => handleDelete(book.bookId)} className="p-1.5 bg-rose-50 dark:bg-slate-800 text-rose-600 dark:text-rose-400 rounded-lg"><Trash2 size={12} /></button>
+                            <button onClick={() => handleEdit(book)} className="p-1.5 bg-white/10 hover:bg-white/20 text-cyan-300 rounded-lg transition-all cursor-pointer"><Edit size={12} /></button>
+                            <button onClick={() => handleDelete(book.bookId)} className="p-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 rounded-lg transition-all cursor-pointer"><Trash2 size={12} /></button>
                           </div>
                         </td>
                       </tr>
@@ -307,24 +310,24 @@ const LibrarianInventory = () => {
 
       {/* Custom Confirmation Modal */}
       {confirmDeleteId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl space-y-6">
-            <h4 className="text-xs font-black text-rose-500 uppercase tracking-wider">Delete Textbook</h4>
-            <p className="text-xs text-slate-550 dark:text-slate-400 font-bold">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-sm p-6 bg-black/60 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.8)] space-y-6 text-white">
+            <h4 className="text-xs font-black text-rose-400 uppercase tracking-wider">Delete Textbook</h4>
+            <p className="text-xs text-gray-300 font-medium">
               Are you sure you want to remove this textbook from catalog?
             </p>
             <div className="flex gap-3">
               <button
                 type="button"
                 onClick={() => executeDelete(confirmDeleteId)}
-                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold transition-all"
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold transition-all cursor-pointer"
               >
                 Confirm
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmDeleteId(null)}
-                className="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-400 rounded-xl font-bold"
+                className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-gray-300 rounded-xl font-bold transition-all cursor-pointer"
               >
                 Cancel
               </button>
@@ -453,67 +456,74 @@ const LibrarianCirculation = () => {
   );
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
+    <div className="space-y-6 text-xs font-semibold font-sans">
       
-      {/* Title Banner */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-indigo-650 to-blue-700 text-white shadow-xl flex items-center justify-between">
+      {/* 1. CIRCULATION BANNER (BLUE TINTED GLASS) */}
+      <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-blue-900/50 to-indigo-900/50 backdrop-blur-xl border border-blue-500/30 text-white shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-extrabold font-display">Circulation Board & Checkout logs</h2>
-          <p className="text-sm text-indigo-100 mt-1">Approve checkout requests, record returns and audit library ledger</p>
+          <span className="px-3.5 py-1 bg-blue-500/20 text-blue-200 border border-blue-400/30 text-[10px] font-black uppercase tracking-wider rounded-full drop-shadow-md inline-block mb-2">
+            Library Asset Operations
+          </span>
+          <h2 className="text-2xl md:text-3xl font-extrabold font-display drop-shadow-[0_4px_4px_rgba(0,0,0,1)] text-white">Circulation Board & Checkout Logs</h2>
+          <p className="text-xs text-gray-100 font-medium drop-shadow-md mt-0.5">Approve checkout requests, record returns, and audit library ledger</p>
         </div>
-        <div className="p-3.5 bg-white/10 rounded-2xl border border-white/10">
-          <CheckSquare size={24} />
+        <div className="p-4 bg-white/10 rounded-2xl border border-white/20 shadow-md backdrop-blur-md shrink-0">
+          <CheckSquare size={26} className="text-blue-300 drop-shadow" />
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         
-        {/* Direct Issue Form */}
-        <div className="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl self-start">
-          <h3 className="text-sm font-extrabold text-slate-850 dark:text-white uppercase tracking-wider mb-5">Direct Book Issue</h3>
+        {/* 2. DIRECT BOOK ISSUE PANEL */}
+        <div className="lg:col-span-2 p-6 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] self-start space-y-5 text-white">
+          <h3 className="text-sm font-extrabold text-gray-100 tracking-widest uppercase drop-shadow-md border-b border-white/15 pb-3">
+            Direct Book Issue
+          </h3>
           <form onSubmit={handleDirectIssue} className="space-y-4">
             <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Borrower Roll No. / Employee ID</label>
+              <label className="block text-white font-bold drop-shadow-sm mb-2 uppercase text-[10.5px]">Borrower Roll No. / Employee ID</label>
               <input
                 type="text"
                 value={rollNumber}
                 onChange={(e) => setRollNumber(e.target.value)}
                 placeholder="e.g., CSE-2023-001"
                 required
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-medium"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all font-medium text-xs shadow-inner"
               />
             </div>
 
             <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Book ISBN Number</label>
+              <label className="block text-white font-bold drop-shadow-sm mb-2 uppercase text-[10.5px]">Book ISBN Number</label>
               <input
                 type="text"
                 value={bookIsbn}
                 onChange={(e) => setBookIsbn(e.target.value)}
                 placeholder="e.g., 978-0262033848"
                 required
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-medium"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all font-medium text-xs shadow-inner"
               />
             </div>
 
             <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-2 uppercase">Borrower Role Class</label>
+              <label className="block text-white font-bold drop-shadow-sm mb-2 uppercase text-[10.5px]">Borrower Role Class</label>
               <div className="flex gap-4">
-                <label className="flex items-center gap-1.5 cursor-pointer text-slate-800 dark:text-slate-350">
+                <label className="flex items-center gap-2 cursor-pointer text-gray-100 font-bold drop-shadow-sm">
                   <input
                     type="radio"
                     name="borrowerType"
                     checked={borrowerType === 'student'}
                     onChange={() => setBorrowerType('student')}
+                    className="accent-blue-500"
                   />
                   <span>Student (Fine Applicable)</span>
                 </label>
-                <label className="flex items-center gap-1.5 cursor-pointer text-slate-800 dark:text-slate-350">
+                <label className="flex items-center gap-2 cursor-pointer text-gray-100 font-bold drop-shadow-sm">
                   <input
                     type="radio"
                     name="borrowerType"
                     checked={borrowerType === 'faculty'}
                     onChange={() => setBorrowerType('faculty')}
+                    className="accent-blue-500"
                   />
                   <span>Faculty (Exempted)</span>
                 </label>
@@ -523,32 +533,32 @@ const LibrarianCirculation = () => {
             <button
               type="submit"
               disabled={issuing}
-              className="w-full py-3 bg-blue-650 hover:bg-blue-755 text-white rounded-xl font-bold transition-all shadow-md shadow-blue-500/10 flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-500/25 border border-blue-400/40 flex items-center justify-center gap-2 drop-shadow cursor-pointer hover:scale-[1.02]"
             >
               <span>{issuing ? 'Processing...' : 'Complete Direct Issue'}</span>
-              <ArrowRight size={14} />
+              <ArrowRight size={15} />
             </button>
           </form>
         </div>
 
-        {/* Circulation Logs & Table lists */}
+        {/* 3. AUDIT & CIRCULATION RECORDS PANEL */}
         <div className="lg:col-span-3 space-y-6">
           
-          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl">
+          <div className="p-6 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white">
             
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-4 mb-4">
-              <span className="text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Audit & Filter Records</span>
-              <button onClick={loadCirculationData} className="p-1.5 bg-slate-50 dark:bg-slate-800 text-slate-500 rounded-lg"><RefreshCw size={12} /></button>
+            <div className="flex items-center justify-between border-b border-white/15 pb-4 mb-4">
+              <span className="text-sm font-extrabold text-gray-100 tracking-widest uppercase drop-shadow-md">Audit & Filter Records</span>
+              <button onClick={loadCirculationData} className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all border border-white/10 shadow-sm"><RefreshCw size={14} /></button>
             </div>
 
             <div className="relative mb-5">
-              <Search size={14} className="absolute left-3.5 top-3 text-slate-400" />
+              <Search size={16} className="absolute left-3.5 top-3.5 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search transactions by borrower name, roll no, or title..."
                 value={circSearch}
                 onChange={(e) => setCircSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white"
+                className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all font-medium text-xs shadow-inner"
               />
             </div>
 
@@ -557,20 +567,20 @@ const LibrarianCirculation = () => {
               
               {/* Requests */}
               <div className="space-y-3">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Pending Borrow Requests ({filteredRequests.length})</span>
+                <span className="text-[10px] uppercase font-extrabold text-gray-200 block tracking-wider drop-shadow-sm">Pending Borrow Requests ({filteredRequests.length})</span>
                 {filteredRequests.length === 0 ? (
-                  <div className="p-4 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-slate-450">No pending student checkout requests.</div>
+                  <div className="p-4 text-center border border-dashed border-white/20 rounded-xl text-gray-300">No pending student checkout requests.</div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     {filteredRequests.map(req => (
-                      <div key={req.transactionId} className="p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-850 rounded-xl flex items-center justify-between">
+                      <div key={req.transactionId} className="p-3.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all flex items-center justify-between shadow-sm">
                         <div>
-                          <h4 className="font-extrabold text-slate-850 dark:text-white text-xs">{req.bookTitle}</h4>
-                          <p className="text-[10px] text-slate-455 mt-0.5">Borrower: {req.studentName} ({req.rollNumber})</p>
+                          <h4 className="font-extrabold text-white text-xs drop-shadow-sm">{req.bookTitle}</h4>
+                          <p className="text-[10px] text-gray-200 mt-0.5 font-semibold">Borrower: {req.studentName} ({req.rollNumber})</p>
                         </div>
                         <button
                           onClick={() => handleApprove(req.transactionId)}
-                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black"
+                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black shadow-md border border-emerald-400/40 cursor-pointer hover:scale-[1.02]"
                         >
                           Approve Request
                         </button>
@@ -582,31 +592,31 @@ const LibrarianCirculation = () => {
 
               {/* Active checkouts */}
               <div className="space-y-3">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Active Borrow Checkouts ({filteredCheckouts.length})</span>
+                <span className="text-[10px] uppercase font-extrabold text-gray-200 block tracking-wider drop-shadow-sm">Active Borrow Checkouts ({filteredCheckouts.length})</span>
                 {filteredCheckouts.length === 0 ? (
-                  <div className="p-4 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-slate-450">No books currently checked out.</div>
+                  <div className="p-4 text-center border border-dashed border-white/20 rounded-xl text-gray-300">No books currently checked out.</div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     {filteredCheckouts.map(item => (
-                      <div key={item.transactionId} className="p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-850 rounded-xl flex items-center justify-between">
+                      <div key={item.transactionId} className="p-3.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all flex items-center justify-between shadow-sm">
                         <div>
-                          <h4 className="font-extrabold text-slate-850 dark:text-white text-xs">{item.bookTitle}</h4>
-                          <p className="text-[10px] text-slate-455 mt-0.5">Checked out to: {item.studentName} ({item.rollNumber})</p>
-                          <div className="flex gap-2 items-center mt-1 text-[9.5px] font-bold text-slate-400">
+                          <h4 className="font-extrabold text-white text-xs drop-shadow-sm">{item.bookTitle}</h4>
+                          <p className="text-[10px] text-gray-200 mt-0.5 font-semibold">Checked out to: {item.studentName} ({item.rollNumber})</p>
+                          <div className="flex gap-2 items-center mt-1 text-[9.5px] font-bold text-gray-300">
                             <span>Issued: {item.issueDate}</span>
                             <span>●</span>
                             <span>Due: {item.dueDate}</span>
                             {item.fine > 0 && (
                               <>
                                 <span>●</span>
-                                <span className="text-rose-500 font-extrabold">Fine: ₹{item.fine}</span>
+                                <span className="text-rose-400 font-black drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Fine: ₹{item.fine}</span>
                               </>
                             )}
                           </div>
                         </div>
                         <button
                           onClick={() => handleReturn(item.transactionId)}
-                          className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-black"
+                          className="px-3.5 py-1.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-lg text-[10px] font-black shadow-md border border-indigo-400/40 cursor-pointer hover:scale-[1.02]"
                         >
                           Record Return
                         </button>
@@ -618,19 +628,19 @@ const LibrarianCirculation = () => {
 
               {/* Return History */}
               <div className="space-y-3">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Recent Return Logs ({filteredHistory.length})</span>
+                <span className="text-[10px] uppercase font-extrabold text-gray-200 block tracking-wider drop-shadow-sm">Recent Return Logs ({filteredHistory.length})</span>
                 {filteredHistory.length === 0 ? (
-                  <div className="p-4 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-slate-450">No returned transaction records found.</div>
+                  <div className="p-4 text-center border border-dashed border-white/20 rounded-xl text-gray-300">No returned transaction records found.</div>
                 ) : (
                   <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                     {filteredHistory.map(hist => (
-                      <div key={hist.transactionId} className="p-3 bg-slate-50 dark:bg-slate-800/10 border border-slate-100 dark:border-slate-850 rounded-xl flex items-center justify-between">
+                      <div key={hist.transactionId} className="p-3 bg-white/5 border border-white/10 rounded-xl flex items-center justify-between shadow-sm">
                         <div>
-                          <h4 className="font-extrabold text-slate-700 dark:text-slate-300 text-xs">{hist.bookTitle}</h4>
-                          <p className="text-[9.5px] text-slate-400 mt-0.5">Borrower: {hist.studentName} ({hist.rollNumber})</p>
-                          <p className="text-[9px] text-slate-400 font-semibold mt-0.5">Returned on: {hist.returnDate} {hist.fine > 0 && `(Fine paid: ₹${hist.fine})`}</p>
+                          <h4 className="font-extrabold text-white text-xs drop-shadow-sm">{hist.bookTitle}</h4>
+                          <p className="text-[9.5px] text-gray-300 mt-0.5">Borrower: {hist.studentName} ({hist.rollNumber})</p>
+                          <p className="text-[9px] text-gray-400 font-semibold mt-0.5">Returned on: {hist.returnDate} {hist.fine > 0 && `(Fine paid: ₹${hist.fine})`}</p>
                         </div>
-                        <span className="text-[9.5px] px-2 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-500 rounded font-black uppercase">Returned</span>
+                        <span className="text-[9.5px] px-2.5 py-0.5 bg-white/10 border border-white/20 text-gray-200 rounded font-black uppercase">Returned</span>
                       </div>
                     ))}
                   </div>
@@ -668,39 +678,53 @@ const LibrarianAnalytics = () => {
   }, []);
 
   if (loading) {
-    return <div className="py-20 text-center animate-pulse text-slate-400">Loading library metrics...</div>;
+    return <div className="py-20 text-center animate-pulse text-gray-400">Loading library metrics...</div>;
   }
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
+    <div className="space-y-6 text-xs font-semibold text-white">
+      {/* Title Banner */}
+      <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-blue-900/50 to-indigo-900/50 backdrop-blur-xl border border-blue-500/30 text-white shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex items-center justify-between gap-4">
+        <div>
+          <span className="px-3.5 py-1 bg-blue-500/20 text-blue-200 border border-blue-400/30 text-[10px] font-black uppercase tracking-wider rounded-full drop-shadow-md inline-block mb-2">
+            Asset Intelligence
+          </span>
+          <h2 className="text-2xl md:text-3xl font-extrabold font-display drop-shadow-[0_4px_4px_rgba(0,0,0,1)] text-white">Executive Library Analytics</h2>
+          <p className="text-xs text-gray-100 font-medium drop-shadow-md mt-0.5">Real-time circulation metrics, inventory turnover, and checkout trends</p>
+        </div>
+        <div className="p-4 bg-white/10 rounded-2xl border border-white/20 shadow-md backdrop-blur-md shrink-0">
+          <Activity size={26} className="text-cyan-300 drop-shadow" />
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex items-center justify-between">
+        <div className="p-5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex items-center justify-between hover:bg-black/50 transition-all">
           <div>
-            <span className="text-[10px] uppercase font-extrabold text-slate-400">Total Book Titles</span>
-            <p className="text-3xl font-black text-slate-900 dark:text-white mt-1.5">{stats?.totalTitles}</p>
+            <span className="text-[10px] uppercase font-bold text-gray-400">Total Book Titles</span>
+            <p className="text-3xl font-black text-white mt-1.5">{stats?.totalTitles}</p>
           </div>
-          <div className="p-3 bg-blue-500/10 text-blue-500 rounded-2xl"><BookOpen size={20} /></div>
+          <div className="p-3 bg-blue-500/20 text-cyan-300 rounded-2xl border border-blue-500/30"><BookOpen size={20} /></div>
         </div>
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex items-center justify-between">
+        <div className="p-5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex items-center justify-between hover:bg-black/50 transition-all">
           <div>
-            <span className="text-[10px] uppercase font-extrabold text-slate-400">Total Shelf Copies</span>
-            <p className="text-3xl font-black text-slate-900 dark:text-white mt-1.5">{stats?.totalCopies}</p>
+            <span className="text-[10px] uppercase font-bold text-gray-400">Total Shelf Copies</span>
+            <p className="text-3xl font-black text-white mt-1.5">{stats?.totalCopies}</p>
           </div>
-          <div className="p-3 bg-purple-500/10 text-purple-500 rounded-2xl"><Library size={20} /></div>
+          <div className="p-3 bg-purple-500/20 text-purple-300 rounded-2xl border border-purple-500/30"><Library size={20} /></div>
         </div>
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex items-center justify-between">
+        <div className="p-5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex items-center justify-between hover:bg-black/50 transition-all">
           <div>
-            <span className="text-[10px] uppercase font-extrabold text-slate-400">Active Checked Out</span>
-            <p className="text-3xl font-black text-emerald-500 mt-1.5">{stats?.activeIssued}</p>
+            <span className="text-[10px] uppercase font-bold text-gray-400">Active Checked Out</span>
+            <p className="text-3xl font-black text-emerald-400 mt-1.5">{stats?.activeIssued}</p>
           </div>
-          <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-2xl"><RefreshCw size={20} /></div>
+          <div className="p-3 bg-emerald-500/20 text-emerald-300 rounded-2xl border border-emerald-500/30"><RefreshCw size={20} /></div>
         </div>
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex items-center justify-between">
+        <div className="p-5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex items-center justify-between hover:bg-black/50 transition-all">
           <div>
-            <span className="text-[10px] uppercase font-extrabold text-slate-400">Overdue Returns</span>
-            <p className="text-3xl font-black text-rose-500 mt-1.5">{stats?.overdueCount}</p>
+            <span className="text-[10px] uppercase font-bold text-gray-400">Overdue Returns</span>
+            <p className="text-3xl font-black text-rose-400 mt-1.5">{stats?.overdueCount}</p>
           </div>
-          <div className="p-3 bg-rose-500/10 text-rose-500 rounded-2xl"><TrendingUp size={20} /></div>
+          <div className="p-3 bg-rose-500/20 text-rose-300 rounded-2xl border border-rose-500/30"><TrendingUp size={20} /></div>
         </div>
       </div>
     </div>
@@ -747,58 +771,74 @@ const LibrarianEresources = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 text-xs font-semibold">
-      <div className="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl self-start space-y-4">
-        <h3 className="text-base font-extrabold text-slate-850 dark:text-white">Publish Digital E-Resource / Journal</h3>
-        <form onSubmit={handleAddEresource} className="space-y-3">
-          <div>
-            <label className="block text-[9.5px] uppercase font-bold text-slate-450 mb-1">Publication Title</label>
-            <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g. IEEE Transactions on AI 2026" className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
-          </div>
-          <div>
-            <label className="block text-[9.5px] uppercase font-bold text-slate-450 mb-1">Publisher / Author</label>
-            <input type="text" value={author} onChange={(e) => setAuthor(e.target.value)} required placeholder="e.g. Springer Nature" className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[9.5px] uppercase font-bold text-slate-450 mb-1">Resource Category</label>
-              <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold">
-                <option value="IEEE Journal">IEEE Journal</option>
-                <option value="Springer Book">Springer Book</option>
-                <option value="ScienceDirect">ScienceDirect</option>
-                <option value="ACM Digital">ACM Digital</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-[9.5px] uppercase font-bold text-slate-450 mb-1">Access Protocol</label>
-              <input type="text" value={accessType} onChange={(e) => setAccessType(e.target.value)} placeholder="Campus IP" className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
-            </div>
-          </div>
-          <button type="submit" className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all mt-2">
-            Publish Digital Asset
-          </button>
-        </form>
+    <div className="space-y-6 text-xs font-semibold text-white">
+      {/* Title Banner */}
+      <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-blue-900/50 to-indigo-900/50 backdrop-blur-xl border border-blue-500/30 text-white shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex items-center justify-between gap-4">
+        <div>
+          <span className="px-3.5 py-1 bg-blue-500/20 text-blue-200 border border-blue-400/30 text-[10px] font-black uppercase tracking-wider rounded-full drop-shadow-md inline-block mb-2">
+            Digital Repository
+          </span>
+          <h2 className="text-2xl md:text-3xl font-extrabold font-display drop-shadow-[0_4px_4px_rgba(0,0,0,1)] text-white">E-Resources & Research Journals</h2>
+          <p className="text-xs text-gray-100 font-medium drop-shadow-md mt-0.5">Publish and curate IEEE, Springer, ACM, and open access repositories</p>
+        </div>
+        <div className="p-4 bg-white/10 rounded-2xl border border-white/20 shadow-md backdrop-blur-md shrink-0">
+          <BookOpen size={26} className="text-cyan-300 drop-shadow" />
+        </div>
       </div>
 
-      <div className="lg:col-span-3 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-4">
-        <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider block border-b border-slate-100 dark:border-slate-800 pb-4">Catalogued E-Journals & Repositories</span>
-        {loading ? (
-          <div className="py-20 text-center animate-pulse text-slate-400">Loading catalog...</div>
-        ) : (
-          <div className="space-y-3">
-            {resources.map(res => (
-              <div key={res.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-850 space-y-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-extrabold text-slate-850 dark:text-white text-xs">{res.title}</h4>
-                    <span className="text-[10px] text-slate-400 font-bold block mt-0.5">Author: {res.author} • Protocol: {res.accessType}</span>
-                  </div>
-                  <span className="px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded text-[9.5px] font-black">{res.category}</span>
-                </div>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="lg:col-span-2 p-6 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] self-start space-y-4 text-white">
+          <h3 className="text-sm font-extrabold text-gray-100 border-b border-white/15 pb-3">Publish Digital E-Resource / Journal</h3>
+          <form onSubmit={handleAddEresource} className="space-y-3">
+            <div>
+              <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Publication Title</label>
+              <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g. IEEE Transactions on AI 2026" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-medium text-xs shadow-inner" />
+            </div>
+            <div>
+              <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Publisher / Author</label>
+              <input type="text" value={author} onChange={(e) => setAuthor(e.target.value)} required placeholder="e.g. Springer Nature" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-medium text-xs shadow-inner" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Resource Category</label>
+                <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white text-xs focus:outline-none focus:bg-white/10 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-bold cursor-pointer">
+                  <option value="IEEE Journal" className="bg-slate-900 text-white">IEEE Journal</option>
+                  <option value="Springer Book" className="bg-slate-900 text-white">Springer Book</option>
+                  <option value="ScienceDirect" className="bg-slate-900 text-white">ScienceDirect</option>
+                  <option value="ACM Digital" className="bg-slate-900 text-white">ACM Digital</option>
+                </select>
               </div>
-            ))}
-          </div>
-        )}
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Access Protocol</label>
+                <input type="text" value={accessType} onChange={(e) => setAccessType(e.target.value)} placeholder="Campus IP" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-medium text-xs shadow-inner" />
+              </div>
+            </div>
+            <button type="submit" className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-500/25 border border-blue-400/40 cursor-pointer hover:scale-[1.02] mt-2">
+              Publish Digital Asset
+            </button>
+          </form>
+        </div>
+
+        <div className="lg:col-span-3 p-6 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] space-y-4 text-white">
+          <span className="text-xs font-extrabold text-gray-200 uppercase tracking-wider block border-b border-white/15 pb-4">Catalogued E-Journals & Repositories</span>
+          {loading ? (
+            <div className="py-20 text-center animate-pulse text-gray-400">Loading catalog...</div>
+          ) : (
+            <div className="space-y-3">
+              {resources.map(res => (
+                <div key={res.id} className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-bold text-white text-xs drop-shadow-sm">{res.title}</h4>
+                      <span className="text-[10px] text-gray-400 font-bold block mt-0.5">Author: {res.author} • Protocol: {res.accessType}</span>
+                    </div>
+                    <span className="px-2.5 py-0.5 bg-blue-500/20 text-cyan-300 border border-blue-500/30 rounded font-black text-[9.5px]">{res.category}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -838,11 +878,11 @@ const LibrarianFines = () => {
   };
 
   return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl text-xs font-semibold space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-4">
+    <div className="p-6 rounded-3xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-xs font-semibold space-y-6 text-white">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/15 pb-4">
         <div>
-          <h3 className="text-base font-extrabold text-slate-800 dark:text-white">Library Fines & Graduation No-Dues Desk</h3>
-          <p className="text-xs text-slate-450 mt-1">Search student roll number to clear library fine balances and release official No-Dues clearance</p>
+          <h3 className="text-base font-extrabold text-white">Library Fines & Graduation No-Dues Desk</h3>
+          <p className="text-xs text-gray-400 mt-1">Search student roll number to clear library fine balances and release official No-Dues clearance</p>
         </div>
         <div className="flex items-center gap-2">
           <input
@@ -850,30 +890,30 @@ const LibrarianFines = () => {
             placeholder="Roll Number (e.g. CSE-2023-001)"
             value={rollNumber}
             onChange={(e) => setRollNumber(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+            className="px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white placeholder-gray-400 text-xs focus:outline-none focus:bg-white/10 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-medium shadow-inner"
           />
-          <button onClick={handleSearchStudent} className="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold">Search</button>
+          <button onClick={handleSearchStudent} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all cursor-pointer shadow-md">Search</button>
         </div>
       </div>
 
       {student ? (
-        <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-850 space-y-4">
+        <div className="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-4 text-white">
           <div className="flex justify-between items-center">
             <div>
-              <h4 className="font-extrabold text-sm text-slate-850 dark:text-white">{student.fullName}</h4>
-              <span className="text-[10px] text-slate-400 font-bold">Roll: {student.rollNumber} • Dept: {student.department || 'CSE'}</span>
+              <h4 className="font-bold text-sm text-white">{student.fullName}</h4>
+              <span className="text-[10px] text-gray-400 font-bold">Roll: {student.rollNumber} • Dept: {student.department || 'CSE'}</span>
             </div>
-            <span className="px-3 py-1 bg-emerald-500/10 text-emerald-500 rounded-xl text-[10px] font-black uppercase">Zero Active Penalties</span>
+            <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-xl text-[10px] font-black uppercase">Zero Active Penalties</span>
           </div>
 
-          <div className="flex justify-end pt-2 border-t border-slate-200/50 dark:border-slate-800">
-            <button onClick={handleIssueNoDues} className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-all shadow">
+          <div className="flex justify-end pt-2 border-t border-white/10">
+            <button onClick={handleIssueNoDues} className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-all shadow cursor-pointer hover:scale-[1.02]">
               Issue Library No-Dues Certificate
             </button>
           </div>
         </div>
       ) : (
-        <div className="py-20 text-center text-slate-450">Search a student roll number above to audit dues.</div>
+        <div className="py-20 text-center text-gray-400">Search a student roll number above to audit dues.</div>
       )}
     </div>
   );

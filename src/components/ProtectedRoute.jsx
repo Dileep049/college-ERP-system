@@ -9,35 +9,35 @@ export const ProtectedRoute = ({ children, allowedRole }) => {
   if (loading) {
     // Show a premium glassmorphic loading screen
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.85)),url('/nature-bg.png')] bg-cover bg-center bg-fixed text-white p-6">
         <div className="relative flex items-center justify-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
-          <div className="absolute h-8 w-8 rounded-full bg-blue-500/20 animate-pulse"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-cyan-400 border-t-transparent shadow-lg"></div>
+          <div className="absolute h-8 w-8 rounded-full bg-cyan-400/20 animate-pulse"></div>
         </div>
-        <p className="mt-4 text-slate-500 dark:text-slate-400 font-medium animate-pulse">Verifying credentials...</p>
+        <p className="mt-4 text-cyan-200 font-semibold animate-pulse tracking-wide text-xs">Verifying credentials & session...</p>
       </div>
     );
   }
 
   if (profileError) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 p-6 text-center transition-colors duration-200">
-        <div className="max-w-md w-full p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl space-y-5">
-          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto text-xl font-bold">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.85)),url('/nature-bg.png')] bg-cover bg-center bg-fixed p-6 text-center text-white">
+        <div className="max-w-md w-full p-8 bg-black/50 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.8)] space-y-5">
+          <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/30 text-rose-300 flex items-center justify-center mx-auto text-xl font-bold">
             ⚠️
           </div>
-          <h3 className="text-lg font-black text-slate-900 dark:text-white">Profile Loading Error</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">{profileError}</p>
+          <h3 className="text-lg font-black text-white">Profile Loading Error</h3>
+          <p className="text-xs text-gray-300 font-medium">{profileError}</p>
           <div className="flex items-center justify-center gap-3 pt-2">
             <button
               onClick={() => user?.uid ? loadUserProfile(user.uid) : window.location.reload()}
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-xs font-bold shadow-md transition-all"
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
             >
               Retry Profile
             </button>
             <button
               onClick={() => logout()}
-              className="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl text-xs font-bold transition-all"
+              className="px-5 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
             >
               Sign Out
             </button>

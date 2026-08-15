@@ -275,16 +275,16 @@ const StudentAttendance = ({ student, isParent }) => {
       {loading ? (
         <div className="py-12 text-center animate-pulse text-slate-400">Loading attendance data...</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+        <div className="w-full max-w-full overflow-x-hidden">
+          <table className="w-full table-fixed text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 text-[10px]">
-                <th className="px-5 py-3">Subject</th>
-                <th className="px-5 py-3 text-center">Total Classes</th>
-                <th className="px-5 py-3 text-center">Present</th>
-                <th className="px-5 py-3 text-center">Absent</th>
-                <th className="px-5 py-3 text-center">Leave</th>
-                <th className="px-5 py-3 text-right">Attendance %</th>
+                <th className="w-[35%] px-3 py-3">Subject</th>
+                <th className="w-[13%] px-2 py-3 text-center">Total</th>
+                <th className="w-[13%] px-2 py-3 text-center">Present</th>
+                <th className="w-[13%] px-2 py-3 text-center">Absent</th>
+                <th className="w-[11%] px-2 py-3 text-center">Leave</th>
+                <th className="w-[15%] px-3 py-3 text-right">Att %</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-bold">
@@ -292,12 +292,12 @@ const StudentAttendance = ({ student, isParent }) => {
                 const pct = s.total > 0 ? ((s.present / s.total) * 100).toFixed(1) : 0;
                 return (
                   <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
-                    <td className="px-5 py-4 font-black text-slate-900 dark:text-white">{s.subject}</td>
-                    <td className="px-5 py-4 text-center">{s.total}</td>
-                    <td className="px-5 py-4 text-center text-emerald-600">{s.present}</td>
-                    <td className="px-5 py-4 text-center text-rose-500">{s.absent}</td>
-                    <td className="px-5 py-4 text-center text-amber-500">{s.leave}</td>
-                    <td className={`px-5 py-4 text-right font-black ${parseFloat(pct) >= 75 ? 'text-emerald-600' : 'text-rose-500'}`}>{pct}%</td>
+                    <td className="px-3 py-3 font-black text-slate-900 dark:text-white break-words align-middle">{s.subject}</td>
+                    <td className="px-2 py-3 text-center break-words align-middle">{s.total}</td>
+                    <td className="px-2 py-3 text-center text-emerald-600 break-words align-middle">{s.present}</td>
+                    <td className="px-2 py-3 text-center text-rose-500 break-words align-middle">{s.absent}</td>
+                    <td className="px-2 py-3 text-center text-amber-500 break-words align-middle">{s.leave}</td>
+                    <td className={`px-3 py-3 text-right font-black break-words align-middle ${parseFloat(pct) >= 75 ? 'text-emerald-600' : 'text-rose-500'}`}>{pct}%</td>
                   </tr>
                 );
               })}
@@ -323,15 +323,15 @@ const StudentResults = ({ student, isParent }) => {
         <Award size={24} className="text-amber-500" />
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+      <div className="w-full max-w-full overflow-x-hidden">
+        <table className="w-full table-fixed text-left border-collapse">
           <thead>
             <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 text-[10px]">
-              <th className="px-5 py-3">Subject</th>
-              <th className="px-5 py-3 text-center">Credits</th>
-              <th className="px-5 py-3 text-center">Grade</th>
-              <th className="px-5 py-3 text-center">Grade Point</th>
-              <th className="px-5 py-3 text-right">Result</th>
+              <th className="w-[45%] px-3 py-3">Subject</th>
+              <th className="w-[12%] px-2 py-3 text-center">Credits</th>
+              <th className="w-[13%] px-2 py-3 text-center">Grade</th>
+              <th className="w-[15%] px-2 py-3 text-center">Grade Point</th>
+              <th className="w-[15%] px-3 py-3 text-right">Result</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-bold">
@@ -733,25 +733,25 @@ const StudentLeaves = ({ student, isParent }) => {
         ) : leaves.length === 0 ? (
           <div className="py-12 text-center text-slate-400">No leave requests logged.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          <div className="w-full max-w-full overflow-x-hidden">
+            <table className="w-full table-fixed text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 text-[10px]">
-                  <th className="px-5 py-3">Type</th>
-                  <th className="px-5 py-3 text-center">Dates</th>
-                  <th className="px-5 py-3">Reason</th>
-                  <th className="px-5 py-3 text-center">Status</th>
-                  <th className="px-5 py-3 text-right">Remarks</th>
+                  <th className="w-[20%] px-3 py-3">Type</th>
+                  <th className="w-[20%] px-2 py-3 text-center">Dates</th>
+                  <th className="w-[25%] px-3 py-3">Reason</th>
+                  <th className="w-[15%] px-2 py-3 text-center">Status</th>
+                  <th className="w-[20%] px-3 py-3 text-right">Remarks</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-bold">
                 {leaves.map(l => (
                   <tr key={l.id || l.leaveId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
-                    <td className="px-5 py-4 font-black text-slate-900 dark:text-white">{l.leaveType}</td>
-                    <td className="px-5 py-4 text-center">{l.fromDate} to {l.toDate}</td>
-                    <td className="px-5 py-4 text-slate-500 font-normal">{l.reason}</td>
-                    <td className="px-5 py-4 text-center">
-                      <span className={`px-3 py-1 rounded-xl text-[9.5px] font-black uppercase ${
+                    <td className="px-3 py-3 font-black text-slate-900 dark:text-white break-words align-middle">{l.leaveType}</td>
+                    <td className="px-2 py-3 text-center font-mono text-xs break-words align-middle">{l.fromDate} to {l.toDate}</td>
+                    <td className="px-3 py-3 text-slate-500 font-normal break-words align-middle">{l.reason}</td>
+                    <td className="px-2 py-3 text-center align-middle">
+                      <span className={`px-2 py-0.5 rounded-xl text-[9.5px] font-black uppercase inline-block break-words ${
                         l.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30' :
                         l.status === 'Rejected' ? 'bg-rose-500/10 text-rose-600 border border-rose-500/30' :
                         'bg-amber-500/10 text-amber-600 border border-amber-500/30'
@@ -759,7 +759,7 @@ const StudentLeaves = ({ student, isParent }) => {
                         {l.status}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-right font-medium text-xs">
+                    <td className="px-3 py-3 text-right font-medium text-xs break-words align-middle">
                       {l.status === 'Approved' ? (
                         <span className="text-emerald-600 dark:text-emerald-400 font-bold">
                           Approved by {l.approvedByName || 'Ward Counsellor'}
@@ -770,11 +770,11 @@ const StudentLeaves = ({ student, isParent }) => {
                             Rejected by {l.rejectedByName || 'Ward Counsellor'}
                           </span>
                           <span className="text-rose-700 dark:text-rose-300 font-medium block text-[11px]">
-                            Rejection Reason: {l.rejectionReason || l.remarks || 'No reason provided'}
+                            {l.rejectionReason || l.remarks || 'No reason provided'}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-amber-500 font-semibold italic">Pending Ward Counsellor Review</span>
+                        <span className="text-amber-500 font-semibold italic">Pending Review</span>
                       )}
                     </td>
                   </tr>

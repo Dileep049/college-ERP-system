@@ -704,75 +704,86 @@ export const AdminPortal = () => {
   });
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
+    <div className="space-y-6 text-xs font-semibold font-sans">
       
-      {/* Header */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-950 text-white shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-extrabold font-display">Super Admin Command Center</h2>
-          <p className="text-sm text-slate-400 mt-1">Institutional Operations, Workloads & Data Management</p>
+      {/* 1. SUPER ADMIN COMMAND CENTER (TOP SECTION & TABS IN GLASS CONTAINER) */}
+      <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-3xl p-6 mb-8 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white space-y-6">
+        
+        {/* Header Bar */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/15 pb-6">
+          <div>
+            <span className="px-3.5 py-1 bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 text-[10px] font-black uppercase tracking-wider rounded-full drop-shadow-md inline-block mb-2">
+              Master System Control
+            </span>
+            <h2 className="text-2xl md:text-3xl font-extrabold font-display drop-shadow-[0_4px_4px_rgba(0,0,0,1)] text-white">Super Admin Command Center</h2>
+            <p className="text-xs text-gray-100 font-medium drop-shadow-md mt-0.5">Institutional Operations, Workloads & Global Database Management</p>
+          </div>
+          <button 
+            onClick={async () => { await logout(); navigate('/', { replace: true }); }} 
+            className="px-4 py-2.5 bg-rose-650/80 hover:bg-rose-600 border border-rose-400/40 text-white rounded-xl text-xs font-bold transition-all shadow-lg drop-shadow-md cursor-pointer hover:scale-[1.02] shrink-0"
+          >
+            Sign Out Portal
+          </button>
         </div>
-        <button onClick={async () => { await logout(); navigate('/', { replace: true }); }} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-md">
-          Sign Out Portal
-        </button>
-      </div>
 
-      {/* Tabs */}
-      <div className="flex flex-wrap border-b border-slate-200 dark:border-slate-800 gap-1 sm:gap-2">
-        <button 
-          onClick={() => setActiveTab('dashboard')} 
-          className={`px-3 py-2.5 sm:px-4 sm:py-3 text-xs font-extrabold border-b-2 transition-all ${activeTab === 'dashboard' ? 'border-blue-500 text-blue-500' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
-        >
-          Overview Dashboard
-        </button>
-        <button 
-          onClick={() => setActiveTab('users')} 
-          className={`px-3 py-2.5 sm:px-4 sm:py-3 text-xs font-extrabold border-b-2 transition-all ${activeTab === 'users' ? 'border-blue-500 text-blue-500' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
-        >
-          Users Directory (15 Roles)
-        </button>
-        <button 
-          onClick={() => setActiveTab('structure')} 
-          className={`px-3 py-2.5 sm:px-4 sm:py-3 text-xs font-extrabold border-b-2 transition-all ${activeTab === 'structure' ? 'border-blue-500 text-blue-500' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
-        >
-          Academic Structure
-        </button>
-        <button 
-          onClick={() => setActiveTab('calendar')} 
-          className={`px-3 py-2.5 sm:px-4 sm:py-3 text-xs font-extrabold border-b-2 transition-all ${activeTab === 'calendar' ? 'border-blue-500 text-blue-500' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
-        >
-          Academic Calendar
-        </button>
-        <button 
-          onClick={() => setActiveTab('allocations')} 
-          className={`px-3 py-2.5 sm:px-4 sm:py-3 text-xs font-extrabold border-b-2 transition-all ${activeTab === 'allocations' ? 'border-blue-500 text-blue-500' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
-        >
-          Workload Allocations
-        </button>
-        <button 
-          onClick={() => setActiveTab('leaves')} 
-          className={`px-3 py-2.5 sm:px-4 sm:py-3 text-xs font-extrabold border-b-2 transition-all ${activeTab === 'leaves' ? 'border-blue-500 text-blue-500' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
-        >
-          Leave Reviews
-        </button>
-        <button 
-          onClick={() => setActiveTab('backup')} 
-          className={`px-3 py-2.5 sm:px-4 sm:py-3 text-xs font-extrabold border-b-2 transition-all ${activeTab === 'backup' ? 'border-blue-500 text-blue-500' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
-        >
-          Backup & Restore
-        </button>
-        <button 
-          onClick={() => setActiveTab('bulk-import')} 
-          className={`px-3 py-2.5 sm:px-4 sm:py-3 text-xs font-extrabold border-b-2 transition-all ${activeTab === 'bulk-import' ? 'border-blue-500 text-blue-500' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
-        >
-          Bulk Student Import
-        </button>
-        <button 
-          onClick={() => setActiveTab('reports')} 
-          className={`px-3 py-2.5 sm:px-4 sm:py-3 text-xs font-extrabold border-b-2 transition-all ${activeTab === 'reports' ? 'border-blue-500 text-blue-500' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
-        >
-          Global Ledgers
-        </button>
+        {/* Tabs */}
+        <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-1">
+          <button 
+            onClick={() => setActiveTab('dashboard')} 
+            className={`px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${activeTab === 'dashboard' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-md backdrop-blur-md drop-shadow-md' : 'text-gray-200 hover:bg-white/10 hover:text-white border border-transparent'}`}
+          >
+            Overview Dashboard
+          </button>
+          <button 
+            onClick={() => setActiveTab('users')} 
+            className={`px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${activeTab === 'users' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-md backdrop-blur-md drop-shadow-md' : 'text-gray-200 hover:bg-white/10 hover:text-white border border-transparent'}`}
+          >
+            Users Directory (15 Roles)
+          </button>
+          <button 
+            onClick={() => setActiveTab('structure')} 
+            className={`px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${activeTab === 'structure' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-md backdrop-blur-md drop-shadow-md' : 'text-gray-200 hover:bg-white/10 hover:text-white border border-transparent'}`}
+          >
+            Academic Structure
+          </button>
+          <button 
+            onClick={() => setActiveTab('calendar')} 
+            className={`px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${activeTab === 'calendar' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-md backdrop-blur-md drop-shadow-md' : 'text-gray-200 hover:bg-white/10 hover:text-white border border-transparent'}`}
+          >
+            Academic Calendar
+          </button>
+          <button 
+            onClick={() => setActiveTab('allocations')} 
+            className={`px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${activeTab === 'allocations' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-md backdrop-blur-md drop-shadow-md' : 'text-gray-200 hover:bg-white/10 hover:text-white border border-transparent'}`}
+          >
+            Workload Allocations
+          </button>
+          <button 
+            onClick={() => setActiveTab('leaves')} 
+            className={`px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${activeTab === 'leaves' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-md backdrop-blur-md drop-shadow-md' : 'text-gray-200 hover:bg-white/10 hover:text-white border border-transparent'}`}
+          >
+            Leave Reviews
+          </button>
+          <button 
+            onClick={() => setActiveTab('backup')} 
+            className={`px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${activeTab === 'backup' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-md backdrop-blur-md drop-shadow-md' : 'text-gray-200 hover:bg-white/10 hover:text-white border border-transparent'}`}
+          >
+            Backup & Restore
+          </button>
+          <button 
+            onClick={() => setActiveTab('bulk-import')} 
+            className={`px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${activeTab === 'bulk-import' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-md backdrop-blur-md drop-shadow-md' : 'text-gray-200 hover:bg-white/10 hover:text-white border border-transparent'}`}
+          >
+            Bulk Student Import
+          </button>
+          <button 
+            onClick={() => setActiveTab('reports')} 
+            className={`px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${activeTab === 'reports' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-md backdrop-blur-md drop-shadow-md' : 'text-gray-200 hover:bg-white/10 hover:text-white border border-transparent'}`}
+          >
+            Global Ledgers
+          </button>
+        </div>
+
       </div>
 
       {/* Tab Contents */}
@@ -783,78 +794,78 @@ export const AdminPortal = () => {
       {activeTab === 'dashboard' && (
         <div className="space-y-6">
           {/* Action Bar */}
-          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="p-5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex flex-col sm:flex-row items-center justify-between gap-4 text-white">
             <div>
-              <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Institutional Live Statistics</h3>
-              <p className="text-[11px] text-slate-450 dark:text-slate-400">Real-time metrics across Firestore collections</p>
+              <h3 className="text-sm font-extrabold text-white drop-shadow-md">Institutional Live Statistics</h3>
+              <p className="text-[11px] text-gray-200 font-medium mt-0.5">Real-time metrics across Firestore collections</p>
             </div>
             <button
               onClick={handleSyncRoster}
               disabled={syncingRoster}
-              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-500/20 flex items-center gap-2"
+              className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/25 border border-blue-400/40 flex items-center gap-2 drop-shadow cursor-pointer hover:scale-[1.02]"
             >
               <Upload size={14} />
               <span>{syncingRoster ? 'Syncing Roster...' : 'Sync 55 AI & ML Students to Firestore'}</span>
             </button>
           </div>
 
-          {/* 17 KPI Summary Cards Grid */}
+          {/* 2. 12 KPI SUMMARY CARDS GRID */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Total Students</span>
-              <span className="text-2xl font-black text-blue-600 dark:text-blue-400 block mt-1">{usersList.filter(u => u.role === 'student').length || 55}</span>
+            <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
+              <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] block">Total Students</span>
+              <span className="text-4xl font-black text-cyan-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">{usersList.filter(u => u.role === 'student').length || 55}</span>
             </div>
-            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Total Faculty</span>
-              <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 block mt-1">{usersList.filter(u => u.role === 'faculty' || u.role === 'lab_faculty').length || 12}</span>
+            <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
+              <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] block">Total Faculty</span>
+              <span className="text-4xl font-black text-emerald-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">{usersList.filter(u => u.role === 'faculty' || u.role === 'lab_faculty').length || 12}</span>
             </div>
-            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Total Parents</span>
-              <span className="text-2xl font-black text-purple-600 dark:text-purple-400 block mt-1">{usersList.filter(u => u.role === 'parent').length || 45}</span>
+            <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
+              <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] block">Total Parents</span>
+              <span className="text-4xl font-black text-purple-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">{usersList.filter(u => u.role === 'parent').length || 45}</span>
             </div>
-            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Total HODs</span>
-              <span className="text-2xl font-black text-amber-600 dark:text-amber-400 block mt-1">{usersList.filter(u => u.role === 'hod').length || 6}</span>
+            <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
+              <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] block">Total HODs</span>
+              <span className="text-4xl font-black text-amber-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">{usersList.filter(u => u.role === 'hod').length || 6}</span>
             </div>
-            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Ward Counsellors</span>
-              <span className="text-2xl font-black text-sky-600 dark:text-sky-400 block mt-1">{usersList.filter(u => u.role === 'counsellor').length || 8}</span>
+            <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
+              <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] block">Ward Counsellors</span>
+              <span className="text-4xl font-black text-sky-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">{usersList.filter(u => u.role === 'counsellor').length || 8}</span>
             </div>
-            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Total Departments</span>
-              <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400 block mt-1">6</span>
+            <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
+              <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] block">Total Departments</span>
+              <span className="text-4xl font-black text-indigo-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">6</span>
             </div>
-            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Total Courses</span>
-              <span className="text-2xl font-black text-teal-600 dark:text-teal-400 block mt-1">4</span>
+            <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
+              <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] block">Total Courses</span>
+              <span className="text-4xl font-black text-teal-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">4</span>
             </div>
-            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Total Branches</span>
-              <span className="text-2xl font-black text-rose-600 dark:text-rose-400 block mt-1">6</span>
+            <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
+              <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] block">Total Branches</span>
+              <span className="text-4xl font-black text-rose-400 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">6</span>
             </div>
-            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Total Semesters</span>
-              <span className="text-2xl font-black text-cyan-600 dark:text-cyan-400 block mt-1">8</span>
+            <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
+              <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] block">Total Semesters</span>
+              <span className="text-4xl font-black text-cyan-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">8</span>
             </div>
-            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Total Sections</span>
-              <span className="text-2xl font-black text-pink-600 dark:text-pink-400 block mt-1">3 (EM, A, B)</span>
+            <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
+              <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] block">Total Sections</span>
+              <span className="text-4xl font-black text-pink-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">3 (EM, A, B)</span>
             </div>
-            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Total Subjects</span>
-              <span className="text-2xl font-black text-orange-600 dark:text-orange-400 block mt-1">24</span>
+            <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
+              <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] block">Total Subjects</span>
+              <span className="text-4xl font-black text-orange-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">24</span>
             </div>
-            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-sm">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Active Accounts</span>
-              <span className="text-2xl font-black text-emerald-500 block mt-1">{usersList.length || 65}</span>
+            <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
+              <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] block">Active Accounts</span>
+              <span className="text-4xl font-black text-emerald-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">{usersList.length || 65}</span>
             </div>
           </div>
 
-          {/* Visual Analytics Grid */}
+          {/* 3. VISUAL ANALYTICS GRID */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Department Breakdown */}
-            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl">
-              <h4 className="font-extrabold text-slate-800 dark:text-white mb-4">Department Roster Breakdown</h4>
+            <div className="p-6 rounded-3xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white">
+              <h4 className="font-extrabold text-white drop-shadow-md mb-4 text-sm">Department Roster Breakdown</h4>
               <div className="space-y-3">
                 {[
                   { name: 'AI & ML (Artificial Intelligence)', count: 55, pct: 100, color: 'bg-blue-500' },
@@ -864,12 +875,12 @@ export const AdminPortal = () => {
                   { name: 'Civil Engineering', count: 18, pct: 36, color: 'bg-rose-500' }
                 ].map((item, idx) => (
                   <div key={idx} className="space-y-1">
-                    <div className="flex justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <div className="flex justify-between text-xs font-bold text-gray-100 drop-shadow-sm">
                       <span>{item.name}</span>
                       <span>{item.count} Students</span>
                     </div>
-                    <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                      <div className={`h-full ${item.color}`} style={{ width: `${item.pct}%` }}></div>
+                    <div className="w-full h-2.5 bg-black/40 border border-white/10 rounded-full overflow-hidden">
+                      <div className={`h-full ${item.color} shadow-sm`} style={{ width: `${item.pct}%` }}></div>
                     </div>
                   </div>
                 ))}
@@ -877,24 +888,24 @@ export const AdminPortal = () => {
             </div>
 
             {/* System Activity & Health */}
-            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl">
-              <h4 className="font-extrabold text-slate-800 dark:text-white mb-4">System Operational Health</h4>
+            <div className="p-6 rounded-3xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white">
+              <h4 className="font-extrabold text-white drop-shadow-md mb-4 text-sm">System Operational Health</h4>
               <div className="grid grid-cols-2 gap-4 text-center">
-                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-                  <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 block">Firestore Database</span>
-                  <span className="text-lg font-black text-emerald-600 dark:text-emerald-400 block mt-1">CONNECTED</span>
+                <div className="p-4 rounded-2xl bg-black/30 backdrop-blur-md border border-emerald-400/30 shadow-md">
+                  <span className="text-xs font-extrabold text-emerald-300 block drop-shadow-sm">Firestore Database</span>
+                  <span className="text-lg font-black text-emerald-300 block mt-1 drop-shadow font-display">CONNECTED</span>
                 </div>
-                <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20">
-                  <span className="text-xs font-black text-blue-600 dark:text-blue-400 block">Auth Guards</span>
-                  <span className="text-lg font-black text-blue-600 dark:text-blue-400 block mt-1">15 ROLES ACTIVE</span>
+                <div className="p-4 rounded-2xl bg-black/30 backdrop-blur-md border border-blue-400/30 shadow-md">
+                  <span className="text-xs font-extrabold text-cyan-300 block drop-shadow-sm">Auth Guards</span>
+                  <span className="text-lg font-black text-cyan-300 block mt-1 drop-shadow font-display">15 ROLES ACTIVE</span>
                 </div>
-                <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20">
-                  <span className="text-xs font-black text-purple-600 dark:text-purple-400 block">Dynamic Percentages</span>
-                  <span className="text-lg font-black text-purple-600 dark:text-purple-400 block mt-1">ENFORCED</span>
+                <div className="p-4 rounded-2xl bg-black/30 backdrop-blur-md border border-purple-400/30 shadow-md">
+                  <span className="text-xs font-extrabold text-purple-300 block drop-shadow-sm">Dynamic Percentages</span>
+                  <span className="text-lg font-black text-purple-300 block mt-1 drop-shadow font-display">ENFORCED</span>
                 </div>
-                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
-                  <span className="text-xs font-black text-amber-600 dark:text-amber-400 block">Audit Logging</span>
-                  <span className="text-lg font-black text-amber-600 dark:text-amber-400 block mt-1">ENABLED</span>
+                <div className="p-4 rounded-2xl bg-black/30 backdrop-blur-md border border-amber-400/30 shadow-md">
+                  <span className="text-xs font-extrabold text-amber-300 block drop-shadow-sm">Audit Logging</span>
+                  <span className="text-lg font-black text-amber-300 block mt-1 drop-shadow font-display">ENABLED</span>
                 </div>
               </div>
             </div>
@@ -905,101 +916,113 @@ export const AdminPortal = () => {
       {/* Tab Contents */}
       {activeTab === 'users' && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-md">
-            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-              <div className="relative flex-1 sm:flex-none">
-                <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
-                <input 
-                  type="text" 
-                  placeholder="Search user, ID or email..."
+          
+          {/* 1. SEARCH & FILTER CONTAINER */}
+          <div className="flex flex-wrap gap-4 items-center justify-between w-full max-w-full bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto flex-1 min-w-[260px]">
+              <div className="relative flex-1 min-w-[180px]">
+                <Search className="absolute left-3 top-2.5 text-gray-400" size={15} />
+                <input
+                  type="text"
+                  placeholder="Search user by name, email..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-4 py-2 w-full sm:w-64 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                  className="pl-9 pr-3 py-2 w-full bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-medium text-sm shadow-inner"
                 />
               </div>
               
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                className="px-3 py-2 flex-1 sm:flex-initial min-w-[130px] rounded-xl border border-white/10 bg-white/5 text-white text-sm font-bold focus:outline-none focus:bg-white/10 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all shadow-inner cursor-pointer"
               >
-                <option value="all">All Roles</option>
-                <option value="student">Student</option>
-                <option value="faculty">Faculty</option>
-                <option value="hod">HOD</option>
-                <option value="counsellor">Ward Counsellor</option>
-                <option value="principal">Principal</option>
-                <option value="librarian">Librarian</option>
-                <option value="placement">Placement Officer</option>
-                <option value="admin">Super Admin</option>
+                <option value="all" className="bg-slate-900 text-white">All Roles</option>
+                <option value="student" className="bg-slate-900 text-white">Student</option>
+                <option value="faculty" className="bg-slate-900 text-white">Faculty</option>
+                <option value="hod" className="bg-slate-900 text-white">HOD</option>
+                <option value="counsellor" className="bg-slate-900 text-white">Ward Counsellor</option>
+                <option value="principal" className="bg-slate-900 text-white">Principal</option>
+                <option value="librarian" className="bg-slate-900 text-white">Librarian</option>
+                <option value="placement" className="bg-slate-900 text-white">Placement Officer</option>
+                <option value="admin" className="bg-slate-900 text-white">Super Admin</option>
               </select>
             </div>
 
             <button 
               onClick={() => { resetUserForm(); setIsModalOpen(true); }}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow flex items-center gap-2"
+              className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-500/20 border border-blue-400/30 flex items-center gap-1.5 drop-shadow cursor-pointer hover:scale-[1.02] shrink-0"
             >
               <UserPlus size={14} />
               <span>Provision User</span>
             </button>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl rounded-2xl overflow-hidden">
+          {/* 2. MAIN TABLE CONTAINER */}
+          <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] overflow-hidden w-full max-w-full">
             {loadingUsers ? (
-              <div className="py-20 text-center animate-pulse text-slate-400">Loading Directory...</div>
+              <div className="py-16 text-center animate-pulse text-gray-300 font-bold text-xs">Loading Directory...</div>
             ) : filteredUsers.length === 0 ? (
-              <div className="text-center py-20 text-slate-400">No matching user profiles found.</div>
+              <div className="text-center py-16 text-gray-300 font-semibold text-xs">No matching user profiles found.</div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-450 border-b border-slate-100 dark:border-slate-800/80 uppercase font-bold tracking-wider text-[10px]">
-                      <th className="px-5 py-3">Full Name & Role</th>
-                      <th className="px-5 py-3">Contact Details</th>
-                      <th className="px-5 py-3">Workload / Dept</th>
-                      <th className="px-5 py-3">Academic IDs</th>
-                      <th className="px-5 py-3 text-center">Actions</th>
+              <div className="w-full max-w-full overflow-x-hidden">
+                <table className="w-full table-fixed text-left border-collapse">
+                  <thead className="bg-black/40 border-b border-white/10">
+                    <tr>
+                      <th className="w-[28%] px-2 sm:px-3 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Full Name & Role</th>
+                      <th className="w-[24%] px-2 sm:px-3 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Contact Details</th>
+                      <th className="w-[20%] px-2 sm:px-3 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Workload / Dept</th>
+                      <th className="w-[14%] px-2 sm:px-3 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Academic IDs</th>
+                      <th className="w-[14%] px-2 sm:px-3 py-3 text-center text-xs font-bold text-gray-400 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200 font-bold">
+                  <tbody className="text-white font-medium">
                     {filteredUsers.map(u => (
-                      <tr key={u.uid} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
-                        <td className="px-5 py-4">
-                          <div className="font-extrabold text-sm">{u.fullName || u.full_name}</div>
-                          <span className={`px-2 py-0.5 mt-1 inline-block text-[9px] font-black uppercase rounded ${
-                            u.role === 'admin' ? 'bg-red-500/10 text-red-500' :
-                            u.role === 'principal' ? 'bg-indigo-500/10 text-indigo-500' :
-                            u.role === 'hod' ? 'bg-purple-500/10 text-purple-500' :
-                            u.role === 'counsellor' ? 'bg-orange-500/10 text-orange-500' :
-                            u.role === 'faculty' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-500/10 text-slate-400'
-                          }`}>{u.role}</span>
+                      <tr key={u.uid} className="border-b border-white/5 hover:bg-white/10 transition-colors duration-200 last:border-0">
+                        <td className="px-2 sm:px-3 py-3 whitespace-normal break-words align-middle">
+                          <div className="flex flex-col gap-1 min-w-0">
+                            <div className="text-xs sm:text-sm font-semibold text-white tracking-wide drop-shadow-sm break-words">{u.fullName || u.full_name}</div>
+                            <span className={`px-2 py-0.5 inline-block text-[10px] font-semibold uppercase rounded-full shadow-sm w-max max-w-full break-words ${
+                              u.role === 'admin' ? 'bg-rose-500/20 text-rose-300 border border-rose-400/30' :
+                              u.role === 'principal' ? 'bg-amber-500/20 text-amber-300 border border-amber-400/30' :
+                              u.role === 'hod' ? 'bg-purple-500/20 text-purple-300 border border-purple-400/30' :
+                              u.role === 'counsellor' ? 'bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-400/30' :
+                              u.role === 'faculty' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30' :
+                              u.role === 'librarian' ? 'bg-blue-500/20 text-blue-300 border border-blue-400/30' :
+                              u.role === 'placement' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-400/30' :
+                              'bg-white/10 text-cyan-300 border border-white/15'
+                            }`}>{u.role}</span>
+                          </div>
                         </td>
-                        <td className="px-5 py-4">
-                          <div>{u.email}</div>
-                          <span className="text-slate-400 font-normal text-[10px]">{u.mobile || 'No Mobile'}</span>
+                        <td className="px-2 sm:px-3 py-3 whitespace-normal break-words align-middle">
+                          <div className="flex flex-col gap-0.5 min-w-0">
+                            <div className="text-xs sm:text-sm text-gray-200 font-medium break-words">{u.email}</div>
+                            <span className="text-[11px] text-gray-400 break-words">{u.mobile || 'No Mobile'}</span>
+                          </div>
                         </td>
-                        <td className="px-5 py-4">
-                          <div>Dept: {u.department}</div>
-                          {u.semester && <span className="text-slate-455 font-bold block text-[10px]">{u.semester}</span>}
-                          {u.subjects && <span className="text-[10px] text-blue-500 block">Teach: {u.subjects.join(', ')}</span>}
+                        <td className="px-2 sm:px-3 py-3 whitespace-normal break-words align-middle">
+                          <div className="flex flex-col gap-0.5 min-w-0">
+                            <div className="text-xs sm:text-sm text-gray-200 font-medium break-words">Dept: <strong className="text-white font-semibold">{u.department}</strong></div>
+                            {u.semester && <span className="text-[11px] text-cyan-300 font-semibold break-words">{u.semester}</span>}
+                            {u.subjects && <span className="text-[10px] text-purple-300 font-medium break-words">{u.subjects.join(', ')}</span>}
+                          </div>
                         </td>
-                        <td className="px-5 py-4 font-mono text-[10px]">
-                          {u.role === 'student' ? `ROLL: ${u.rollNumber || 'N/A'}` : `EMP: ${u.employeeId || 'N/A'}`}
+                        <td className="px-2 sm:px-3 py-3 whitespace-normal break-words font-mono text-xs font-medium text-cyan-300 align-middle">
+                          <span>{u.role === 'student' ? `ROLL: ${u.rollNumber || 'N/A'}` : `EMP: ${u.employeeId || 'N/A'}`}</span>
                         </td>
-                        <td className="px-5 py-4 text-center">
-                          <div className="flex justify-center items-center gap-2">
-                            <button onClick={() => handleCopyCredentials(u.email)} className="p-2 bg-slate-150 dark:bg-slate-800 rounded-xl transition-all">
-                              <Copy size={13} className="text-slate-500 dark:text-slate-400" />
+                        <td className="px-2 sm:px-3 py-3 whitespace-normal text-center align-middle">
+                          <div className="flex justify-center items-center gap-1 flex-wrap">
+                            <button onClick={() => handleCopyCredentials(u.email)} title="Copy Credentials" className="p-1 sm:p-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg transition-all cursor-pointer shadow-sm shrink-0">
+                              <Copy size={12} className="text-gray-300 hover:text-white" />
                             </button>
-                            <button onClick={() => handleOpenReset(u)} className="p-2 bg-amber-500/10 rounded-xl transition-all">
-                              <Key size={13} className="text-amber-500" />
+                            <button onClick={() => handleOpenReset(u)} title="Reset Password" className="p-1 sm:p-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/30 rounded-lg transition-all cursor-pointer shadow-sm shrink-0">
+                              <Key size={12} className="text-amber-300" />
                             </button>
-                            <button onClick={() => handleOpenEdit(u)} className="p-2 bg-blue-500/10 rounded-xl transition-all">
-                              <Edit size={13} className="text-blue-500" />
+                            <button onClick={() => handleOpenEdit(u)} title="Edit User" className="p-1 sm:p-1.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 rounded-lg transition-all cursor-pointer shadow-sm shrink-0">
+                              <Edit size={12} className="text-cyan-300" />
                             </button>
                             {u.uid !== currentUser.uid && (
-                              <button onClick={() => handleDeleteUser(u.uid)} className="p-2 bg-red-500/10 rounded-xl transition-all">
-                                <Trash2 size={13} className="text-red-500" />
+                              <button onClick={() => handleDeleteUser(u.uid)} title="Delete User" className="p-1 sm:p-1.5 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/30 rounded-lg transition-all cursor-pointer shadow-sm shrink-0">
+                                <Trash2 size={12} className="text-rose-300" />
                               </button>
                             )}
                           </div>
@@ -1017,36 +1040,36 @@ export const AdminPortal = () => {
       {/* --- ACADEMIC CALENDAR TAB --- */}
       {activeTab === 'calendar' && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-md">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-black/40 backdrop-blur-md border border-white/10 p-5 rounded-3xl shadow-lg">
             <div className="flex flex-wrap items-center gap-3">
               <select
                 value={calViewMode}
                 onChange={(e) => setCalViewMode(e.target.value)}
-                className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                className="px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
               >
-                <option value="monthly">Monthly Overview</option>
-                <option value="daily">Today's Schedule</option>
-                <option value="weekly">Weekly View</option>
-                <option value="yearly">Yearly Overview</option>
+                <option value="monthly" className="bg-slate-900 text-white">Monthly Overview</option>
+                <option value="daily" className="bg-slate-900 text-white">Today's Schedule</option>
+                <option value="weekly" className="bg-slate-900 text-white">Weekly View</option>
+                <option value="yearly" className="bg-slate-900 text-white">Yearly Overview</option>
               </select>
 
               <select
                 value={calTypeFilter}
                 onChange={(e) => setCalTypeFilter(e.target.value)}
-                className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                className="px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
               >
-                <option value="all">All Types</option>
-                <option value="holiday">Holidays</option>
-                <option value="exam">Exams</option>
-                <option value="event">Events</option>
-                <option value="placement">Placement Drives</option>
-                <option value="workshop">Workshops</option>
+                <option value="all" className="bg-slate-900 text-white">All Types</option>
+                <option value="holiday" className="bg-slate-900 text-white">Holidays</option>
+                <option value="exam" className="bg-slate-900 text-white">Exams</option>
+                <option value="event" className="bg-slate-900 text-white">Events</option>
+                <option value="placement" className="bg-slate-900 text-white">Placement Drives</option>
+                <option value="workshop" className="bg-slate-900 text-white">Workshops</option>
               </select>
             </div>
 
             <button 
               onClick={() => { resetCalForm(); setIsCalModalOpen(true); }}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow flex items-center gap-2"
+              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer hover:scale-[1.02]"
             >
               <CalendarDays size={14} />
               <span>Add Calendar Event</span>
@@ -1055,26 +1078,26 @@ export const AdminPortal = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredCalendar.map(evt => (
-              <div key={evt.id} className="p-4 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-lg rounded-2xl flex flex-col justify-between">
+              <div key={evt.id} className="p-5 bg-black/40 backdrop-blur-md border border-white/10 shadow-lg rounded-3xl flex flex-col justify-between">
                 <div>
                   <div className="flex justify-between items-start">
-                    <span className={`px-2 py-0.5 text-[9px] font-black rounded uppercase ${
-                      evt.type === 'holiday' ? 'bg-red-500/10 text-red-500' :
-                      evt.type === 'exam' ? 'bg-amber-500/10 text-amber-500' :
-                      evt.type === 'event' ? 'bg-blue-500/10 text-blue-500' : 'bg-purple-500/10 text-purple-500'
+                    <span className={`px-2 py-0.5 text-[9px] font-black rounded uppercase border ${
+                      evt.type === 'holiday' ? 'bg-rose-500/20 text-rose-300 border-rose-400/30' :
+                      evt.type === 'exam' ? 'bg-amber-500/20 text-amber-300 border-amber-400/30' :
+                      evt.type === 'event' ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400/30' : 'bg-purple-500/20 text-purple-300 border-purple-400/30'
                     }`}>{evt.type}</span>
-                    <span className="text-[10px] text-slate-400 font-bold">{evt.startDate}</span>
+                    <span className="text-[10px] text-gray-300 font-bold">{evt.startDate}</span>
                   </div>
-                  <h4 className="font-extrabold text-sm text-slate-800 dark:text-white mt-2">{evt.title}</h4>
-                  <p className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-1 font-normal leading-relaxed">{evt.description}</p>
-                  {evt.semester && <p className="text-[9.5px] text-slate-400 mt-1">Scope: {evt.semester}</p>}
+                  <h4 className="font-extrabold text-sm text-white mt-2 drop-shadow-sm">{evt.title}</h4>
+                  <p className="text-xs text-gray-300 mt-1 font-normal leading-relaxed">{evt.description}</p>
+                  {evt.semester && <p className="text-[10px] text-gray-400 mt-1">Scope: {evt.semester}</p>}
                 </div>
 
-                <div className="flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800/80 pt-3 mt-3">
-                  <button onClick={() => handleOpenEditCal(evt)} className="p-1.5 bg-blue-500/10 hover:bg-blue-500/25 rounded-lg text-blue-500">
+                <div className="flex justify-end gap-2 border-t border-white/10 pt-3 mt-3">
+                  <button onClick={() => handleOpenEditCal(evt)} className="p-1.5 bg-blue-500/20 hover:bg-blue-500/35 border border-blue-400/30 rounded-lg text-cyan-300 cursor-pointer">
                     <Edit size={12} />
                   </button>
-                  <button onClick={() => handleDeleteCal(evt.id)} className="p-1.5 bg-red-500/10 hover:bg-red-500/25 rounded-lg text-red-500">
+                  <button onClick={() => handleDeleteCal(evt.id)} className="p-1.5 bg-rose-500/20 hover:bg-rose-500/35 border border-rose-400/30 rounded-lg text-rose-300 cursor-pointer">
                     <Trash2 size={12} />
                   </button>
                 </div>
@@ -1087,48 +1110,48 @@ export const AdminPortal = () => {
       {/* --- BACKUP & RESTORE TAB --- */}
       {activeTab === 'backup' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 p-5 rounded-2xl shadow-md space-y-6">
+          <div className="lg:col-span-1 bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-3xl shadow-lg space-y-6">
             <div>
-              <h3 className="text-base font-extrabold text-slate-800 dark:text-white">Database Snapshot Tools</h3>
-              <p className="text-[10.5px] text-slate-450 mt-1">Settle physical backups of users, calendar settings, and academic classes workloads.</p>
+              <h3 className="text-base font-extrabold text-white drop-shadow-sm">Database Snapshot Tools</h3>
+              <p className="text-xs text-gray-300 mt-1">Settle physical backups of users, calendar settings, and academic classes workloads.</p>
             </div>
 
             <button 
               onClick={handleTriggerBackup}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow flex items-center justify-center gap-2"
+              className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.02]"
             >
               <Download size={14} />
               <span>Create Manual Backup</span>
             </button>
 
-            <div className="border-t border-slate-100 dark:border-slate-800/80 pt-4">
-              <label className="block text-[10px] uppercase font-bold text-slate-450 mb-2">Upload Backup Restore file</label>
+            <div className="border-t border-white/10 pt-4">
+              <label className="block text-[10px] uppercase font-bold text-gray-300 mb-2">Upload Backup Restore file</label>
               <div className="flex items-center gap-2">
                 <input 
                   type="file" 
                   accept=".json"
                   onChange={handleRestoreUpload}
                   disabled={uploadingBackup}
-                  className="w-full text-xs font-bold bg-slate-50 dark:bg-slate-950 p-2 rounded-xl border border-slate-200 dark:border-slate-800 dark:text-white"
+                  className="w-full text-xs font-bold bg-white/5 p-2 rounded-xl border border-white/10 text-white"
                 />
               </div>
             </div>
           </div>
 
-          <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl rounded-2xl p-5">
-            <span className="text-xs font-black text-slate-400 block uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-850 pb-3">Administrative restore logs</span>
+          <div className="lg:col-span-2 bg-black/40 backdrop-blur-md border border-white/10 shadow-lg rounded-3xl p-6">
+            <span className="text-xs font-black text-gray-400 block uppercase tracking-wider mb-4 border-b border-white/10 pb-3">Administrative restore logs</span>
             {backupLogs.length === 0 ? (
-              <div className="py-20 text-center text-slate-400">No backup operations completed yet.</div>
+              <div className="py-20 text-center text-gray-400">No backup operations completed yet.</div>
             ) : (
               <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
                 {backupLogs.map((log, idx) => (
-                  <div key={idx} className="p-3 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-850 rounded-xl">
+                  <div key={idx} className="p-3 bg-white/5 border border-white/10 rounded-2xl">
                     <div className="flex justify-between items-center text-[10px]">
-                      <span className="font-extrabold text-slate-700 dark:text-slate-200">{log.backupName}</span>
-                      <span className="text-slate-400 font-bold">{log.timestamp ? String(log.timestamp).split('T')[0] : 'N/A'}</span>
+                      <span className="font-extrabold text-white">{log.backupName}</span>
+                      <span className="text-gray-400 font-bold">{log.timestamp ? String(log.timestamp).split('T')[0] : 'N/A'}</span>
                     </div>
-                    <p className="text-[10px] text-slate-450 mt-1">Size: {(log.size / 1024).toFixed(2)} KB • Triggered by ID: {log.triggeredBy}</p>
-                    <p className="text-[10.5px] text-slate-650 dark:text-slate-350 mt-2 font-normal">{log.logDetails}</p>
+                    <p className="text-[10px] text-gray-300 mt-1">Size: {(log.size / 1024).toFixed(2)} KB • Triggered by ID: {log.triggeredBy}</p>
+                    <p className="text-xs text-gray-200 mt-2 font-normal">{log.logDetails}</p>
                   </div>
                 ))}
               </div>
@@ -1139,55 +1162,55 @@ export const AdminPortal = () => {
 
       {activeTab === 'allocations' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 p-5 rounded-2xl shadow-md h-fit">
-            <h3 className="text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2 mb-4">
-              <BookOpen size={18} className="text-blue-500" />
+          <div className="lg:col-span-1 bg-black/40 backdrop-blur-md border border-white/10 p-6 rounded-3xl shadow-lg h-fit">
+            <h3 className="text-base font-extrabold text-white flex items-center gap-2 mb-4 drop-shadow-sm">
+              <BookOpen size={18} className="text-cyan-400" />
               <span>Workload Allocator</span>
             </h3>
 
             <form onSubmit={handleAllocate} className="space-y-4">
               <div>
-                <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Academic Branch</label>
+                <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Academic Branch</label>
                 <select
                   value={allocBranch}
                   onChange={(e) => {
                     setAllocBranch(e.target.value);
                     setAllocSubject(''); // Automatically clear subject when branch changes
                   }}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                  className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
                 >
-                  <option value="">Select Department...</option>
-                  {KBN_BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+                  <option value="" className="bg-slate-900 text-white">Select Department...</option>
+                  {KBN_BRANCHES.map(b => <option key={b} value={b} className="bg-slate-900 text-white">{b}</option>)}
                 </select>
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-bold text-slate-450 mb-1">Semester</label>
+                <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Semester</label>
                 <select
                   value={allocSemester}
                   onChange={(e) => setAllocSemester(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                  className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
                 >
-                  {KBN_SEMESTERS.map(s => <option key={s} value={s}>{s}</option>)}
+                  {KBN_SEMESTERS.map(s => <option key={s} value={s} className="bg-slate-900 text-white">{s}</option>)}
                 </select>
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Assigned Subject</label>
+                <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Assigned Subject</label>
                 <select 
                   value={allocSubject}
                   onChange={(e) => setAllocSubject(e.target.value)}
                   disabled={!allocBranch}
                   required
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold disabled:bg-slate-100 dark:disabled:bg-slate-800/50 disabled:cursor-not-allowed disabled:text-slate-400"
+                  className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {!allocBranch ? (
-                    <option value="">Select Department First</option>
+                    <option value="" className="bg-slate-900 text-white">Select Department First</option>
                   ) : (
                     <>
-                      <option value="">Select Subject...</option>
+                      <option value="" className="bg-slate-900 text-white">Select Subject...</option>
                       {(BRANCH_SUBJECT_MAP[allocBranch] || []).map(s => (
-                        <option key={s} value={s}>{s}</option>
+                        <option key={s} value={s} className="bg-slate-900 text-white">{s}</option>
                       ))}
                     </>
                   )}
@@ -1195,46 +1218,46 @@ export const AdminPortal = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-bold text-slate-450 mb-1">Assigned Faculty Member</label>
+                <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Assigned Faculty Member</label>
                 <select
                   value={allocFacultyId}
                   onChange={(e) => setAllocFacultyId(e.target.value)}
                   required
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                  className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
                 >
-                  <option value="">Select Faculty...</option>
+                  <option value="" className="bg-slate-900 text-white">Select Faculty...</option>
                   {faculties.map(f => (
-                    <option key={f.uid} value={f.uid}>{f.fullName || f.full_name} ({f.department})</option>
+                    <option key={f.uid} value={f.uid} className="bg-slate-900 text-white">{f.fullName || f.full_name} ({f.department})</option>
                   ))}
                 </select>
               </div>
 
-              <button type="submit" className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-extrabold text-xs transition-all shadow-md mt-6">
+              <button type="submit" className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-extrabold text-xs transition-all shadow-md mt-6 cursor-pointer hover:scale-[1.02]">
                 Confirm Allocation Ledger
               </button>
             </form>
           </div>
 
-          <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl rounded-2xl overflow-hidden p-5">
-            <span className="text-xs font-black text-slate-400 block uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-800/80 pb-3">Active Faculty workload ledgers</span>
+          <div className="lg:col-span-2 bg-black/40 backdrop-blur-md border border-white/10 shadow-lg rounded-3xl overflow-hidden p-6 w-full max-w-full">
+            <span className="text-xs font-black text-gray-400 block uppercase tracking-wider mb-4 border-b border-white/10 pb-3">Active Faculty workload ledgers</span>
             {allocations.length === 0 ? (
-              <div className="text-center py-20 text-slate-400">No subject allocations currently active.</div>
+              <div className="text-center py-20 text-gray-400">No subject allocations currently active.</div>
             ) : (
-              <div className="border border-slate-100 dark:border-slate-800/80 rounded-xl overflow-hidden overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
+              <div className="border border-white/10 rounded-2xl overflow-hidden w-full max-w-full overflow-x-hidden">
+                <table className="w-full table-fixed text-left border-collapse text-xs">
                   <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-455 border-b border-slate-100 dark:border-slate-800/80 uppercase font-bold tracking-wider">
-                      <th className="px-4 py-3">Allocated Scope</th>
-                      <th className="px-4 py-3">Subject</th>
-                      <th className="px-4 py-3">Faculty Instructor</th>
+                    <tr className="bg-black/40 text-gray-400 border-b border-white/10 uppercase font-bold tracking-wider">
+                      <th className="w-[30%] px-3 py-3">Allocated Scope</th>
+                      <th className="w-[35%] px-3 py-3">Subject</th>
+                      <th className="w-[35%] px-3 py-3">Faculty Instructor</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200 font-bold">
+                  <tbody className="divide-y divide-white/5 text-white font-medium">
                     {allocations.map(a => (
-                      <tr key={a.allocationId}>
-                        <td className="px-4 py-3">{a.branch} • {a.semester}</td>
-                        <td className="px-4 py-3 text-blue-605 dark:text-blue-400">{a.subjectName}</td>
-                        <td className="px-4 py-3">{a.facultyName}</td>
+                      <tr key={a.allocationId} className="hover:bg-white/10 transition-colors">
+                        <td className="px-3 py-3 text-gray-300 font-bold break-words align-middle">{a.branch} • {a.semester}</td>
+                        <td className="px-3 py-3 whitespace-normal break-words text-cyan-300 font-semibold align-middle">{a.subjectName}</td>
+                        <td className="px-3 py-3 whitespace-normal break-words text-white font-semibold align-middle">{a.facultyName}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1246,11 +1269,11 @@ export const AdminPortal = () => {
       )}
 
       {activeTab === 'leaves' && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl rounded-2xl p-5">
-          <div className="border-b border-slate-100 dark:border-slate-800/80 pb-3 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 shadow-lg rounded-3xl p-6 w-full max-w-full">
+          <div className="border-b border-white/10 pb-3 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <span className="text-xs font-black text-slate-400 block uppercase tracking-wider">Leave Applications Panel</span>
-              <p className="text-[10px] font-normal text-slate-450 mt-0.5">Approve or reject leaves submitted directly by the Principal</p>
+              <span className="text-xs font-black text-gray-400 block uppercase tracking-wider">Leave Applications Panel</span>
+              <p className="text-xs font-normal text-gray-300 mt-0.5">Approve or reject leaves submitted directly by the Principal</p>
             </div>
             
             <input 
@@ -1258,53 +1281,53 @@ export const AdminPortal = () => {
               placeholder="Remarks for reviews..."
               value={reviewingRemarks}
               onChange={(e) => setReviewingRemarks(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold w-full sm:w-64"
+              className="px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold w-full sm:w-64 placeholder-gray-400"
             />
           </div>
 
           {allLeaves.filter(l => l.applicant_role === 'principal' || l.applicantRole === 'principal').length === 0 ? (
-            <div className="text-center py-20 text-slate-400">No Principal leave requests pending.</div>
+            <div className="text-center py-20 text-gray-400">No Principal leave requests pending.</div>
           ) : (
-            <div className="border border-slate-105 dark:border-slate-800 rounded-xl overflow-hidden overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
+            <div className="border border-white/10 rounded-2xl overflow-hidden w-full max-w-full overflow-x-hidden">
+              <table className="w-full table-fixed text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-455 border-b border-slate-100 dark:border-slate-800/80 font-bold uppercase tracking-wider">
-                    <th className="px-4 py-3">Applicant</th>
-                    <th className="px-4 py-3">Scope Dates</th>
-                    <th className="px-4 py-3">Reason</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 text-center">Oversight Action</th>
+                  <tr className="bg-black/40 text-gray-400 border-b border-white/10 font-bold uppercase tracking-wider">
+                    <th className="w-[24%] px-3 py-3">Applicant</th>
+                    <th className="w-[20%] px-3 py-3">Scope Dates</th>
+                    <th className="w-[26%] px-3 py-3">Reason</th>
+                    <th className="w-[14%] px-3 py-3 text-center">Status</th>
+                    <th className="w-[16%] px-3 py-3 text-center">Oversight Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-105 dark:divide-slate-800/60 text-slate-805 dark:text-slate-200 font-bold">
+                <tbody className="divide-y divide-white/5 text-white font-medium">
                   {allLeaves.filter(l => l.applicant_role === 'principal' || l.applicantRole === 'principal').map(l => (
-                    <tr key={l.leaveId}>
-                      <td className="px-4 py-3">
-                        <div className="font-extrabold">{l.studentName}</div>
-                        <span className="text-[9px] text-indigo-500 font-black block">Principal</span>
+                    <tr key={l.leaveId} className="hover:bg-white/10 transition-colors">
+                      <td className="px-3 py-3 break-words align-middle">
+                        <div className="font-extrabold text-white break-words">{l.studentName}</div>
+                        <span className="text-[9px] text-purple-300 font-black block">Principal</span>
                       </td>
-                      <td className="px-4 py-3">{l.startDate} to {l.endDate}</td>
-                      <td className="px-4 py-3 font-normal">{l.reason}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-0.5 text-[9px] rounded font-black uppercase ${
-                          l.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500' :
-                          l.status === 'rejected' ? 'bg-rose-500/10 text-rose-505' : 'bg-amber-500/10 text-amber-505'
+                      <td className="px-3 py-3 text-gray-300 break-words align-middle font-mono text-[11px]">{l.startDate} to {l.endDate}</td>
+                      <td className="px-3 py-3 font-normal text-gray-200 break-words align-middle">{l.reason}</td>
+                      <td className="px-3 py-3 text-center align-middle">
+                        <span className={`px-2 py-0.5 text-[9px] rounded-full font-bold uppercase border inline-block break-words ${
+                          l.status === 'approved' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30' :
+                          l.status === 'rejected' ? 'bg-rose-500/20 text-rose-300 border-rose-400/30' : 'bg-amber-500/20 text-amber-300 border-amber-400/30'
                         }`}>{l.status}</span>
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-3 py-3 text-center align-middle">
                         {l.status === 'pending' ? (
-                          <div className="flex justify-center items-center gap-2">
-                            <button onClick={() => handleReviewLeave(l.leaveId, 'approved')} className="px-2.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg flex items-center gap-1 transition-all">
-                              <Check size={12} />
+                          <div className="flex justify-center items-center gap-1.5 flex-wrap">
+                            <button onClick={() => handleReviewLeave(l.leaveId, 'approved')} className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-1 transition-all cursor-pointer text-[11px]">
+                              <Check size={11} />
                               <span>Approve</span>
                             </button>
-                            <button onClick={() => handleReviewLeave(l.leaveId, 'rejected')} className="px-2.5 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg flex items-center gap-1 transition-all">
-                              <X size={12} />
+                            <button onClick={() => handleReviewLeave(l.leaveId, 'rejected')} className="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg flex items-center gap-1 transition-all cursor-pointer text-[11px]">
+                              <X size={11} />
                               <span>Reject</span>
                             </button>
                           </div>
                         ) : (
-                          <span className="text-slate-400 font-normal">{l.remarks || 'No remarks'}</span>
+                          <span className="text-gray-400 font-normal break-words text-[11px]">{l.remarks || 'No remarks'}</span>
                         )}
                       </td>
                     </tr>
@@ -1319,41 +1342,41 @@ export const AdminPortal = () => {
       {activeTab === 'reports' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 space-y-4">
-            <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-md">
-              <span className="text-[10px] text-slate-455 block uppercase font-black">Fee Ledger Settle</span>
-              <p className="text-3xl font-black text-slate-900 dark:text-white mt-1">
+            <div className="p-6 rounded-3xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg">
+              <span className="text-[10px] text-gray-400 block uppercase font-black tracking-wider">Fee Ledger Settle</span>
+              <p className="text-3xl font-black text-white mt-1 drop-shadow-sm">
                 ₹{allFees.filter(f => f.status === 'paid').reduce((acc, curr) => acc + curr.amount, 0).toLocaleString()}
               </p>
             </div>
           </div>
 
-          <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl rounded-2xl overflow-hidden p-5">
-            <span className="text-xs font-black text-slate-400 block uppercase tracking-wider mb-4 border-b border-slate-100 dark:border-slate-850 pb-3">Institution fee transaction registers</span>
+          <div className="lg:col-span-2 bg-black/40 backdrop-blur-md border border-white/10 shadow-lg rounded-3xl overflow-hidden p-6 w-full max-w-full">
+            <span className="text-xs font-black text-gray-400 block uppercase tracking-wider mb-4 border-b border-white/10 pb-3">Institution fee transaction registers</span>
             {allFees.length === 0 ? (
-              <div className="text-center py-20 text-slate-400">No transaction records generated.</div>
+              <div className="text-center py-20 text-gray-400">No transaction records generated.</div>
             ) : (
-              <div className="border border-slate-100 dark:border-slate-800/80 rounded-xl overflow-hidden overflow-x-auto">
-                <table className="w-full text-left border-collapse text-[11px]">
+              <div className="border border-white/10 rounded-2xl overflow-hidden w-full max-w-full overflow-x-hidden">
+                <table className="w-full table-fixed text-left border-collapse text-xs">
                   <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-455 border-b border-slate-100 dark:border-slate-800/80 uppercase font-bold tracking-wider">
-                      <th className="px-4 py-3">Student Name</th>
-                      <th className="px-4 py-3">Fee Type</th>
-                      <th className="px-4 py-3 text-right">Amount</th>
-                      <th className="px-4 py-3 text-center">Status</th>
+                    <tr className="bg-black/40 text-gray-400 border-b border-white/10 uppercase font-bold tracking-wider">
+                      <th className="w-[40%] px-3 py-3">Student Name</th>
+                      <th className="w-[25%] px-3 py-3">Fee Type</th>
+                      <th className="w-[20%] px-3 py-3 text-right">Amount</th>
+                      <th className="w-[15%] px-3 py-3 text-center">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200 font-bold">
+                  <tbody className="divide-y divide-white/5 text-white font-medium">
                     {allFees.map((f, idx) => (
-                      <tr key={idx}>
-                        <td className="px-4 py-3">
-                          <div className="font-extrabold">{f.studentName}</div>
-                          <span className="text-[9px] text-slate-400 block font-normal font-mono">{f.rollNumber}</span>
+                      <tr key={idx} className="hover:bg-white/10 transition-colors">
+                        <td className="px-3 py-3 break-words align-middle">
+                          <div className="font-extrabold text-white break-words">{f.studentName}</div>
+                          <span className="text-[10px] text-cyan-300 block font-normal font-mono break-words">{f.rollNumber}</span>
                         </td>
-                        <td className="px-4 py-3">{f.feeType}</td>
-                        <td className="px-4 py-3 text-right text-blue-600 dark:text-blue-400">₹{f.amount.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-center">
-                          <span className={`px-2 py-0.5 text-[9px] rounded font-black uppercase ${
-                            f.status === 'paid' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'
+                        <td className="px-3 py-3 text-gray-200 break-words align-middle">{f.feeType}</td>
+                        <td className="px-3 py-3 text-right font-bold text-cyan-300 break-words align-middle">₹{f.amount.toLocaleString()}</td>
+                        <td className="px-3 py-3 text-center align-middle">
+                          <span className={`px-2 py-0.5 text-[9px] rounded-full font-black uppercase border inline-block break-words ${
+                            f.status === 'paid' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30' : 'bg-rose-500/20 text-rose-300 border-rose-400/30'
                           }`}>{f.status}</span>
                         </td>
                       </tr>
@@ -1368,181 +1391,181 @@ export const AdminPortal = () => {
 
       {/* CREATE / EDIT USER MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl shadow-2xl relative overflow-y-auto max-h-[90vh]">
-            <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 rounded-xl transition-all">
-              <X size={16} className="text-slate-500 dark:text-slate-405" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+          <div className="w-full max-w-lg bg-black/80 backdrop-blur-xl border border-white/20 p-6 rounded-3xl shadow-2xl relative overflow-y-auto max-h-[90vh] text-white">
+            <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 p-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl transition-all cursor-pointer">
+              <X size={16} className="text-gray-300" />
             </button>
 
-            <h3 className="text-lg font-black text-slate-900 dark:text-white mb-6">
+            <h3 className="text-lg font-black text-white drop-shadow-sm mb-6">
               {editingUser ? 'Modify User Profile' : 'Provision User Account'}
             </h3>
 
             <form onSubmit={handleSaveUser} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-slate-450 mb-1">Account Role</label>
+                  <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Account Role</label>
                   <select
                     value={formRole}
                     onChange={(e) => setFormRole(e.target.value)}
                     disabled={!!editingUser}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                    className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
                   >
-                    <option value="student">Student</option>
-                    <option value="faculty">Faculty</option>
-                    <option value="hod">HOD</option>
-                    <option value="counsellor">Ward Counsellor</option>
-                    <option value="principal">Principal</option>
-                    <option value="librarian">Librarian</option>
-                    <option value="placement">Placement Officer</option>
-                    <option value="admin">Super Admin</option>
+                    <option value="student" className="bg-slate-900 text-white">Student</option>
+                    <option value="faculty" className="bg-slate-900 text-white">Faculty</option>
+                    <option value="hod" className="bg-slate-900 text-white">HOD</option>
+                    <option value="counsellor" className="bg-slate-900 text-white">Ward Counsellor</option>
+                    <option value="principal" className="bg-slate-900 text-white">Principal</option>
+                    <option value="librarian" className="bg-slate-900 text-white">Librarian</option>
+                    <option value="placement" className="bg-slate-900 text-white">Placement Officer</option>
+                    <option value="admin" className="bg-slate-900 text-white">Super Admin</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Academic Department</label>
+                  <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Academic Department</label>
                   <select
                     value={formDepartment}
                     onChange={(e) => setFormDepartment(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                    className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
                   >
-                    <option value="N/A">N/A</option>
-                    <option value="All">All</option>
-                    {COLLEGE_DEPARTMENTS.map((b, idx) => <option key={`${b}-${idx}`} value={b}>{b}</option>)}
+                    <option value="N/A" className="bg-slate-900 text-white">N/A</option>
+                    <option value="All" className="bg-slate-900 text-white">All</option>
+                    {COLLEGE_DEPARTMENTS.map((b, idx) => <option key={`${b}-${idx}`} value={b} className="bg-slate-900 text-white">{b}</option>)}
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Full Name</label>
-                <input type="text" placeholder="Prof. Jane Doe" value={formFullName} onChange={(e) => setFormFullName(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
+                <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Full Name</label>
+                <input type="text" placeholder="Prof. Jane Doe" value={formFullName} onChange={(e) => setFormFullName(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Email Address</label>
-                <input type="email" placeholder="jane.doe@kbn.edu" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} required disabled={!!editingUser} className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-805 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
+                <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Email Address</label>
+                <input type="email" placeholder="jane.doe@kbn.edu" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} required disabled={!!editingUser} className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400 disabled:opacity-50" />
               </div>
 
               {!editingUser && (
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Initial Password</label>
-                  <input type="password" placeholder="••••••••" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
+                  <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Initial Password</label>
+                  <input type="password" placeholder="••••••••" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
                 </div>
               )}
 
               {formRole === 'student' && (
-                <div className="space-y-4 border-t border-slate-100 dark:border-slate-800 pt-4">
+                <div className="space-y-4 border-t border-white/10 pt-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[10px] uppercase font-bold text-slate-450 mb-1">Semester</label>
+                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Semester</label>
                       <select
                         value={formSemester}
                         onChange={(e) => setFormSemester(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                        className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
                       >
-                        {KBN_SEMESTERS.map(s => <option key={s} value={s}>{s}</option>)}
+                        {KBN_SEMESTERS.map(s => <option key={s} value={s} className="bg-slate-900 text-white">{s}</option>)}
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Roll Number (Student ID)</label>
-                      <input type="text" placeholder="CSE-2023-010" value={formRollNumber} onChange={(e) => setFormRollNumber(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
+                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Roll Number (Student ID)</label>
+                      <input type="text" placeholder="CSE-2023-010" value={formRollNumber} onChange={(e) => setFormRollNumber(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Hall Ticket No</label>
-                      <input type="text" placeholder="HT2026001" value={formHallTicketNumber} onChange={(e) => setFormHallTicketNumber(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
+                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Hall Ticket No</label>
+                      <input type="text" placeholder="HT2026001" value={formHallTicketNumber} onChange={(e) => setFormHallTicketNumber(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
                     </div>
 
                     <div>
-                      <label className="block text-[10px] uppercase font-bold text-slate-450 mb-1">Section</label>
+                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Section</label>
                       <select
                         value={formSection}
                         onChange={(e) => setFormSection(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                        className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
                       >
-                        <option value="A">A</option>
-                        <option value="B">B</option>
-                        <option value="C">C</option>
+                        <option value="A" className="bg-slate-900 text-white">A</option>
+                        <option value="B" className="bg-slate-900 text-white">B</option>
+                        <option value="C" className="bg-slate-900 text-white">C</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Academic Year</label>
-                      <input type="text" placeholder="2026-2027" value={formAcademicYear} onChange={(e) => setFormAcademicYear(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
+                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Academic Year</label>
+                      <input type="text" placeholder="2026-2027" value={formAcademicYear} onChange={(e) => setFormAcademicYear(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Parent Name</label>
-                      <input type="text" placeholder="Richard Doe" value={formParentName} onChange={(e) => setFormParentName(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-805 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
+                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Parent Name</label>
+                      <input type="text" placeholder="Richard Doe" value={formParentName} onChange={(e) => setFormParentName(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
                     </div>
 
                     <div>
-                      <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Parent Mobile (Mandatory)</label>
-                      <input type="text" placeholder="9988776655" value={formParentMobile} onChange={(e) => setFormParentMobile(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-805 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
+                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Parent Mobile (Mandatory)</label>
+                      <input type="text" placeholder="9988776655" value={formParentMobile} onChange={(e) => setFormParentMobile(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Parent Email (Optional)</label>
-                    <input type="email" placeholder="parent@example.com" value={formParentEmail} onChange={(e) => setFormParentEmail(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-805 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
+                    <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Parent Email (Optional)</label>
+                    <input type="email" placeholder="parent@example.com" value={formParentEmail} onChange={(e) => setFormParentEmail(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
                   </div>
                 </div>
               )}
 
               {formRole === 'faculty' && (
-                <div className="space-y-4 border-t border-slate-100 dark:border-slate-800 pt-4">
-                  <div className="border-b border-slate-100 dark:border-slate-800 pb-2">
-                    <span className="text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-wider">Faculty Academic Scope Config</span>
+                <div className="space-y-4 border-t border-white/10 pt-4">
+                  <div className="border-b border-white/10 pb-2">
+                    <span className="text-[10px] font-black text-purple-300 uppercase tracking-wider">Faculty Academic Scope Config</span>
                   </div>
                   
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-[10px] uppercase font-bold text-slate-450 mb-1">Semester *</label>
+                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Semester *</label>
                       <select
                         value={formSemester}
                         onChange={(e) => setFormSemester(e.target.value)}
                         required
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                        className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
                       >
-                        <option value="Semester 1">Semester 1</option>
-                        <option value="Semester 2">Semester 2</option>
-                        <option value="Semester 3">Semester 3</option>
-                        <option value="Semester 4">Semester 4</option>
-                        <option value="Semester 5">Semester 5</option>
-                        <option value="Semester 6">Semester 6</option>
-                        <option value="Semester 7">Semester 7</option>
-                        <option value="Semester 8">Semester 8</option>
+                        <option value="Semester 1" className="bg-slate-900 text-white">Semester 1</option>
+                        <option value="Semester 2" className="bg-slate-900 text-white">Semester 2</option>
+                        <option value="Semester 3" className="bg-slate-900 text-white">Semester 3</option>
+                        <option value="Semester 4" className="bg-slate-900 text-white">Semester 4</option>
+                        <option value="Semester 5" className="bg-slate-900 text-white">Semester 5</option>
+                        <option value="Semester 6" className="bg-slate-900 text-white">Semester 6</option>
+                        <option value="Semester 7" className="bg-slate-900 text-white">Semester 7</option>
+                        <option value="Semester 8" className="bg-slate-900 text-white">Semester 8</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-[10px] uppercase font-bold text-slate-450 mb-1">Section *</label>
+                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Section *</label>
                       <select
                         value={formSection}
                         onChange={(e) => setFormSection(e.target.value)}
                         required
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                        className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
                       >
-                        <option value="Section A">Section A</option>
-                        <option value="Section B">Section B</option>
-                        <option value="Section C">Section C</option>
+                        <option value="Section A" className="bg-slate-900 text-white">Section A</option>
+                        <option value="Section B" className="bg-slate-900 text-white">Section B</option>
+                        <option value="Section C" className="bg-slate-900 text-white">Section C</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Academic Year *</label>
+                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Academic Year *</label>
                       <input
                         type="text"
                         placeholder="2026-2027"
                         value={formAcademicYear}
                         onChange={(e) => setFormAcademicYear(e.target.value)}
                         required
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                        className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400"
                       />
                     </div>
                   </div>
@@ -1550,15 +1573,15 @@ export const AdminPortal = () => {
               )}
 
               {formRole !== 'student' && formRole !== 'admin' && (
-                <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
-                  <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Employee ID *</label>
-                  <input type="text" placeholder="FAC-CSE-012" value={formEmployeeId} onChange={(e) => setFormEmployeeId(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
+                <div className="border-t border-white/10 pt-4">
+                  <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Employee ID *</label>
+                  <input type="text" placeholder="FAC-CSE-012" value={formEmployeeId} onChange={(e) => setFormEmployeeId(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
                 </div>
               )}
 
               {/* TWILIO SMS OTP 2FA SECTION */}
-              <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
-                <label className="block text-[10px] uppercase font-bold text-slate-400">
+              <div className="border-t border-white/10 pt-4 space-y-3">
+                <label className="block text-[10px] uppercase font-bold text-gray-400">
                   User Phone Number (Twilio SMS OTP 2FA)
                 </label>
                 
@@ -1567,13 +1590,13 @@ export const AdminPortal = () => {
                     value={formCountryCode}
                     onChange={(e) => setFormCountryCode(e.target.value)}
                     disabled={isPhoneVerified || otpLoading}
-                    className="px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                    className="px-2.5 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
                   >
-                    <option value="+91">🇮🇳 +91</option>
-                    <option value="+1">🇺🇸 +1</option>
-                    <option value="+44">🇬🇧 +44</option>
-                    <option value="+61">🇦🇺 +61</option>
-                    <option value="+971">🇦🇪 +971</option>
+                    <option value="+91" className="bg-slate-900 text-white">🇮🇳 +91</option>
+                    <option value="+1" className="bg-slate-900 text-white">🇺🇸 +1</option>
+                    <option value="+44" className="bg-slate-900 text-white">🇬🇧 +44</option>
+                    <option value="+61" className="bg-slate-900 text-white">🇦🇺 +61</option>
+                    <option value="+971" className="bg-slate-900 text-white">🇦🇪 +971</option>
                   </select>
 
                   <input
@@ -1586,7 +1609,7 @@ export const AdminPortal = () => {
                     }}
                     required
                     disabled={isPhoneVerified || otpLoading}
-                    className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+                    className="flex-1 px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400"
                   />
 
                   {!isPhoneVerified && (
@@ -1594,7 +1617,7 @@ export const AdminPortal = () => {
                       type="button"
                       onClick={handleSendOtp}
                       disabled={otpLoading || !formMobile || formMobile.trim().length < 10}
-                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all shadow-md shrink-0"
+                      className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all shadow-md shrink-0 cursor-pointer"
                     >
                       {otpLoading && !otpSent ? 'Sending...' : otpSent ? 'Resend OTP' : 'Send OTP'}
                     </button>
@@ -1603,7 +1626,7 @@ export const AdminPortal = () => {
 
                 {/* Verification Success Badge */}
                 {isPhoneVerified && (
-                  <div className="flex items-center gap-2 p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-600 dark:text-emerald-400 font-extrabold text-xs">
+                  <div className="flex items-center gap-2 p-2.5 bg-emerald-500/20 border border-emerald-400/30 rounded-xl text-emerald-300 font-extrabold text-xs">
                     <Check size={16} className="shrink-0" />
                     <span>Phone Verified via Twilio 2FA</span>
                   </div>
@@ -1611,7 +1634,7 @@ export const AdminPortal = () => {
 
                 {/* Error Banner */}
                 {otpError && (
-                  <div className="p-2.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-500 font-bold text-xs flex items-center gap-2">
+                  <div className="p-2.5 bg-rose-500/20 border border-rose-400/30 rounded-xl text-rose-300 font-bold text-xs flex items-center gap-2">
                     <AlertCircle size={14} className="shrink-0" />
                     <span>{otpError}</span>
                   </div>
@@ -1619,8 +1642,8 @@ export const AdminPortal = () => {
 
                 {/* OTP Input Field & Verification Step */}
                 {otpSent && !isPhoneVerified && (
-                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl space-y-3">
-                    <label className="block text-[10px] uppercase font-black text-slate-500 dark:text-slate-400">
+                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
+                    <label className="block text-[10px] uppercase font-black text-gray-300">
                       Enter 6-digit SMS OTP Code
                     </label>
                     <div className="flex gap-2">
@@ -1630,27 +1653,27 @@ export const AdminPortal = () => {
                         placeholder="••••••"
                         value={otpCode}
                         onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                        className="flex-1 px-3 py-2 text-center tracking-widest font-mono text-base font-black rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none dark:text-white"
+                        className="flex-1 px-3 py-2 text-center tracking-widest font-mono text-base font-black rounded-xl border border-white/10 bg-white/5 focus:outline-none text-white placeholder-gray-500"
                       />
                       <button
                         type="button"
                         onClick={handleVerifyOtp}
                         disabled={otpLoading || otpCode.length !== 6}
-                        className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all shadow"
+                        className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all shadow cursor-pointer"
                       >
                         {otpLoading ? 'Verifying...' : 'Verify OTP'}
                       </button>
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-gray-400">
                       <span>Didn't receive SMS OTP?</span>
                       {resendCountdown > 0 ? (
-                        <span className="text-indigo-500 font-extrabold">Resend in {resendCountdown}s</span>
+                        <span className="text-cyan-300 font-extrabold">Resend in {resendCountdown}s</span>
                       ) : (
                         <button
                           type="button"
                           onClick={handleResendOtp}
-                          className="text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-800 font-extrabold"
+                          className="text-cyan-400 underline hover:text-cyan-300 font-extrabold cursor-pointer"
                         >
                           Resend OTP
                         </button>
@@ -1663,10 +1686,10 @@ export const AdminPortal = () => {
               <button
                 type="submit"
                 disabled={!editingUser && !isPhoneVerified}
-                className={`w-full py-3 text-white rounded-xl text-xs font-black shadow-lg transition-all mt-6 ${
+                className={`w-full py-3 text-white rounded-xl text-xs font-black shadow-lg transition-all mt-6 cursor-pointer ${
                   !editingUser && !isPhoneVerified
-                    ? 'bg-slate-400 dark:bg-slate-700 cursor-not-allowed opacity-60'
-                    : 'bg-blue-600 hover:bg-blue-700'
+                    ? 'bg-slate-700 cursor-not-allowed opacity-60'
+                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:scale-[1.02]'
                 }`}
               >
                 {editingUser ? 'Update Account' : isPhoneVerified ? 'Create Account' : 'Verify Phone OTP to Create Account'}
@@ -1678,53 +1701,53 @@ export const AdminPortal = () => {
 
       {/* --- CALENDAR MODAL --- */}
       {isCalModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl shadow-2xl relative">
-            <button onClick={() => setIsCalModalOpen(false)} className="absolute top-4 right-4 p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 rounded-xl">
-              <X size={16} className="text-slate-500" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+          <div className="w-full max-w-md bg-black/80 backdrop-blur-xl border border-white/20 p-6 rounded-3xl shadow-2xl relative text-white">
+            <button onClick={() => setIsCalModalOpen(false)} className="absolute top-4 right-4 p-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl cursor-pointer">
+              <X size={16} className="text-gray-300" />
             </button>
 
-            <h3 className="text-lg font-black text-slate-900 dark:text-white mb-6">
+            <h3 className="text-lg font-black text-white drop-shadow-sm mb-6">
               {editingCalEvent ? 'Edit Calendar Event' : 'Add Calendar Event'}
             </h3>
 
             <form onSubmit={handleSaveCalEvent} className="space-y-4">
               <div>
-                <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Event Title</label>
-                <input type="text" placeholder="Mid Term Exams" value={calTitle} onChange={(e) => setCalTitle(e.target.value)} required className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white" />
+                <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Event Title</label>
+                <input type="text" placeholder="Mid Term Exams" value={calTitle} onChange={(e) => setCalTitle(e.target.value)} required className="w-full px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white placeholder-gray-400 font-bold" />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-slate-450 mb-1">Type</label>
-                  <select value={calType} onChange={(e) => setCalType(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold">
-                    <option value="holiday">Holiday</option>
-                    <option value="exam">Exam Schedule</option>
-                    <option value="event">Campus Event</option>
-                    <option value="workshop">Workshop</option>
-                    <option value="seminar">Seminar</option>
-                    <option value="placement">Placement Drive</option>
+                  <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Type</label>
+                  <select value={calType} onChange={(e) => setCalType(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer">
+                    <option value="holiday" className="bg-slate-900 text-white">Holiday</option>
+                    <option value="exam" className="bg-slate-900 text-white">Exam Schedule</option>
+                    <option value="event" className="bg-slate-900 text-white">Campus Event</option>
+                    <option value="workshop" className="bg-slate-900 text-white">Workshop</option>
+                    <option value="seminar" className="bg-slate-900 text-white">Seminar</option>
+                    <option value="placement" className="bg-slate-900 text-white">Placement Drive</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-slate-450 mb-1">Sub-Type</label>
-                  <select value={calSubType} onChange={(e) => setCalSubType(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold">
+                  <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Sub-Type</label>
+                  <select value={calSubType} onChange={(e) => setCalSubType(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer">
                     {calType === 'holiday' ? (
                       <>
-                        <option value="government">Government Holiday</option>
-                        <option value="festival">Festival</option>
-                        <option value="college">College Specific</option>
+                        <option value="government" className="bg-slate-900 text-white">Government Holiday</option>
+                        <option value="festival" className="bg-slate-900 text-white">Festival</option>
+                        <option value="college" className="bg-slate-900 text-white">College Specific</option>
                       </>
                     ) : calType === 'exam' ? (
                       <>
-                        <option value="mid">Mid Exam</option>
-                        <option value="internal">Internal Exam</option>
-                        <option value="semester">Semester Exam</option>
-                        <option value="practical">Practical Exam</option>
+                        <option value="mid" className="bg-slate-900 text-white">Mid Exam</option>
+                        <option value="internal" className="bg-slate-900 text-white">Internal Exam</option>
+                        <option value="semester" className="bg-slate-900 text-white">Semester Exam</option>
+                        <option value="practical" className="bg-slate-900 text-white">Practical Exam</option>
                       </>
                     ) : (
-                      <option value="general">General</option>
+                      <option value="general" className="bg-slate-900 text-white">General</option>
                     )}
                   </select>
                 </div>
@@ -1732,21 +1755,21 @@ export const AdminPortal = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-slate-450 mb-1">Start Date</label>
-                  <input type="date" value={calStartDate} onChange={(e) => setCalStartDate(e.target.value)} required className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
+                  <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Start Date</label>
+                  <input type="date" value={calStartDate} onChange={(e) => setCalStartDate(e.target.value)} required className="w-full px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer" />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-slate-450 mb-1">End Date</label>
-                  <input type="date" value={calEndDate} onChange={(e) => setCalEndDate(e.target.value)} required className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
+                  <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">End Date</label>
+                  <input type="date" value={calEndDate} onChange={(e) => setCalEndDate(e.target.value)} required className="w-full px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">Description</label>
-                <textarea rows="3" value={calDescription} onChange={(e) => setCalDescription(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-medium resize-none"></textarea>
+                <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Description</label>
+                <textarea rows="3" value={calDescription} onChange={(e) => setCalDescription(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-medium resize-none placeholder-gray-400"></textarea>
               </div>
 
-              <button type="submit" className="w-full py-2.5 bg-blue-600 hover:bg-blue-755 text-white rounded-xl font-bold transition-all shadow-md mt-4">
+              <button type="submit" className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-md mt-4 cursor-pointer hover:scale-[1.02]">
                 Save Entry Ledger
               </button>
             </form>
@@ -1756,18 +1779,18 @@ export const AdminPortal = () => {
 
       {/* PASSWORD RESET MODAL */}
       {isResetModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl shadow-2xl relative">
-            <button onClick={() => setIsResetModalOpen(false)} className="absolute top-4 right-4 p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 rounded-xl transition-all">
-              <X size={16} className="text-slate-500" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+          <div className="w-full max-w-sm bg-black/80 backdrop-blur-xl border border-white/20 p-6 rounded-3xl shadow-2xl relative text-white">
+            <button onClick={() => setIsResetModalOpen(false)} className="absolute top-4 right-4 p-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl transition-all cursor-pointer">
+              <X size={16} className="text-gray-300" />
             </button>
-            <h3 className="text-lg font-black text-slate-900 dark:text-white mb-6">Reset Account Password</h3>
+            <h3 className="text-lg font-black text-white drop-shadow-sm mb-6">Reset Account Password</h3>
             <form onSubmit={handleSaveReset} className="space-y-4">
               <div>
-                <label className="block text-[10px] uppercase font-bold text-slate-455 mb-1">New Password</label>
-                <input type="password" placeholder="••••••••" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-805 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold" />
+                <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">New Password</label>
+                <input type="password" placeholder="••••••••" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
               </div>
-              <button type="submit" className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black shadow transition-all mt-4">
+              <button type="submit" className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl text-xs font-black shadow-md transition-all mt-4 cursor-pointer hover:scale-[1.02]">
                 Reset Password Ledger
               </button>
             </form>

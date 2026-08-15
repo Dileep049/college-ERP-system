@@ -89,8 +89,8 @@ const PrincipalDashboard = ({ principal }) => {
   if (loading) {
     return (
       <div className="space-y-6 animate-pulse text-xs font-semibold">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="h-28 bg-slate-200 dark:bg-slate-800 rounded-3xl"></div>)}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          {[1,2,3,4,5,6,7,8,9,10].map(i => <div key={i} className="h-28 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)]"></div>)}
         </div>
       </div>
     );
@@ -101,128 +101,128 @@ const PrincipalDashboard = ({ principal }) => {
   const topDepartments = stats?.topDepartments || [];
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
+    <div className="space-y-6 text-xs font-semibold font-sans">
       
-      {/* Header Banner */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-950 text-white shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+      {/* 1. EXECUTIVE COMMAND CONSOLE BANNER (PREMIUM DARK GLASS WITH GOLD ACCENT) */}
+      <div className="p-6 md:p-8 rounded-3xl bg-black/50 backdrop-blur-xl border border-yellow-500/30 text-white shadow-[0_8px_32px_rgba(0,0,0,0.7)] relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none text-yellow-400">
           <Building size={140} />
         </div>
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             {principal?.profilePhotoUrl ? (
-              <img src={principal.profilePhotoUrl} alt={principal?.fullName} className="w-14 h-14 rounded-2xl object-cover border-2 border-amber-400/50 shadow-xl" />
+              <img src={principal.profilePhotoUrl} alt={principal?.fullName} className="w-14 h-14 rounded-2xl object-cover border-2 border-yellow-400/70 shadow-xl" />
             ) : (
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-600 text-slate-950 flex items-center justify-center font-black text-lg shadow-xl border-2 border-amber-400/50">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-yellow-500 to-amber-600 text-slate-950 flex items-center justify-center font-black text-lg shadow-xl border-2 border-yellow-400/70">
                 {principal?.fullName ? principal.fullName.split(' ').map(n => n[0]).join('') : 'DA'}
               </div>
             )}
             <div>
-              <span className="px-3 py-0.5 bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider rounded-full">
+              <span className="px-3 py-1 bg-yellow-400 text-slate-950 text-[10px] font-black uppercase tracking-wider rounded-full shadow-md">
                 KBN Executive Command Console
               </span>
-              <h2 className="text-2xl font-black font-display mt-1">Institutional Executive Overview</h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Principal: <strong className="text-white font-bold">{principal?.fullName || 'Dr. Arthur Pendelton'}</strong> • Institutional Operations & Governance
+              <h2 className="text-2xl md:text-3xl font-extrabold font-display mt-1.5 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] text-white">Institutional Executive Overview</h2>
+              <p className="text-xs text-gray-100 font-medium drop-shadow-md mt-0.5">
+                Principal: <strong className="text-yellow-300 font-bold drop-shadow">{principal?.fullName || 'Dr. Arthur Pendelton'}</strong> • Institutional Operations & Governance
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <a href="/principal/branches" className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-2xl backdrop-blur-md border border-white/10">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <a href="/principal/branches" className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-2xl backdrop-blur-md border border-white/20 shadow-md drop-shadow transition-all hover:scale-[1.02]">
               Branch Analytics
             </a>
-            <a href="/principal/results" className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-2xl shadow-lg shadow-purple-500/20">
+            <a href="/principal/results" className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs rounded-2xl shadow-lg shadow-purple-500/25 border border-purple-400/40 drop-shadow transition-all hover:scale-[1.02]">
               Semester Results
             </a>
           </div>
         </div>
       </div>
 
-      {/* 10 Executive KPI Cards Grid */}
+      {/* 2. 10 DARK TINTED STAT CARDS (EXECUTIVE KPI GRID) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md">
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Total Students</span>
-          <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{cards.totalStudents}</p>
-          <span className="text-[9.5px] text-emerald-500 font-bold block mt-1">Active Enrolled</span>
+        <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300 flex flex-col justify-between">
+          <span className="text-[10px] uppercase text-gray-100 font-extrabold tracking-wide block drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Total Students</span>
+          <p className="text-white font-black text-4xl drop-shadow-[0_4px_4px_rgba(0,0,0,1)] mt-1 font-display">{cards.totalStudents}</p>
+          <span className="text-[9.5px] text-emerald-300 font-bold block mt-1 drop-shadow-md">Active Enrolled</span>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md">
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Total Faculty</span>
-          <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{cards.totalFaculty}</p>
-          <span className="text-[9.5px] text-purple-500 font-bold block mt-1">Teaching Staff</span>
+        <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300 flex flex-col justify-between">
+          <span className="text-[10px] uppercase text-gray-100 font-extrabold tracking-wide block drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Total Faculty</span>
+          <p className="text-white font-black text-4xl drop-shadow-[0_4px_4px_rgba(0,0,0,1)] mt-1 font-display">{cards.totalFaculty}</p>
+          <span className="text-[9.5px] text-purple-300 font-bold block mt-1 drop-shadow-md">Teaching Staff</span>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md">
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Departments</span>
-          <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{cards.totalDepartments}</p>
-          <span className="text-[9.5px] text-indigo-500 font-bold block mt-1">Academic Branches</span>
+        <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300 flex flex-col justify-between">
+          <span className="text-[10px] uppercase text-gray-100 font-extrabold tracking-wide block drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Departments</span>
+          <p className="text-white font-black text-4xl drop-shadow-[0_4px_4px_rgba(0,0,0,1)] mt-1 font-display">{cards.totalDepartments}</p>
+          <span className="text-[9.5px] text-indigo-300 font-bold block mt-1 drop-shadow-md">Academic Branches</span>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md">
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Total HODs</span>
-          <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{cards.totalHODs}</p>
-          <span className="text-[9.5px] text-amber-500 font-bold block mt-1">Department Heads</span>
+        <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300 flex flex-col justify-between">
+          <span className="text-[10px] uppercase text-gray-100 font-extrabold tracking-wide block drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Total HODs</span>
+          <p className="text-white font-black text-4xl drop-shadow-[0_4px_4px_rgba(0,0,0,1)] mt-1 font-display">{cards.totalHODs}</p>
+          <span className="text-[9.5px] text-amber-300 font-bold block mt-1 drop-shadow-md">Department Heads</span>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md">
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Ward Counsellors</span>
-          <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{cards.totalWardCounsellors}</p>
-          <span className="text-[9.5px] text-emerald-500 font-bold block mt-1">Active Counsellors</span>
+        <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300 flex flex-col justify-between">
+          <span className="text-[10px] uppercase text-gray-100 font-extrabold tracking-wide block drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Ward Counsellors</span>
+          <p className="text-white font-black text-4xl drop-shadow-[0_4px_4px_rgba(0,0,0,1)] mt-1 font-display">{cards.totalWardCounsellors}</p>
+          <span className="text-[9.5px] text-cyan-300 font-bold block mt-1 drop-shadow-md">Active Counsellors</span>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md">
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Attendance %</span>
-          <p className="text-2xl font-black text-emerald-600 mt-1">{cards.attendancePercentage}%</p>
-          <span className="text-[9.5px] text-slate-400 font-bold block mt-1">Institutional Average</span>
+        <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300 flex flex-col justify-between">
+          <span className="text-[10px] uppercase text-gray-100 font-extrabold tracking-wide block drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Attendance %</span>
+          <p className="text-emerald-300 font-black text-4xl drop-shadow-[0_4px_4px_rgba(0,0,0,1)] mt-1 font-display">{cards.attendancePercentage}%</p>
+          <span className="text-[9.5px] text-gray-200 font-bold block mt-1 drop-shadow-md">Institutional Average</span>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md">
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Students At Risk</span>
-          <p className="text-2xl font-black text-rose-600 mt-1">{cards.studentsAtRisk}</p>
-          <span className="text-[9.5px] text-rose-500 font-bold block mt-1">&lt;75% Attendance / Low</span>
+        <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300 flex flex-col justify-between">
+          <span className="text-[10px] uppercase text-gray-100 font-extrabold tracking-wide block drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Students At Risk</span>
+          <p className="text-rose-400 font-black text-4xl drop-shadow-[0_4px_4px_rgba(0,0,0,1)] mt-1 font-display">{cards.studentsAtRisk}</p>
+          <span className="text-[9.5px] text-rose-300 font-bold block mt-1 drop-shadow-md">&lt;75% Attendance / Low</span>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md">
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Students Passed</span>
-          <p className="text-2xl font-black text-emerald-600 mt-1">{cards.studentsPassed}</p>
-          <span className="text-[9.5px] text-emerald-500 font-bold block mt-1">Semester Passed</span>
+        <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300 flex flex-col justify-between">
+          <span className="text-[10px] uppercase text-gray-100 font-extrabold tracking-wide block drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Students Passed</span>
+          <p className="text-emerald-300 font-black text-4xl drop-shadow-[0_4px_4px_rgba(0,0,0,1)] mt-1 font-display">{cards.studentsPassed}</p>
+          <span className="text-[9.5px] text-emerald-300 font-bold block mt-1 drop-shadow-md">Semester Passed</span>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md">
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Students Failed</span>
-          <p className="text-2xl font-black text-rose-500 mt-1">{cards.studentsFailed}</p>
-          <span className="text-[9.5px] text-slate-400 font-bold block mt-1">With Backlogs</span>
+        <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300 flex flex-col justify-between">
+          <span className="text-[10px] uppercase text-gray-100 font-extrabold tracking-wide block drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Students Failed</span>
+          <p className="text-rose-400 font-black text-4xl drop-shadow-[0_4px_4px_rgba(0,0,0,1)] mt-1 font-display">{cards.studentsFailed}</p>
+          <span className="text-[9.5px] text-gray-300 font-bold block mt-1 drop-shadow-md">With Backlogs</span>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md">
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Placement Rate</span>
-          <p className="text-2xl font-black text-indigo-600 mt-1">{cards.placementRate}%</p>
-          <span className="text-[9.5px] text-indigo-500 font-bold block mt-1">Corporate Selections</span>
+        <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300 flex flex-col justify-between">
+          <span className="text-[10px] uppercase text-gray-100 font-extrabold tracking-wide block drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Placement Rate</span>
+          <p className="text-indigo-300 font-black text-4xl drop-shadow-[0_4px_4px_rgba(0,0,0,1)] mt-1 font-display">{cards.placementRate}%</p>
+          <span className="text-[9.5px] text-indigo-300 font-bold block mt-1 drop-shadow-md">Corporate Selections</span>
         </div>
       </div>
 
-      {/* Executive Insights & Top Performing Departments */}
+      {/* 3. EXECUTIVE INSIGHTS & TOP PERFORMING DEPARTMENTS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Executive Insights (Generated from Database Calculations) */}
-        <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-            <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <TrendingUp className="text-purple-600" size={18} />
+        {/* Executive Insights Panel */}
+        <div className="p-6 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] space-y-4 text-white">
+          <div className="flex items-center justify-between border-b border-white/15 pb-3">
+            <h3 className="text-base font-extrabold text-white drop-shadow-lg flex items-center gap-2">
+              <TrendingUp className="text-purple-400" size={18} />
               Institutional Executive Insights
             </h3>
-            <span className="px-2.5 py-0.5 bg-purple-500/10 text-purple-600 text-[9.5px] font-bold rounded-full">
+            <span className="px-3 py-1 bg-purple-500/20 text-purple-200 border border-purple-400/30 text-[9.5px] font-bold rounded-full drop-shadow">
               Automated Analytics
             </span>
           </div>
 
           <div className="space-y-3">
             {insights.map((ins, i) => (
-              <div key={i} className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/40 dark:border-slate-800 flex items-start gap-3">
-                <div className="w-7 h-7 rounded-xl bg-purple-600/10 text-purple-600 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+              <div key={i} className="p-3.5 bg-black/30 backdrop-blur-md rounded-xl border border-white/10 flex items-start gap-3">
+                <div className="w-7 h-7 rounded-xl bg-purple-500/20 border border-purple-400/30 text-purple-300 font-black text-xs flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
                   {i + 1}
                 </div>
-                <p className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
+                <p className="text-xs text-gray-100 font-medium drop-shadow-sm leading-relaxed">
                   {ins.text}
                 </p>
               </div>
@@ -230,31 +230,31 @@ const PrincipalDashboard = ({ principal }) => {
           </div>
         </div>
 
-        {/* Top Performing Departments */}
-        <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-            <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <Award className="text-amber-500" size={18} />
+        {/* Top Performing Departments Panel */}
+        <div className="p-6 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] space-y-4 text-white">
+          <div className="flex items-center justify-between border-b border-white/15 pb-3">
+            <h3 className="text-base font-extrabold text-white drop-shadow-lg flex items-center gap-2">
+              <Award className="text-yellow-400" size={18} />
               Top Performing Departments
             </h3>
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Dynamic Ranking</span>
+            <span className="text-[10px] text-gray-100 font-bold uppercase tracking-wider drop-shadow">Dynamic Ranking</span>
           </div>
 
           <div className="space-y-3">
             {topDepartments.map((dept) => (
-              <div key={dept.name} className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/40 dark:border-slate-800 flex items-center justify-between">
+              <div key={dept.name} className="p-3.5 bg-black/30 backdrop-blur-md rounded-xl border border-white/10 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs ${dept.rank === 1 ? 'bg-amber-400 text-slate-950' : dept.rank === 2 ? 'bg-slate-300 text-slate-950' : 'bg-amber-700 text-white'}`}>
+                  <span className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs shadow-md ${dept.rank === 1 ? 'bg-yellow-400 text-slate-950' : dept.rank === 2 ? 'bg-slate-300 text-slate-950' : 'bg-amber-600 text-white'}`}>
                     #{dept.rank}
                   </span>
                   <div>
-                    <h4 className="text-xs font-black text-slate-900 dark:text-white">{dept.name}</h4>
-                    <p className="text-[10px] text-slate-400">Pass Rate: <strong className="text-emerald-600">{dept.passRate}%</strong> • Avg Marks: {dept.avgMarks}</p>
+                    <h4 className="text-xs font-extrabold text-white drop-shadow-md">{dept.name}</h4>
+                    <p className="text-[10px] text-gray-200 mt-0.5">Pass Rate: <strong className="text-emerald-300 font-bold">{dept.passRate}%</strong> • Avg Marks: {dept.avgMarks}</p>
                   </div>
                 </div>
                 <div className="text-right text-[11px]">
-                  <span className="text-purple-600 dark:text-purple-400 font-black">{dept.placementRate}% Placement</span>
-                  <span className="text-[9.5px] text-slate-400 block font-medium">Att: {dept.attendance}%</span>
+                  <span className="text-purple-300 font-extrabold drop-shadow">{dept.placementRate}% Placement</span>
+                  <span className="text-[9.5px] text-gray-200 block font-medium mt-0.5">Att: {dept.attendance}%</span>
                 </div>
               </div>
             ))}

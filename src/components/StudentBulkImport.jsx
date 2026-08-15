@@ -330,17 +330,17 @@ export const StudentBulkImport = () => {
   };
 
   return (
-    <div className="space-y-6 text-xs font-semibold font-sans">
+    <div className="space-y-6 text-xs font-semibold font-sans text-white">
       
-      {/* Header Banner */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-white/10" style={{ boxShadow: 'var(--shadow-3d-card), inset 0 1px 0 rgba(255, 255, 255, 0.2)' }}>
+      {/* 1. Header Banner (Blue Tinted Glass) */}
+      <div className="p-6 rounded-3xl bg-gradient-to-r from-blue-900/50 to-indigo-900/50 backdrop-blur-xl border border-blue-500/30 text-white shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-[10px] font-bold text-blue-200 uppercase tracking-wider mb-1">
+          <div className="flex items-center gap-2 text-[10px] font-bold text-cyan-300 uppercase tracking-wider mb-1">
             <ShieldCheck size={14} />
             <span>Super Admin &bull; Student Management &bull; Bulk Student Ingestion</span>
           </div>
-          <h2 className="text-2xl font-black font-display tracking-tight">Bulk Student Import Module</h2>
-          <p className="text-xs text-blue-100 mt-1 max-w-2xl leading-relaxed">
+          <h2 className="text-2xl font-black font-display tracking-tight text-white drop-shadow-sm">Bulk Student Import Module</h2>
+          <p className="text-xs text-gray-200 mt-1 max-w-2xl leading-relaxed">
             Batch ingest up to 10,000 student documents directly into Cloud Firestore (`students` collection) using Roll Number document IDs.
           </p>
         </div>
@@ -349,14 +349,14 @@ export const StudentBulkImport = () => {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => handleDownloadTemplate('csv')}
-            className="btn-3d btn-3d-secondary py-2 px-3.5 text-xs text-white border-white/20 bg-white/10 hover:bg-white/20"
+            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-all flex items-center gap-1.5 shadow-sm cursor-pointer hover:scale-[1.02]"
           >
             <Download size={14} />
             <span>CSV Template</span>
           </button>
           <button
             onClick={() => handleDownloadTemplate('json')}
-            className="btn-3d btn-3d-secondary py-2 px-3.5 text-xs text-white border-white/20 bg-white/10 hover:bg-white/20"
+            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-all flex items-center gap-1.5 shadow-sm cursor-pointer hover:scale-[1.02]"
           >
             <Download size={14} />
             <span>JSON Template</span>
@@ -364,29 +364,27 @@ export const StudentBulkImport = () => {
         </div>
       </div>
 
-      {/* 3 Upload Options & Drag and Drop Zone */}
-      <div className="card-3d p-6 space-y-6">
-        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-4">
+      {/* 2. Upload Options & Drag and Drop Zone Container */}
+      <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-3xl p-6 space-y-6 shadow-lg w-full max-w-full">
+        <div className="flex flex-wrap items-center justify-between border-b border-white/10 pb-4 gap-3">
           <div>
-            <h3 className="text-base font-extrabold text-[var(--text-primary)]">Step 1: Upload Student Roster File</h3>
-            <p className="text-xs text-[var(--text-muted)]">Supported formats: Excel (.xlsx), CSV (.csv), JSON (.json) &bull; Maximum 10,000 records</p>
+            <h3 className="text-sm font-extrabold text-white drop-shadow-sm">Step 1: Upload Student Roster File</h3>
+            <p className="text-xs text-gray-300">Supported formats: Excel (.xlsx), CSV (.csv), JSON (.json) &bull; Maximum 10,000 records</p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="badge-3d badge-3d-info">.xlsx</span>
-            <span className="badge-3d badge-3d-success">.csv</span>
-            <span className="badge-3d badge-3d-neutral">.json</span>
+            <span className="px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold bg-blue-500/20 text-cyan-300 border border-blue-400/30">.xlsx</span>
+            <span className="px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">.csv</span>
+            <span className="px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold bg-purple-500/20 text-purple-300 border border-purple-400/30">.json</span>
           </div>
         </div>
 
-        {/* Drag and Drop Box */}
+        {/* 2. FILE UPLOAD DROPZONE (Dashed Glass Box) */}
         <div
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
           onDragLeave={() => setIsDragging(false)}
           onDrop={handleDrop}
-          className={`p-10 rounded-2xl border-2 border-dashed text-center transition-all flex flex-col items-center justify-center gap-3 cursor-pointer ${
-            isDragging 
-              ? 'border-[var(--accent)] bg-blue-500/5 dark:bg-blue-950/20 scale-[0.99]' 
-              : 'border-[var(--border)] bg-[var(--surface-elevated)] hover:bg-[var(--bg-secondary)]'
+          className={`bg-black/40 backdrop-blur-md border-2 border-dashed border-white/20 rounded-3xl p-10 hover:bg-black/60 hover:border-blue-400 transition-all duration-300 flex flex-col items-center justify-center gap-3 cursor-pointer text-center ${
+            isDragging ? 'border-cyan-400 bg-black/70 scale-[0.99]' : ''
           }`}
           onClick={() => fileInputRef.current?.click()}
         >
@@ -403,10 +401,10 @@ export const StudentBulkImport = () => {
           </div>
 
           <div>
-            <h4 className="text-sm font-extrabold text-[var(--text-primary)]">
+            <h4 className="text-sm font-extrabold text-white drop-shadow-sm">
               {selectedFile ? selectedFile.name : 'Drag & drop student roster file here, or click to browse'}
             </h4>
-            <p className="text-xs text-[var(--text-muted)] mt-1">
+            <p className="text-xs text-gray-300 mt-1">
               {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB &bull; File ready for validation` : 'Supports Excel, CSV or JSON up to 10,000 rows'}
             </p>
           </div>
@@ -415,21 +413,21 @@ export const StudentBulkImport = () => {
         {/* Upload Summary Cards */}
         {selectedFile && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-2">
-            <div className="stat-card-3d">
-              <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider block">Total Parsed</span>
-              <span className="text-2xl font-black text-[var(--text-primary)] block mt-1">{parsedRows.length + validationErrors.length} Rows</span>
+            <div className="bg-black/30 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-sm">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Total Parsed</span>
+              <span className="text-2xl font-black text-white block mt-1">{parsedRows.length + validationErrors.length} Rows</span>
             </div>
-            <div className="stat-card-3d">
-              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">Valid Students</span>
-              <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 block mt-1">{validRowsCount} Records</span>
+            <div className="bg-black/30 backdrop-blur-md border border-emerald-500/20 rounded-2xl p-4 shadow-sm">
+              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Valid Students</span>
+              <span className="text-2xl font-black text-emerald-300 block mt-1">{validRowsCount} Records</span>
             </div>
-            <div className="stat-card-3d">
-              <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider block">Validation Errors</span>
-              <span className="text-2xl font-black text-rose-600 dark:text-rose-400 block mt-1">{validationErrors.length} Issues</span>
+            <div className="bg-black/30 backdrop-blur-md border border-rose-500/20 rounded-2xl p-4 shadow-sm">
+              <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider block">Validation Errors</span>
+              <span className="text-2xl font-black text-rose-300 block mt-1">{validationErrors.length} Issues</span>
             </div>
-            <div className="stat-card-3d">
-              <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">Duplicates Found</span>
-              <span className="text-2xl font-black text-amber-600 dark:text-amber-400 block mt-1">{duplicateCount} Rows</span>
+            <div className="bg-black/30 backdrop-blur-md border border-amber-500/20 rounded-2xl p-4 shadow-sm">
+              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">Duplicates Found</span>
+              <span className="text-2xl font-black text-amber-300 block mt-1">{duplicateCount} Rows</span>
             </div>
           </div>
         )}
@@ -437,27 +435,27 @@ export const StudentBulkImport = () => {
         {/* Validation Errors Preview Table */}
         {validationErrors.length > 0 && (
           <div className="space-y-3 pt-2">
-            <h4 className="font-extrabold text-rose-600 dark:text-rose-400 flex items-center gap-2">
+            <h4 className="font-extrabold text-rose-400 flex items-center gap-2">
               <AlertTriangle size={16} />
               <span>Validation Audit Issues ({validationErrors.length})</span>
             </h4>
-            <div className="table-3d-container max-h-48">
-              <table className="table-3d">
-                <thead>
+            <div className="w-full max-w-full overflow-x-hidden rounded-2xl border border-rose-500/30 max-h-48">
+              <table className="w-full table-fixed text-left border-collapse">
+                <thead className="bg-black/40 border-b border-white/10">
                   <tr>
-                    <th>Row #</th>
-                    <th>Roll Number</th>
-                    <th>Student Name</th>
-                    <th>Error Details</th>
+                    <th className="w-[15%] px-3 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Row #</th>
+                    <th className="w-[20%] px-3 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Roll Number</th>
+                    <th className="w-[25%] px-3 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Student Name</th>
+                    <th className="w-[40%] px-3 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Error Details</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="text-white font-medium">
                   {validationErrors.map((err, idx) => (
-                    <tr key={idx} className="bg-rose-500/5">
-                      <td className="font-mono">Row {err.rowNum}</td>
-                      <td className="font-mono text-rose-600 dark:text-rose-400">{err.roll || 'N/A'}</td>
-                      <td>{err.name || 'N/A'}</td>
-                      <td className="text-rose-600 dark:text-rose-400 font-medium">{err.errors.join(', ')}</td>
+                    <tr key={idx} className="border-b border-white/5 hover:bg-white/10 transition-colors bg-rose-500/10">
+                      <td className="px-3 py-3 font-mono text-xs text-gray-300 break-words align-middle">Row {err.rowNum}</td>
+                      <td className="px-3 py-3 font-mono text-xs text-rose-300 font-bold break-words align-middle">{err.roll || 'N/A'}</td>
+                      <td className="px-3 py-3 text-xs text-white break-words align-middle">{err.name || 'N/A'}</td>
+                      <td className="px-3 py-3 text-xs text-rose-300 font-medium break-words align-middle">{err.errors.join(', ')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -468,11 +466,11 @@ export const StudentBulkImport = () => {
 
         {/* Execute Batch Ingestion Button */}
         {validRowsCount > 0 && (
-          <div className="flex justify-end pt-2 border-t border-[var(--border-subtle)]">
+          <div className="flex justify-end pt-2 border-t border-white/10">
             <button
               onClick={handleExecuteBatchUpload}
               disabled={importing}
-              className="btn-3d btn-3d-success py-2.5 px-6 text-xs font-bold"
+              className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer hover:scale-[1.02]"
             >
               <Database size={16} />
               <span>{importing ? 'Executing Firestore Batch Writes...' : `Commit ${validRowsCount} Valid Students to Firestore`}</span>
@@ -483,66 +481,66 @@ export const StudentBulkImport = () => {
 
       {/* Success Result Summary Card */}
       {importResult && (
-        <div className="card-3d p-6 border border-emerald-500/30 space-y-4">
+        <div className="bg-black/40 backdrop-blur-md border border-emerald-500/30 rounded-3xl p-6 space-y-4 shadow-lg">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-emerald-500 text-white rounded-2xl shadow-md">
               <CheckCircle2 size={24} />
             </div>
             <div>
-              <h3 className="text-lg font-black text-emerald-600 dark:text-emerald-400">Batch Ingestion Successful!</h3>
-              <p className="text-xs text-[var(--text-muted)] font-medium">
+              <h3 className="text-lg font-black text-emerald-300 drop-shadow-sm">Batch Ingestion Successful!</h3>
+              <p className="text-xs text-gray-300 font-medium">
                 Student documents committed to Cloud Firestore collection `students` using rollNumber document IDs.
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-2">
-            <div className="stat-card-3d">
-              <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider block">Total Parsed</span>
-              <span className="text-xl font-black text-[var(--text-primary)] block mt-0.5">{importResult.totalParsed}</span>
+            <div className="bg-black/30 backdrop-blur-md border border-white/10 rounded-2xl p-3 shadow-sm">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Total Parsed</span>
+              <span className="text-xl font-black text-white block mt-0.5">{importResult.totalParsed}</span>
             </div>
-            <div className="stat-card-3d">
-              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">Inserted</span>
-              <span className="text-xl font-black text-emerald-600 dark:text-emerald-400 block mt-0.5">{importResult.inserted}</span>
+            <div className="bg-black/30 backdrop-blur-md border border-emerald-500/20 rounded-2xl p-3 shadow-sm">
+              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Inserted</span>
+              <span className="text-xl font-black text-emerald-300 block mt-0.5">{importResult.inserted}</span>
             </div>
-            <div className="stat-card-3d">
-              <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">Updated</span>
-              <span className="text-xl font-black text-blue-600 dark:text-blue-400 block mt-0.5">{importResult.updated}</span>
+            <div className="bg-black/30 backdrop-blur-md border border-blue-500/20 rounded-2xl p-3 shadow-sm">
+              <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider block">Updated</span>
+              <span className="text-xl font-black text-cyan-300 block mt-0.5">{importResult.updated}</span>
             </div>
-            <div className="stat-card-3d">
-              <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">Skipped</span>
-              <span className="text-xl font-black text-amber-600 dark:text-amber-400 block mt-0.5">{importResult.skipped}</span>
+            <div className="bg-black/30 backdrop-blur-md border border-amber-500/20 rounded-2xl p-3 shadow-sm">
+              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">Skipped</span>
+              <span className="text-xl font-black text-amber-300 block mt-0.5">{importResult.skipped}</span>
             </div>
-            <div className="stat-card-3d">
-              <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider block">Processing Time</span>
-              <span className="text-xl font-black text-purple-600 dark:text-purple-400 block mt-0.5">{importResult.timeSeconds}s</span>
+            <div className="bg-black/30 backdrop-blur-md border border-purple-500/20 rounded-2xl p-3 shadow-sm">
+              <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block">Processing Time</span>
+              <span className="text-xl font-black text-purple-300 block mt-0.5">{importResult.timeSeconds}s</span>
             </div>
           </div>
         </div>
       )}
 
-      {/* Roster Table: Search, Filter, Sort, Pagination & Export */}
-      <div className="card-3d p-6 space-y-5">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-[var(--border-subtle)] pb-4">
+      {/* 3. Live Student Roster Container */}
+      <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-3xl p-6 space-y-5 shadow-lg w-full max-w-full">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
           <div>
-            <h3 className="text-base font-extrabold text-[var(--text-primary)] flex items-center gap-2">
-              <Users size={18} className="text-blue-500" />
+            <h3 className="text-sm font-extrabold text-white drop-shadow-sm flex items-center gap-2">
+              <Users size={18} className="text-cyan-400" />
               <span>Live Student Roster ({filteredRoster.length})</span>
             </h3>
-            <p className="text-xs text-[var(--text-muted)] mt-0.5">Real-time Firestore roster synchronized with Faculty Attendance</p>
+            <p className="text-xs text-gray-300 mt-0.5">Real-time Firestore roster synchronized with Faculty Attendance</p>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => handleExportRoster('excel')}
-              className="btn-3d btn-3d-secondary py-2 px-3 text-xs"
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-all flex items-center gap-1.5 shadow-sm cursor-pointer hover:scale-[1.02]"
             >
               <FileSpreadsheet size={14} />
               <span>Export Excel</span>
             </button>
             <button
               onClick={() => handleExportRoster('json')}
-              className="btn-3d btn-3d-secondary py-2 px-3 text-xs"
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-all flex items-center gap-1.5 shadow-sm cursor-pointer hover:scale-[1.02]"
             >
               <FileText size={14} />
               <span>Export JSON</span>
@@ -551,111 +549,107 @@ export const StudentBulkImport = () => {
         </div>
 
         {/* Filter Controls */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 p-4 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border)]">
-          <div className="relative">
-            <Search size={14} className="absolute left-3 top-3 text-[var(--text-muted)]" />
+        <div className="flex flex-wrap gap-3 p-4 rounded-2xl bg-white/5 border border-white/10">
+          <div className="relative flex-1 min-w-[180px]">
+            <Search size={14} className="absolute left-3 top-2.5 text-gray-400" />
             <input
               type="text"
               placeholder="Search roll or name..."
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-              className="input-3d pl-9"
+              className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400"
             />
           </div>
 
-          <div>
+          <div className="flex-1 min-w-[140px]">
             <select
               value={deptFilter}
               onChange={(e) => { setDeptFilter(e.target.value); setCurrentPage(1); }}
-              className="select-3d"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
             >
-              <option value="all">All Departments</option>
-              <option value="AI & ML">AI & ML</option>
-              <option value="CSE">CSE</option>
-              <option value="ECE">ECE</option>
-              <option value="EEE">EEE</option>
+              <option value="all" className="bg-slate-900 text-white">All Departments</option>
+              <option value="AI & ML" className="bg-slate-900 text-white">AI & ML</option>
+              <option value="CSE" className="bg-slate-900 text-white">CSE</option>
+              <option value="ECE" className="bg-slate-900 text-white">ECE</option>
+              <option value="EEE" className="bg-slate-900 text-white">EEE</option>
             </select>
           </div>
 
-          <div>
+          <div className="flex-1 min-w-[140px]">
             <select
               value={semFilter}
               onChange={(e) => { setSemFilter(e.target.value); setCurrentPage(1); }}
-              className="select-3d"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
             >
-              <option value="all">All Semesters</option>
-              <option value="Semester 1">Semester 1</option>
-              <option value="Semester 2">Semester 2</option>
-              <option value="Semester 3">Semester 3</option>
-              <option value="Semester 4">Semester 4</option>
+              <option value="all" className="bg-slate-900 text-white">All Semesters</option>
+              <option value="Semester 1" className="bg-slate-900 text-white">Semester 1</option>
+              <option value="Semester 2" className="bg-slate-900 text-white">Semester 2</option>
+              <option value="Semester 3" className="bg-slate-900 text-white">Semester 3</option>
+              <option value="Semester 4" className="bg-slate-900 text-white">Semester 4</option>
             </select>
           </div>
 
-          <div>
+          <div className="flex-1 min-w-[120px]">
             <select
               value={secFilter}
               onChange={(e) => { setSecFilter(e.target.value); setCurrentPage(1); }}
-              className="select-3d"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
             >
-              <option value="all">All Sections</option>
-              <option value="EM">Section EM</option>
-              <option value="A">Section A</option>
-              <option value="B">Section B</option>
+              <option value="all" className="bg-slate-900 text-white">All Sections</option>
+              <option value="EM" className="bg-slate-900 text-white">Section EM</option>
+              <option value="A" className="bg-slate-900 text-white">Section A</option>
+              <option value="B" className="bg-slate-900 text-white">Section B</option>
             </select>
           </div>
 
-          <div>
+          <div className="flex-1 min-w-[120px]">
             <select
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-              className="select-3d"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
             >
-              <option value="all">All Status</option>
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
+              <option value="all" className="bg-slate-900 text-white">All Status</option>
+              <option value="Active" className="bg-slate-900 text-white">Active</option>
+              <option value="Inactive" className="bg-slate-900 text-white">Inactive</option>
             </select>
           </div>
         </div>
 
         {/* Student Table */}
-        <div className="table-3d-container">
-          <table className="table-3d">
-            <thead>
+        <div className="w-full max-w-full overflow-x-hidden">
+          <table className="w-full table-fixed text-left border-collapse">
+            <thead className="bg-black/40 border-b border-white/10">
               <tr>
-                <th>Roll Number</th>
-                <th>Student Name</th>
-                <th>Department</th>
-                <th>Course</th>
-                <th>Semester</th>
-                <th>Section</th>
-                <th>Branch</th>
-                <th className="text-center">Status</th>
+                <th className="w-[15%] px-2 sm:px-3 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Roll Number</th>
+                <th className="w-[25%] px-2 sm:px-3 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Student Name</th>
+                <th className="w-[18%] px-2 sm:px-3 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Department</th>
+                <th className="w-[12%] px-2 sm:px-3 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Course</th>
+                <th className="w-[16%] px-2 sm:px-3 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Semester / Sec</th>
+                <th className="w-[14%] px-2 sm:px-3 py-3 text-center text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="text-white font-medium">
               {loadingRoster ? (
                 <tr>
-                  <td colSpan="8" className="py-12 text-center text-[var(--text-muted)] animate-pulse font-bold">Loading roster records...</td>
+                  <td colSpan="6" className="py-12 text-center text-gray-400 animate-pulse font-bold">Loading roster records...</td>
                 </tr>
               ) : paginatedRoster.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="py-12 text-center text-[var(--text-muted)] font-medium">No matching student records found.</td>
+                  <td colSpan="6" className="py-12 text-center text-gray-400 font-medium">No matching student records found.</td>
                 </tr>
               ) : (
                 paginatedRoster.map((s, idx) => (
-                  <tr key={s.rollNumber || idx}>
-                    <td className="font-mono text-blue-600 dark:text-blue-400 font-bold">{s.rollNumber}</td>
-                    <td className="font-bold text-[var(--text-primary)]">{s.studentName || s.fullName}</td>
-                    <td className="text-[var(--text-muted)]">{s.department || 'AI & ML'}</td>
-                    <td className="text-[var(--text-muted)]">{s.course || 'B.Sc'}</td>
-                    <td className="text-[var(--text-muted)]">{s.semester || 'Semester 2'}</td>
-                    <td className="text-[var(--text-muted)]">{s.section || 'EM'}</td>
-                    <td className="text-[var(--text-muted)]">{s.branch || 'AI & ML'}</td>
-                    <td className="text-center">
-                      <span className={`badge-3d ${
+                  <tr key={s.rollNumber || idx} className="border-b border-white/5 hover:bg-white/10 transition-colors">
+                    <td className="px-2 sm:px-3 py-3 whitespace-normal break-words font-mono text-xs sm:text-sm font-medium text-cyan-300 align-middle">{s.rollNumber}</td>
+                    <td className="px-2 sm:px-3 py-3 whitespace-normal break-words text-xs sm:text-sm font-semibold text-white tracking-wide drop-shadow-sm align-middle">{s.studentName || s.fullName}</td>
+                    <td className="px-2 sm:px-3 py-3 whitespace-normal break-words text-xs sm:text-sm font-medium text-gray-300 align-middle">{s.department || s.branch || 'AI & ML'}</td>
+                    <td className="px-2 sm:px-3 py-3 whitespace-normal break-words text-xs sm:text-sm font-medium text-gray-300 align-middle">{s.course || 'B.Sc'}</td>
+                    <td className="px-2 sm:px-3 py-3 whitespace-normal break-words text-xs sm:text-sm font-medium text-gray-300 align-middle">{s.semester || 'Sem 2'} ({s.section || 'EM'})</td>
+                    <td className="px-2 sm:px-3 py-3 whitespace-normal text-center align-middle">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase border inline-block break-words ${
                         (s.status || 'Active') === 'Active' 
-                          ? 'badge-3d-success' 
-                          : 'badge-3d-danger'
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30' 
+                          : 'bg-rose-500/20 text-rose-300 border-rose-400/30'
                       }`}>
                         {s.status || 'Active'}
                       </span>
@@ -668,8 +662,8 @@ export const StudentBulkImport = () => {
         </div>
 
         {/* Pagination Footer */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-          <span className="text-xs text-[var(--text-muted)] font-medium">
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+          <span className="text-xs text-gray-400 font-medium">
             Showing {filteredRoster.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0} to {Math.min(currentPage * rowsPerPage, filteredRoster.length)} of {filteredRoster.length} students
           </span>
 
@@ -677,17 +671,17 @@ export const StudentBulkImport = () => {
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="btn-3d btn-3d-secondary p-2 disabled:opacity-40"
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-white disabled:opacity-30 cursor-pointer"
             >
               <ChevronLeft size={16} />
             </button>
-            <span className="text-xs font-bold text-[var(--text-secondary)] px-2">
+            <span className="text-xs font-bold text-gray-200 px-2">
               Page {currentPage} of {totalPages}
             </span>
             <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="btn-3d btn-3d-secondary p-2 disabled:opacity-40"
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-white disabled:opacity-30 cursor-pointer"
             >
               <ChevronRight size={16} />
             </button>
@@ -698,4 +692,5 @@ export const StudentBulkImport = () => {
     </div>
   );
 };
+
 

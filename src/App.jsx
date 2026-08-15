@@ -133,22 +133,26 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col justify-between py-8 px-4 sm:px-6 transition-colors duration-200 relative">
-      {/* 3D Ambient Background Highlights */}
-      <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-10 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+    <div className="min-h-screen campus-hero-bg flex flex-col justify-between py-8 px-4 sm:px-6 relative overflow-hidden font-sans">
+      {/* Subtle Ambient Glow Highlights */}
+      <div className="absolute -top-24 right-1/4 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[140px] pointer-events-none"></div>
+      <div className="absolute top-1/2 -left-20 w-[450px] h-[450px] bg-purple-500/10 rounded-full blur-[140px] pointer-events-none"></div>
+      <div className="absolute -bottom-20 right-1/3 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[150px] pointer-events-none"></div>
 
-      <div className="max-w-7xl w-full mx-auto space-y-10 relative z-10">
+      <div className="max-w-7xl w-full mx-auto relative z-10">
         
-        {/* Top Floating Navbar for Landing */}
-        <div className="flex items-center justify-between p-3.5 px-6 rounded-2xl card-3d-glass border border-[var(--border)]">
+        {/* Top Floating Premium Physical Glass Navbar */}
+        <div className="flex items-center justify-between p-3.5 px-6 rounded-2xl bg-white/15 backdrop-blur-md border border-white/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.5)]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20 border border-blue-400/30">
-              <ShieldCheck size={22} />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-cyan-500/25 border border-white/40">
+              <ShieldCheck size={22} className="text-white drop-shadow" />
             </div>
             <div>
-              <span className="font-extrabold text-base tracking-tight font-display text-[var(--text-primary)]">ACADEMIA ERP</span>
-              <p className="text-[10px] text-[var(--accent)] font-bold uppercase tracking-wider -mt-0.5">Enterprise Cloud Portal</p>
+              <span className="font-extrabold text-base tracking-tight font-display text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">ACADEMIA ERP</span>
+              <p className="text-[10px] text-cyan-200 font-bold uppercase tracking-wider -mt-0.5 flex items-center gap-1.5 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
+                <span>Next-Gen Campus Hub</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-300 animate-ping"></span>
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -156,48 +160,52 @@ const LandingPage = () => {
           </div>
         </div>
 
-        {/* Header Hero Section */}
-        <div className="text-center space-y-4 max-w-2xl mx-auto pt-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--surface-elevated)] border border-[var(--border)] text-xs font-bold text-[var(--accent)] shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+        {/* 1. HERO SECTION */}
+        <div className="text-center space-y-3 max-w-3xl mx-auto pt-6 pb-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/30 backdrop-blur-md border border-white/30 text-xs font-bold text-white shadow-lg">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
             <span>Academic Session 2026-2027 Active</span>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black font-display text-[var(--text-primary)] tracking-tight">
+
+          <h1 className="text-3xl md:text-5xl font-black font-display text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] tracking-wider">
             KBN COLLEGE ERP
           </h1>
-          <p className="text-xs sm:text-sm font-semibold text-[var(--text-muted)] leading-relaxed">
-            Next-Generation Smart Campus Administration & Academic Management Platform. Select your dedicated portal below to proceed.
+
+          <p className="text-white/95 max-w-2xl mx-auto text-xs sm:text-sm font-semibold leading-relaxed drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)]">
+            Ultra-Advanced Campus Management & Academic Intelligence Platform. Select your institutional portal below to access your dashboard.
           </p>
         </div>
 
-        {/* 3D Portal Selection Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 pt-2">
+        {/* 2. PORTALS GRID (Micro-Compact 3x3 Layout) - Premium Physical Glass */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-[65rem] mx-auto mt-6 px-4">
           {portalRoles.map((portal) => {
             const Icon = portal.icon;
             return (
               <Link
                 key={portal.title}
                 to={portal.link}
-                className="card-3d-interactive p-5 sm:p-6 flex flex-col justify-between min-h-[13.5rem] group w-full"
+                className="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.4)] hover:bg-white/20 hover:border-white/50 hover:shadow-[0_12px_40px_0_rgba(0,0,0,0.35),inset_0_1px_2px_rgba(255,255,255,0.6)] transition-all duration-300 p-3.5 flex flex-col justify-between group w-full"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr ${portal.gradient} text-white flex items-center justify-center shadow-lg shadow-blue-500/10 border border-white/20 group-hover:scale-105 transition-transform duration-200 shrink-0`}>
-                      <Icon size={20} className="sm:w-[22px] sm:h-[22px]" />
+                  <div className="flex items-center justify-between mb-2">
+                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-tr ${portal.gradient} text-white flex items-center justify-center shadow-md border border-white/30 group-hover:scale-105 transition-transform duration-300 shrink-0`}>
+                      <Icon size={15} className="text-white drop-shadow" />
                     </div>
-                    <span className={portal.badgeClass}>{portal.badge}</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-black/25 text-white border border-white/30 backdrop-blur-md shadow-sm">
+                      {portal.badge}
+                    </span>
                   </div>
-                  <h3 className="card-title text-base sm:text-lg font-black font-display tracking-tight group-hover:text-[var(--accent)] transition-colors">
+                  <h3 className="text-sm font-bold font-display text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] group-hover:text-cyan-200 transition-colors mt-2">
                     {portal.title}
                   </h3>
-                  <p className="card-description text-xs sm:text-sm mt-2 font-medium leading-relaxed">
+                  <p className="text-[11px] leading-tight text-white/80 mt-1.5 line-clamp-2 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
                     {portal.description}
                   </p>
                 </div>
 
-                <div className="card-link mt-5 pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between text-xs font-bold">
-                  <span>Enter {portal.title}</span>
-                  <span className="transform group-hover:translate-x-1.5 transition-transform text-sm">→</span>
+                <div className="text-[10px] mt-2.5 pt-2 border-t border-white/25 flex items-center justify-between font-bold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] group-hover:text-cyan-200">
+                  <span className="flex items-center gap-1">Enter {portal.title}</span>
+                  <span className="transform group-hover:translate-x-1 transition-transform text-[10px] text-cyan-200">→</span>
                 </div>
               </Link>
             );
@@ -206,9 +214,9 @@ const LandingPage = () => {
 
       </div>
 
-      {/* Footer */}
-      <footer className="text-center text-xs font-semibold text-[var(--text-muted)] mt-12 py-4">
-        <p>© 2026 KBN College Smart ERP System • Built with 3D Design Architecture</p>
+      {/* 3. FOOTER */}
+      <footer className="text-slate-400/60 text-sm mt-16 text-center py-4">
+        <p>© 2026 KBN College Smart ERP System • Built with Ultra-Advanced 3D Glassmorphic Architecture</p>
       </footer>
     </div>
   );

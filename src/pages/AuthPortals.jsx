@@ -5,19 +5,19 @@ import { mockDB } from '../services/firebase';
 import { Building2, Mail, Lock, Award, AlertCircle, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 
-// Unified 3D Base Auth Form Layout
+// Unified Futuristic Glass Auth Form Layout
 const AuthContainer = ({ title, subtitle, children }) => {
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-[var(--bg-primary)] px-4 py-8 sm:py-12 transition-colors duration-200 relative">
-      {/* 3D Ambient Background Glows */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[140px] pointer-events-none"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[140px] pointer-events-none"></div>
+    <div className="min-h-screen flex flex-col justify-between campus-hero-bg px-4 py-8 sm:py-12 relative overflow-hidden font-sans">
+      {/* Aurora Ambient Background Glows */}
+      <div className="absolute top-1/4 -left-20 w-[450px] h-[450px] bg-cyan-500/10 rounded-full blur-[140px] pointer-events-none"></div>
+      <div className="absolute bottom-1/4 -right-20 w-[450px] h-[450px] bg-purple-500/10 rounded-full blur-[140px] pointer-events-none"></div>
 
-      {/* Top Header bar */}
+      {/* Top Navigation Bar */}
       <div className="max-w-md w-full mx-auto flex items-center justify-between relative z-20">
         <Link
           to="/"
-          className="btn-3d btn-3d-secondary py-2 px-3.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="bg-black/20 backdrop-blur-sm border border-white/20 hover:bg-white/10 hover:border-white/40 transition-all text-white rounded-full px-4 py-2 text-xs flex items-center gap-1.5 shadow-md"
         >
           <ArrowLeft size={14} />
           <span>All Portals</span>
@@ -25,23 +25,23 @@ const AuthContainer = ({ title, subtitle, children }) => {
         <ThemeToggle />
       </div>
 
-      {/* Center 3D Auth Modal */}
-      <div className="w-full max-w-md mx-auto card-3d-elevated p-6 sm:p-8 relative z-10 my-auto">
+      {/* Center Maximum Transparency Glass Auth Modal */}
+      <div className="w-full max-w-md mx-auto bg-white/5 backdrop-blur-sm border border-white/20 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] p-6 sm:p-8 relative z-10 my-auto">
         {/* Logo and Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex p-3.5 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl text-white shadow-lg shadow-blue-500/20 border border-blue-400/30 mb-4">
-            <ShieldCheck size={28} />
+          <div className="inline-flex p-3.5 bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 rounded-2xl text-white shadow-lg shadow-cyan-500/25 border border-white/30 mb-4">
+            <ShieldCheck size={28} className="text-white drop-shadow" />
           </div>
-          <h2 className="text-2xl font-black font-display text-[var(--text-primary)] tracking-tight">{title}</h2>
-          <p className="text-xs font-semibold text-[var(--text-muted)] mt-1.5">{subtitle}</p>
+          <h2 className="text-2xl font-black font-display text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{title}</h2>
+          <p className="text-xs font-semibold text-slate-200 mt-1.5 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">{subtitle}</p>
         </div>
 
         {children}
       </div>
 
       {/* Footer */}
-      <div className="text-center text-xs font-semibold text-[var(--text-muted)] mt-6">
-        <p>ACADEMIA ERP Secure Authentication • Multi-Role Access Control</p>
+      <div className="text-center text-xs font-medium text-white/70 drop-shadow mt-6">
+        <p>© 2026 ACADEMIA ERP • Multi-Role Autonomous Campus Intelligence</p>
       </div>
     </div>
   );
@@ -96,10 +96,10 @@ const CommonPortalLogin = ({ roleLabel, roleFilter, prefillEmail, dashboardPath 
 
   return (
     <AuthContainer title={`${roleLabel} Portal`} subtitle={`Sign in to access your administrative and academic portal`}>
-      
+
       {error && (
-        <div className="mb-4 p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-rose-500 font-bold text-xs flex items-center gap-2">
-          <AlertCircle size={16} className="shrink-0" />
+        <div className="mb-4 p-3.5 bg-rose-500/20 border border-rose-500/40 backdrop-blur-sm rounded-2xl text-rose-200 font-bold text-xs flex items-center gap-2">
+          <AlertCircle size={16} className="shrink-0 text-rose-300" />
           <span>{error}</span>
         </div>
       )}
@@ -107,35 +107,35 @@ const CommonPortalLogin = ({ roleLabel, roleFilter, prefillEmail, dashboardPath 
       {/* Direct Email & Password Login Form */}
       <form onSubmit={handleEmailSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">
+          <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-2 drop-shadow">
             Email Address
           </label>
           <div className="relative">
-            <Mail size={16} className="absolute left-3.5 top-3.5 text-[var(--text-muted)]" />
+            <Mail size={16} className="absolute left-3.5 top-3.5 text-white/50" />
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={prefillEmail}
               required
-              className="input-3d pl-10"
+              className="w-full bg-black/10 border border-white/20 rounded-xl pl-10 pr-4 py-3 text-white placeholder-white/70 focus:outline-none focus:border-cyan-400 focus:bg-black/20 focus:ring-1 focus:ring-cyan-400 transition-all text-sm shadow-inner"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">
+          <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-2 drop-shadow">
             Password
           </label>
           <div className="relative">
-            <Lock size={16} className="absolute left-3.5 top-3.5 text-[var(--text-muted)]" />
+            <Lock size={16} className="absolute left-3.5 top-3.5 text-white/50" />
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
-              className="input-3d pl-10"
+              className="w-full bg-black/10 border border-white/20 rounded-xl pl-10 pr-4 py-3 text-white placeholder-white/70 focus:outline-none focus:border-cyan-400 focus:bg-black/20 focus:ring-1 focus:ring-cyan-400 transition-all text-sm shadow-inner"
             />
           </div>
         </div>
@@ -143,7 +143,7 @@ const CommonPortalLogin = ({ roleLabel, roleFilter, prefillEmail, dashboardPath 
         <button
           type="submit"
           disabled={loading}
-          className="btn-3d btn-3d-primary w-full py-3 text-sm mt-6"
+          className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] transition-all duration-300 w-full py-3 text-sm mt-6 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
         >
           {loading ? (
             <>
@@ -157,15 +157,15 @@ const CommonPortalLogin = ({ roleLabel, roleFilter, prefillEmail, dashboardPath 
       </form>
 
       {/* Quick One-Click Demo Access */}
-      <div className="mt-6 pt-5 border-t border-[var(--border-subtle)] text-center">
-        <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3">
+      <div className="mt-6 pt-5 border-t border-white/15 text-center">
+        <p className="text-[11px] font-bold text-white/70 uppercase tracking-wider mb-3">
           Quick One-Click Demo Access
         </p>
         <button
           type="button"
           onClick={handleDemoAccess}
           disabled={loading}
-          className="btn-3d btn-3d-secondary w-full py-2.5 text-xs text-[var(--accent)] font-bold flex items-center justify-center gap-2 border-dashed border-[var(--accent)]/40 hover:border-[var(--accent)]"
+          className="bg-white/5 border border-white/20 hover:bg-white/10 text-white rounded-xl py-2.5 text-xs w-full flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 font-bold shadow-sm"
         >
           <Award size={15} />
           <span>One-Click Access as {roleLabel}</span>

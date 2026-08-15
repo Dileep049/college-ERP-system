@@ -120,39 +120,42 @@ export const HODPortal = ({ subPage }) => {
 
   return (
     <div className="space-y-6 font-sans pb-12">
-      {/* Top Header Bar with Notifications & Quick Actions */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
+      {/* 1. ROYAL PURPLE GLASS HOD COMMAND BANNER */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-gradient-to-r from-purple-900/50 to-indigo-900/50 backdrop-blur-xl border border-purple-500/30 p-5 md:p-6 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-white">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-200 border border-purple-400/30 drop-shadow-md">
               GLOBAL ADMINISTRATION
             </span>
-            <span className="text-xs text-slate-400 font-semibold">• ALL DEPARTMENTS</span>
+            <span className="text-xs text-purple-200 font-semibold drop-shadow-md">• ALL DEPARTMENTS</span>
           </div>
-          <h1 className="text-xl font-extrabold text-slate-900 dark:text-white mt-1">
+          <h1 className="text-xl md:text-2xl font-extrabold text-white drop-shadow-lg mt-1.5 font-display">
             HOD Command Portal — {user?.fullName || 'Dr. Alan Turing'}
           </h1>
+          <p className="text-xs text-gray-100 font-medium drop-shadow-md mt-0.5">
+            Real-time department oversight, faculty workload management & academic metrics
+          </p>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <button
             onClick={() => setActiveSubPage('ward-counsellors')}
-            className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all shadow-md shadow-purple-500/20 flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold transition-all shadow-lg shadow-purple-500/25 border border-purple-400/40 flex items-center gap-1.5 drop-shadow-md cursor-pointer hover:scale-[1.02]"
           >
             <UserCheck size={14} />
             <span>Assign Counsellor</span>
           </button>
           <button
             onClick={() => setActiveSubPage('faculty-leaves')}
-            className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-md shadow-indigo-500/20 flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-500/25 border border-indigo-400/40 flex items-center gap-1.5 drop-shadow-md cursor-pointer hover:scale-[1.02]"
           >
             <Calendar size={14} />
             <span>Review Leaves</span>
           </button>
           <button
             onClick={() => setActiveSubPage('reports')}
-            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-500/20 flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold transition-all shadow-lg shadow-emerald-500/25 border border-emerald-400/40 flex items-center gap-1.5 drop-shadow-md cursor-pointer hover:scale-[1.02]"
           >
             <FileSpreadsheet size={14} />
             <span>Reports</span>
@@ -162,12 +165,12 @@ export const HODPortal = ({ subPage }) => {
           <div className="relative">
             <button
               onClick={() => setShowNotifDrawer(!showNotifDrawer)}
-              className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all relative"
+              className="p-2.5 rounded-xl bg-black/40 backdrop-blur-md text-white border border-white/15 hover:bg-white/10 transition-all relative shadow-md cursor-pointer"
               title="Notifications"
             >
               <Bell size={18} />
               {notifications.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center animate-pulse">
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center animate-pulse shadow-md">
                   {notifications.length}
                 </span>
               )}
@@ -175,19 +178,19 @@ export const HODPortal = ({ subPage }) => {
 
             {/* Notification Drawer Popover */}
             {showNotifDrawer && (
-              <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 p-4 space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                  <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider">Department Alerts</span>
-                  <button onClick={() => setShowNotifDrawer(false)} className="text-slate-400 hover:text-slate-600"><X size={14} /></button>
+              <div className="absolute right-0 mt-3 w-80 bg-black/80 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl z-50 p-4 space-y-3 text-white">
+                <div className="flex items-center justify-between border-b border-white/15 pb-2">
+                  <span className="text-xs font-black text-white uppercase tracking-wider drop-shadow">Department Alerts</span>
+                  <button onClick={() => setShowNotifDrawer(false)} className="text-gray-300 hover:text-white"><X size={14} /></button>
                 </div>
                 <div className="space-y-2.5 max-h-64 overflow-y-auto">
                   {notifications.map((n) => (
-                    <div key={n.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-xs">
-                      <div className="flex items-center justify-between font-bold text-slate-800 dark:text-slate-200">
+                    <div key={n.id} className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-xs">
+                      <div className="flex items-center justify-between font-bold text-white">
                         <span>{n.title}</span>
-                        <span className="text-[9px] text-slate-400 font-normal">{n.time}</span>
+                        <span className="text-[9px] text-gray-300 font-normal">{n.time}</span>
                       </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{n.message}</p>
+                      <p className="text-[11px] text-gray-200 mt-1 leading-relaxed">{n.message}</p>
                     </div>
                   ))}
                 </div>
@@ -224,28 +227,28 @@ const HODDashboard = ({ hod, onNavigate }) => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-pulse">
         {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-          <div key={i} className="h-28 bg-slate-200 dark:bg-slate-800 rounded-3xl"></div>
+          <div key={i} className="h-28 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)]"></div>
         ))}
       </div>
     );
   }
 
   const kpiCards = [
-    { title: 'Total Faculty', value: stats?.totalFaculty || 25, change: '+2 this year', icon: Users, color: 'text-purple-500 bg-purple-500/10' },
-    { title: 'Total Students', value: stats?.totalStudents || 620, change: 'Across 4 sections', icon: BookOpen, color: 'text-blue-500 bg-blue-500/10' },
-    { title: 'Total Wards', value: stats?.totalWards || 620, change: '3 Ward Counsellors', icon: UserCheck, color: 'text-sky-500 bg-sky-500/10' },
-    { title: 'Present Today', value: stats?.presentToday || 542, change: '87.4% present', icon: CheckCircle2, color: 'text-emerald-500 bg-emerald-500/10' },
-    { title: 'Absent Today', value: stats?.absentToday || 78, change: '12.6% absent', icon: XCircle, color: 'text-rose-500 bg-rose-500/10' },
-    { title: 'Overall Attendance %', value: `${stats?.attendancePercentage}%`, change: '+1.8% vs last month', icon: TrendingUp, color: 'text-emerald-600 bg-emerald-600/10' },
-    { title: 'Faculty on Leave Today', value: stats?.facultyOnLeaveToday || 3, change: 'Coverage arranged', icon: Calendar, color: 'text-amber-500 bg-amber-500/10' },
-    { title: 'Pending Leave Requests', value: stats?.pendingLeaves || 6, change: 'Requires HOD review', icon: AlertCircle, color: 'text-rose-600 bg-rose-600/10', action: () => onNavigate('faculty-leaves') },
-    { title: 'Approved Leaves (Month)', value: stats?.approvedLeavesThisMonth || 14, change: 'Processed', icon: Check, color: 'text-indigo-500 bg-indigo-500/10' },
-    { title: 'Rejected Leaves (Month)', value: stats?.rejectedLeavesThisMonth || 4, change: 'Exam conflicts', icon: X, color: 'text-slate-500 bg-slate-500/10' }
+    { title: 'Total Faculty', value: stats?.totalFaculty || 25, change: '+2 this year', icon: Users, color: 'text-purple-300 bg-purple-500/20 border border-purple-400/30' },
+    { title: 'Total Students', value: stats?.totalStudents || 620, change: 'Across 4 sections', icon: BookOpen, color: 'text-blue-300 bg-blue-500/20 border border-blue-400/30' },
+    { title: 'Total Wards', value: stats?.totalWards || 620, change: '3 Ward Counsellors', icon: UserCheck, color: 'text-sky-300 bg-sky-500/20 border border-sky-400/30' },
+    { title: 'Present Today', value: stats?.presentToday || 542, change: '87.4% present', icon: CheckCircle2, color: 'text-emerald-300 bg-emerald-500/20 border border-emerald-400/30' },
+    { title: 'Absent Today', value: stats?.absentToday || 78, change: '12.6% absent', icon: XCircle, color: 'text-rose-300 bg-rose-500/20 border border-rose-400/30' },
+    { title: 'Overall Attendance %', value: `${stats?.attendancePercentage}%`, change: '+1.8% vs last month', icon: TrendingUp, color: 'text-emerald-300 bg-emerald-500/20 border border-emerald-400/30' },
+    { title: 'Faculty on Leave Today', value: stats?.facultyOnLeaveToday || 3, change: 'Coverage arranged', icon: Calendar, color: 'text-amber-300 bg-amber-500/20 border border-amber-400/30' },
+    { title: 'Pending Leave Requests', value: stats?.pendingLeaves || 6, change: 'Requires HOD review', icon: AlertCircle, color: 'text-rose-300 bg-rose-500/20 border border-rose-400/30', action: () => onNavigate('faculty-leaves') },
+    { title: 'Approved Leaves (Month)', value: stats?.approvedLeavesThisMonth || 14, change: 'Processed', icon: Check, color: 'text-indigo-300 bg-indigo-500/20 border border-indigo-400/30' },
+    { title: 'Rejected Leaves (Month)', value: stats?.rejectedLeavesThisMonth || 4, change: 'Exam conflicts', icon: X, color: 'text-gray-300 bg-white/10 border border-white/20' }
   ];
 
   return (
     <div className="space-y-6">
-      {/* KPI Display Cards */}
+      {/* 2. DARK TINTED STAT CARDS (10 KPI TILES) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {kpiCards.map((kpi, idx) => {
           const Icon = kpi.icon;
@@ -253,74 +256,74 @@ const HODDashboard = ({ hod, onNavigate }) => {
             <div
               key={idx}
               onClick={kpi.action}
-              className={`p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 shadow-md hover:shadow-xl transition-all duration-200 flex flex-col justify-between ${kpi.action ? 'cursor-pointer hover:border-purple-500' : ''}`}
+              className={`p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/20 transition-all duration-300 flex flex-col justify-between ${kpi.action ? 'cursor-pointer hover:scale-[1.02]' : ''}`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{kpi.title}</span>
-                <div className={`p-2 rounded-xl ${kpi.color}`}>
+                <span className="text-[10px] uppercase text-gray-100 font-extrabold tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">{kpi.title}</span>
+                <div className={`p-2 rounded-xl shadow-md ${kpi.color}`}>
                   <Icon size={16} />
                 </div>
               </div>
               <div className="mt-3">
-                <p className="text-2xl font-black text-slate-900 dark:text-white">{kpi.value}</p>
-                <span className="text-[10px] text-slate-500 font-semibold mt-0.5 block">{kpi.change}</span>
+                <p className="text-white font-black text-3xl sm:text-4xl drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display">{kpi.value}</p>
+                <span className="text-[10.5px] text-gray-100 font-bold drop-shadow-md mt-1 block">{kpi.change}</span>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Quick Action Hub */}
-      <div className="p-5 bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white rounded-3xl shadow-xl space-y-3">
+      {/* 3. HOD QUICK ACTION CENTER (ROYAL PURPLE GLASS) */}
+      <div className="p-5 bg-gradient-to-r from-purple-900/50 to-indigo-900/50 backdrop-blur-xl border border-purple-500/30 text-white rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-extrabold flex items-center gap-2">
-            <Briefcase size={16} /> HOD Quick Action Center
+          <h3 className="text-sm font-extrabold flex items-center gap-2 drop-shadow-lg">
+            <Briefcase size={16} className="text-purple-300" /> HOD Quick Action Center
           </h3>
-          <span className="text-[10px] text-purple-200 font-medium">Departmental Control Shortcuts</span>
+          <span className="text-[10px] text-purple-200 font-bold drop-shadow-md">Departmental Control Shortcuts</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-2.5">
-          <button onClick={() => onNavigate('ward-counsellors')} className="p-2.5 bg-white/10 hover:bg-white/20 rounded-2xl text-center text-xs font-bold transition-all border border-white/10">
-            👥 Assign Ward Counsellor
+          <button onClick={() => onNavigate('ward-counsellors')} className="p-2.5 bg-black/40 hover:bg-white/15 backdrop-blur-md rounded-2xl text-center text-xs font-bold transition-all border border-white/15 text-white drop-shadow-md cursor-pointer hover:scale-[1.02]">
+            👥 Assign Counsellor
           </button>
-          <button onClick={() => onNavigate('faculty-leaves')} className="p-2.5 bg-white/10 hover:bg-white/20 rounded-2xl text-center text-xs font-bold transition-all border border-white/10">
-            📝 Review Faculty Leaves
+          <button onClick={() => onNavigate('faculty-leaves')} className="p-2.5 bg-black/40 hover:bg-white/15 backdrop-blur-md rounded-2xl text-center text-xs font-bold transition-all border border-white/15 text-white drop-shadow-md cursor-pointer hover:scale-[1.02]">
+            📝 Review Leaves
           </button>
-          <button onClick={() => onNavigate('reports')} className="p-2.5 bg-white/10 hover:bg-white/20 rounded-2xl text-center text-xs font-bold transition-all border border-white/10">
-            📊 Generate Monthly Report
+          <button onClick={() => onNavigate('reports')} className="p-2.5 bg-black/40 hover:bg-white/15 backdrop-blur-md rounded-2xl text-center text-xs font-bold transition-all border border-white/15 text-white drop-shadow-md cursor-pointer hover:scale-[1.02]">
+            📊 Monthly Report
           </button>
-          <button onClick={() => onNavigate('attendance-unlocks')} className="p-2.5 bg-white/10 hover:bg-white/20 rounded-2xl text-center text-xs font-bold transition-all border border-white/10">
+          <button onClick={() => onNavigate('attendance-unlocks')} className="p-2.5 bg-black/40 hover:bg-white/15 backdrop-blur-md rounded-2xl text-center text-xs font-bold transition-all border border-white/15 text-white drop-shadow-md cursor-pointer hover:scale-[1.02]">
             🔓 Unlock Attendance
           </button>
-          <button onClick={() => onNavigate('attendance-monitoring')} className="p-2.5 bg-white/10 hover:bg-white/20 rounded-2xl text-center text-xs font-bold transition-all border border-white/10">
-            ⚠️ Low Attendance Students
+          <button onClick={() => onNavigate('attendance-monitoring')} className="p-2.5 bg-black/40 hover:bg-white/15 backdrop-blur-md rounded-2xl text-center text-xs font-bold transition-all border border-white/15 text-white drop-shadow-md cursor-pointer hover:scale-[1.02]">
+            ⚠️ Low Attendance
           </button>
-          <button onClick={() => onNavigate('workload')} className="p-2.5 bg-white/10 hover:bg-white/20 rounded-2xl text-center text-xs font-bold transition-all border border-white/10">
+          <button onClick={() => onNavigate('workload')} className="p-2.5 bg-black/40 hover:bg-white/15 backdrop-blur-md rounded-2xl text-center text-xs font-bold transition-all border border-white/15 text-white drop-shadow-md cursor-pointer hover:scale-[1.02]">
             💼 Faculty Workload
           </button>
-          <button onClick={() => onNavigate('announcements')} className="p-2.5 bg-white/10 hover:bg-white/20 rounded-2xl text-center text-xs font-bold transition-all border border-white/10">
-            📢 Post Announcement
+          <button onClick={() => onNavigate('announcements')} className="p-2.5 bg-black/40 hover:bg-white/15 backdrop-blur-md rounded-2xl text-center text-xs font-bold transition-all border border-white/15 text-white drop-shadow-md cursor-pointer hover:scale-[1.02]">
+            📢 Announcements
           </button>
         </div>
       </div>
 
-      {/* Attendance Graph & Section Comparison */}
+      {/* 4. ATTENDANCE GRAPH & SECTION COMPARISON PANELS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 p-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
+        <div className="lg:col-span-2 p-5 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">Daily Department Attendance Roster</h3>
-              <p className="text-[11px] text-slate-400">Present vs Absent student count by day</p>
+              <h3 className="text-sm font-extrabold text-white drop-shadow-lg">Daily Department Attendance Roster</h3>
+              <p className="text-[11px] text-gray-100 font-medium drop-shadow-md mt-0.5">Present vs Absent student count by day</p>
             </div>
-            <span className="text-xs font-bold text-emerald-600 bg-emerald-500/10 px-2.5 py-1 rounded-full">87.4% Avg</span>
+            <span className="text-xs font-extrabold text-emerald-300 bg-emerald-500/20 border border-emerald-400/30 px-3 py-1 rounded-full drop-shadow-md">87.4% Avg</span>
           </div>
           <div className="h-64 text-xs">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={stats?.graphs.daily}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="name" stroke="#94A3B8" />
-                <YAxis stroke="#94A3B8" />
-                <Tooltip />
-                <Legend />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                <XAxis dataKey="name" stroke="#cbd5e1" />
+                <YAxis stroke="#cbd5e1" />
+                <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.85)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }} />
+                <Legend wrapperStyle={{ color: '#fff' }} />
                 <Bar dataKey="Present" fill="#10B981" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Absent" fill="#EF4444" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -328,26 +331,26 @@ const HODDashboard = ({ hod, onNavigate }) => {
           </div>
         </div>
 
-        <div className="p-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md flex flex-col justify-between">
+        <div className="p-5 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white flex flex-col justify-between">
           <div>
-            <h3 className="text-sm font-extrabold text-slate-900 dark:text-white mb-1">Section-wise Attendance</h3>
-            <p className="text-[11px] text-slate-400 mb-4">Department sections strength distribution</p>
+            <h3 className="text-sm font-extrabold text-white drop-shadow-lg mb-1">Section-wise Attendance</h3>
+            <p className="text-[11px] text-gray-100 font-medium drop-shadow-md mb-4">Department sections strength distribution</p>
             <div className="space-y-3">
               {stats?.graphs.sectionWise.map((sec) => (
-                <div key={sec.section} className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+                <div key={sec.section} className="p-3 rounded-xl bg-black/30 border border-white/10">
+                  <div className="flex items-center justify-between text-xs font-bold text-white">
                     <span>{sec.section}</span>
-                    <span className="text-purple-600 dark:text-purple-400">{sec.Attendance}%</span>
+                    <span className="text-purple-300 font-extrabold drop-shadow">{sec.Attendance}%</span>
                   </div>
-                  <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full mt-2 overflow-hidden">
-                    <div className="bg-gradient-to-r from-purple-500 to-indigo-500 h-full rounded-full" style={{ width: `${sec.Attendance}%` }}></div>
+                  <div className="w-full bg-white/10 h-2 rounded-full mt-2 overflow-hidden">
+                    <div className="bg-gradient-to-r from-purple-400 to-indigo-400 h-full rounded-full shadow-[0_0_8px_rgba(192,132,252,0.5)]" style={{ width: `${sec.Attendance}%` }}></div>
                   </div>
-                  <span className="text-[10px] text-slate-400 mt-1 block">{sec.Students} Students Assigned</span>
+                  <span className="text-[10px] text-gray-200 font-medium drop-shadow-sm mt-1 block">{sec.Students} Students Assigned</span>
                 </div>
               ))}
             </div>
           </div>
-          <button onClick={() => onNavigate('overview')} className="w-full mt-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 transition-all flex items-center justify-center gap-1">
+          <button onClick={() => onNavigate('overview')} className="w-full mt-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl text-xs font-bold text-white transition-all flex items-center justify-center gap-1 drop-shadow cursor-pointer">
             <span>Full Department Overview</span>
             <ChevronRight size={14} />
           </button>

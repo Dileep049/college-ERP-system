@@ -144,128 +144,153 @@ const ParentDashboard = ({ parent, child }) => {
   const pendingAssignments = assignments.filter(a => !a.submissions?.some(s => s.studentId === child?.uid));
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
+    <div className="space-y-6 text-xs font-semibold font-sans">
       
-      {/* Header Banner */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-900 text-white shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-indigo-300 text-[10px] font-black uppercase tracking-widest">
+      {/* 1. PARENT PORTAL HUB BANNER (DARK BLUE TINTED GLASS) */}
+      <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-blue-950/60 to-indigo-950/60 backdrop-blur-xl border border-blue-500/30 text-white shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+        <div className="space-y-1 relative z-10">
+          <div className="flex items-center gap-2 text-cyan-300 text-[10px] font-black uppercase tracking-widest drop-shadow-md">
             <span>ACADEMIA</span> • <span>Parent Portal Hub</span>
           </div>
-          <h1 className="text-2xl font-black font-display tracking-tight">{parent?.fullName || 'Parent / Guardian'}</h1>
-          <p className="text-xs text-slate-300 font-medium">
-            Ward: <span className="underline font-black text-indigo-200">{child?.fullName || child?.studentName}</span> ({child?.rollNumber}) • {child?.department} (Sem {child?.semester} - Sec {child?.section || 'A'})
+          <h1 className="text-2xl md:text-3xl font-extrabold font-display tracking-tight text-white drop-shadow-[0_4px_4px_rgba(0,0,0,1)]">{parent?.fullName || 'Parent / Guardian'}</h1>
+          <p className="text-xs text-gray-100 font-medium drop-shadow-md mt-0.5">
+            Ward: <span className="underline font-bold text-cyan-300 drop-shadow">{child?.fullName || child?.studentName}</span> ({child?.rollNumber}) • {child?.department} (Sem {child?.semester} - Sec {child?.section || 'A'})
           </p>
         </div>
-        <span className="px-3.5 py-1.5 bg-white/10 backdrop-blur-md rounded-xl border border-white/15 text-[11px] font-extrabold text-emerald-300 flex items-center gap-1.5">
-          <CheckCircle2 size={14} /> Linked Ward Monitoring Active
+        <span className="px-4 py-2 bg-black/40 backdrop-blur-md rounded-2xl border border-white/20 text-xs font-extrabold text-emerald-300 flex items-center gap-2 shadow-lg drop-shadow relative z-10 shrink-0">
+          <CheckCircle2 size={16} className="text-emerald-400" /> Linked Ward Monitoring Active
         </span>
       </div>
 
-      {/* Live Alerts Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      {/* 2. QUICK STATUS PILLS (GLASS) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {attendance >= 75 ? (
-          <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-300 flex items-center gap-2.5">
-            <CheckCircle2 size={18} className="shrink-0 text-emerald-500" />
-            <div><span className="font-black block text-xs">🟢 Attendance Satisfactory ({attendance}%)</span><span className="text-[10px]">Ward satisfies mandatory 75% rule.</span></div>
+          <div className="bg-black/30 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-md flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 shrink-0 shadow-sm">
+              <CheckCircle2 size={20} className="text-emerald-300 drop-shadow" />
+            </div>
+            <div>
+              <span className="font-extrabold block text-xs text-white drop-shadow-sm">🟢 Attendance Satisfactory ({attendance}%)</span>
+              <span className="text-[10.5px] text-gray-200 font-medium mt-0.5 block">Ward satisfies mandatory 75% rule.</span>
+            </div>
           </div>
         ) : (
-          <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 flex items-center gap-2.5">
-            <AlertTriangle size={18} className="shrink-0 text-rose-500" />
-            <div><span className="font-black block text-xs">🔴 Attendance Alert ({attendance}%)</span><span className="text-[10px]">Below 75%. Ward Counsellor notified.</span></div>
+          <div className="bg-black/30 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-md flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-400/30 shrink-0 shadow-sm animate-pulse">
+              <AlertTriangle size={20} className="text-rose-300 drop-shadow" />
+            </div>
+            <div>
+              <span className="font-extrabold block text-xs text-white drop-shadow-sm">🔴 Attendance Alert ({attendance}%)</span>
+              <span className="text-[10.5px] text-rose-300 font-medium mt-0.5 block">Below 75%. Ward Counsellor notified.</span>
+            </div>
           </div>
         )}
 
         {pendingAssignments.length > 0 ? (
-          <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-300 flex items-center gap-2.5">
-            <Clock size={18} className="shrink-0 text-amber-500" />
-            <div><span className="font-black block text-xs">🟡 {pendingAssignments.length} Assignment(s) Due</span><span className="text-[10px]">Ward has pending class homework.</span></div>
+          <div className="bg-black/30 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-md flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-400/30 shrink-0 shadow-sm">
+              <Clock size={20} className="text-amber-300 drop-shadow" />
+            </div>
+            <div>
+              <span className="font-extrabold block text-xs text-white drop-shadow-sm">🟡 {pendingAssignments.length} Assignment(s) Due</span>
+              <span className="text-[10.5px] text-gray-200 font-medium mt-0.5 block">Ward has pending class homework.</span>
+            </div>
           </div>
         ) : (
-          <div className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-300 flex items-center gap-2.5">
-            <CheckCircle2 size={18} className="shrink-0 text-blue-500" />
-            <div><span className="font-black block text-xs">🟢 All Homework Submitted</span><span className="text-[10px]">Zero pending assignments.</span></div>
+          <div className="bg-black/30 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-md flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-400/30 shrink-0 shadow-sm">
+              <CheckCircle2 size={20} className="text-blue-300 drop-shadow" />
+            </div>
+            <div>
+              <span className="font-extrabold block text-xs text-white drop-shadow-sm">🟢 All Homework Submitted</span>
+              <span className="text-[10.5px] text-gray-200 font-medium mt-0.5 block">Zero pending assignments.</span>
+            </div>
           </div>
         )}
 
-        <div className="p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900 text-purple-700 dark:text-purple-300 flex items-center gap-2.5">
-          <Briefcase size={18} className="shrink-0 text-purple-500" />
-          <div><span className="font-black block text-xs">🔵 {drives.length} Corporate Recruitment Drive(s)</span><span className="text-[10px]">Available for ward's branch.</span></div>
+        <div className="bg-black/30 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-md flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-400/30 shrink-0 shadow-sm">
+            <Briefcase size={20} className="text-purple-300 drop-shadow" />
+          </div>
+          <div>
+            <span className="font-extrabold block text-xs text-white drop-shadow-sm">🔵 {drives.length} Corporate Recruitment Drive(s)</span>
+            <span className="text-[10.5px] text-gray-200 font-medium mt-0.5 block">Available for ward's branch.</span>
+          </div>
         </div>
       </div>
 
-      {/* 8 Main Command Cards */}
+      {/* 3. 8 MAIN COMMAND CARDS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Attendance Rate</span>
-            <CheckSquare size={16} className="text-emerald-500" />
+        <div className="p-5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Attendance Rate</span>
+            <CheckSquare size={17} className="text-emerald-400 drop-shadow" />
           </div>
-          <p className="text-2xl font-black text-emerald-600">{attendance}%</p>
-          <span className="text-[9.5px] text-slate-400 font-bold block">{attendance >= 75 ? 'Good Standing' : 'Warning Level'}</span>
+          <p className="text-3xl font-black text-emerald-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display">{attendance}%</p>
+          <span className="text-[10px] text-white font-bold block drop-shadow-md">{attendance >= 75 ? '🟢 Good Standing' : '🔴 Warning Level'}</span>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Internal Marks</span>
-            <FileText size={16} className="text-blue-500" />
+        <div className="p-5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Internal Marks</span>
+            <FileText size={17} className="text-blue-400 drop-shadow" />
           </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white">{internalMarks} / 50</p>
-          <span className="text-[9.5px] text-blue-600 font-bold block">Internal Score</span>
+          <p className="text-3xl font-black text-white drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display">{internalMarks} / 50</p>
+          <span className="text-[10px] text-cyan-300 font-bold block drop-shadow-md">Internal Score</span>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Current CGPA</span>
-            <Award size={16} className="text-indigo-500" />
+        <div className="p-5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Current CGPA</span>
+            <Award size={17} className="text-indigo-400 drop-shadow" />
           </div>
-          <p className="text-2xl font-black text-indigo-600">{child?.cgpa || 8.4}</p>
-          <span className="text-[9.5px] text-indigo-600 font-bold block">Academic Record</span>
+          <p className="text-3xl font-black text-indigo-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display">{child?.cgpa || 8.4}</p>
+          <span className="text-[10px] text-indigo-200 font-bold block drop-shadow-md">Academic Record</span>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Active Backlogs</span>
-            <AlertTriangle size={16} className="text-rose-500" />
+        <div className="p-5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Active Backlogs</span>
+            <AlertTriangle size={17} className="text-rose-400 drop-shadow" />
           </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white">{child?.backlogs || 0}</p>
-          <span className="text-[9.5px] text-slate-400 font-bold block">Backlog Count</span>
+          <p className="text-3xl font-black text-white drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display">{child?.backlogs || 0}</p>
+          <span className="text-[10px] text-rose-300 font-bold block drop-shadow-md">Backlog Count</span>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Pending Assignments</span>
-            <Briefcase size={16} className="text-amber-500" />
+        <div className="p-5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Pending Assignments</span>
+            <Briefcase size={17} className="text-amber-400 drop-shadow" />
           </div>
-          <p className="text-2xl font-black text-amber-500">{pendingAssignments.length}</p>
-          <span className="text-[9.5px] text-amber-600 font-bold block">Homework Due</span>
+          <p className="text-3xl font-black text-amber-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display">{pendingAssignments.length}</p>
+          <span className="text-[10px] text-amber-200 font-bold block drop-shadow-md">Homework Due</span>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Leave Status</span>
-            <Calendar size={16} className="text-purple-500" />
+        <div className="p-5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Leave Status</span>
+            <Calendar size={17} className="text-purple-400 drop-shadow" />
           </div>
-          <p className="text-sm font-black text-purple-600 mt-2">{latestLeave ? latestLeave.status : 'None Filed'}</p>
-          <span className="text-[9.5px] text-slate-400 font-bold block">Ward Counsellor Review</span>
+          <p className="text-2xl font-black text-purple-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display truncate">{latestLeave ? latestLeave.status : 'None Filed'}</p>
+          <span className="text-[10px] text-purple-200 font-bold block drop-shadow-md">Ward Counsellor Review</span>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Counselling</span>
-            <UserCheck size={16} className="text-teal-500" />
+        <div className="p-5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Counselling</span>
+            <UserCheck size={17} className="text-teal-400 drop-shadow" />
           </div>
-          <p className="text-sm font-black text-teal-600 mt-2">{meetings.length > 0 ? 'Active Session' : 'Assigned'}</p>
-          <span className="text-[9.5px] text-slate-400 font-bold block">Ward Mentor Connected</span>
+          <p className="text-2xl font-black text-teal-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display truncate">{meetings.length > 0 ? 'Active Session' : 'Assigned'}</p>
+          <span className="text-[10px] text-teal-200 font-bold block drop-shadow-md">Ward Mentor Connected</span>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[9.5px] font-extrabold uppercase tracking-wider">Placements</span>
-            <Award size={16} className="text-sky-500" />
+        <div className="p-5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Placements</span>
+            <Award size={17} className="text-sky-400 drop-shadow" />
           </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white">{drives.length}</p>
-          <span className="text-[9.5px] text-sky-600 font-bold block">Available Drives</span>
+          <p className="text-3xl font-black text-sky-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display">{drives.length}</p>
+          <span className="text-[10px] text-sky-200 font-bold block drop-shadow-md">Available Drives</span>
         </div>
       </div>
 

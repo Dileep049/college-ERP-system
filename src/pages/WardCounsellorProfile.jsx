@@ -227,8 +227,8 @@ export const WardCounsellorProfile = () => {
   return (
     <div className="max-w-5xl mx-auto space-y-8 p-4 sm:p-6 lg:p-8">
       {/* Header Banner Card */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 text-white p-6 sm:p-8 shadow-2xl shadow-blue-500/10">
-        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-900/50 to-purple-900/50 backdrop-blur-xl border border-white/10 text-white p-6 sm:p-8 shadow-lg">
+        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
         <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
           {/* Avatar Display */}
           <div className="relative group">
@@ -236,31 +236,31 @@ export const WardCounsellorProfile = () => {
               <img
                 src={photoUrl}
                 alt={displayName}
-                className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl object-cover border-4 border-white/30 shadow-2xl transition-transform duration-300 group-hover:scale-105"
+                className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl object-cover border-4 border-white/20 shadow-2xl transition-transform duration-300 group-hover:scale-105"
               />
             ) : (
-              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl bg-white/20 backdrop-blur-md border-4 border-white/30 text-white flex items-center justify-center font-black text-3xl shadow-2xl">
+              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl bg-white/10 backdrop-blur-md border-4 border-white/20 text-white flex items-center justify-center font-black text-3xl shadow-2xl">
                 {displayName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'WC'}
               </div>
             )}
-            <div className="absolute -bottom-2 -right-2 bg-blue-500 text-white p-2 rounded-xl border-2 border-white shadow-md">
+            <div className="absolute -bottom-2 -right-2 bg-purple-600 text-white p-2 rounded-xl border-2 border-white/40 shadow-md">
               <User size={16} />
             </div>
           </div>
 
           {/* User Details Header */}
           <div className="text-center md:text-left space-y-2 flex-1">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/15 backdrop-blur-md rounded-full text-xs font-bold border border-white/20">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-bold border border-white/20">
               <Sparkles size={14} className="text-amber-300" />
               <span>Institutional Faculty Member</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">{displayName}</h1>
-            <p className="text-xs sm:text-sm font-medium text-blue-100/90">{email}</p>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">{displayName}</h1>
+            <p className="text-xs sm:text-sm font-medium text-purple-200/90">{email}</p>
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
-              <span className="px-3 py-1 bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 rounded-xl text-xs font-black uppercase">
+              <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-xl text-xs font-black uppercase">
                 {role}
               </span>
-              <span className="px-3 py-1 bg-white/15 text-white border border-white/20 rounded-xl text-xs font-semibold">
+              <span className="px-3 py-1 bg-white/10 text-white border border-white/20 rounded-xl text-xs font-semibold">
                 {department}
               </span>
             </div>
@@ -273,29 +273,29 @@ export const WardCounsellorProfile = () => {
         
         {/* LEFT COLUMN: Strict Field Permissions (LOCKED / READ-ONLY) */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6 transition-colors duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+          <div className="p-6 rounded-3xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg space-y-6 transition-colors duration-200">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div>
-                <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                  <Shield size={18} className="text-amber-500" />
-                  <span>Academic Scope & Scope</span>
+                <h2 className="text-base font-black text-white flex items-center gap-2">
+                  <Shield size={18} className="text-amber-400" />
+                  <span>Academic Scope</span>
                 </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p className="text-xs text-gray-400 mt-0.5">
                   Locked system attributes managed by HOD
                 </p>
               </div>
-              <span className="p-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl border border-amber-500/20 font-bold text-xs flex items-center gap-1">
+              <span className="p-2 bg-amber-500/10 text-amber-300 rounded-xl border border-amber-500/20 font-bold text-xs flex items-center gap-1">
                 🔒 Locked
               </span>
             </div>
 
             {/* Warning Banner */}
-            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-medium space-y-1">
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-medium space-y-1">
               <div className="flex items-center gap-1.5 font-bold">
                 <AlertCircle size={15} className="shrink-0" />
                 <span>Strict Security Scope Policy</span>
               </div>
-              <p className="text-[11px] leading-relaxed text-amber-800/80 dark:text-amber-300/80">
+              <p className="text-[11px] leading-relaxed text-amber-200/80">
                 Your assigned email, role, department, semester, and section are locked to ensure system integrity. Contact your Head of Department (HOD) for modifications.
               </p>
             </div>
@@ -303,71 +303,71 @@ export const WardCounsellorProfile = () => {
             <div className="space-y-4 text-xs">
               {/* Locked Email */}
               <div>
-                <label className="block text-slate-600 dark:text-slate-300 font-bold mb-1.5 flex items-center justify-between">
+                <label className="block text-gray-300 font-bold mb-1.5 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <Mail size={14} className="text-slate-400" /> Email Address
+                    <Mail size={14} className="text-gray-400" /> Email Address
                   </span>
-                  <span className="text-[11px] text-slate-400 font-normal">🔒 Read-Only</span>
+                  <span className="text-[11px] text-gray-400 font-normal">🔒 Read-Only</span>
                 </label>
-                <div className="flex items-center justify-between px-4 py-3 bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-slate-700/60 font-medium">
+                <div className="flex items-center justify-between px-4 py-3 bg-white/5 text-gray-200 rounded-xl border border-white/10 font-medium">
                   <span className="truncate">{email}</span>
-                  <Lock size={14} className="text-slate-400 shrink-0 ml-2" />
+                  <Lock size={14} className="text-gray-400 shrink-0 ml-2" />
                 </div>
               </div>
 
               {/* Locked Role */}
               <div>
-                <label className="block text-slate-600 dark:text-slate-300 font-bold mb-1.5 flex items-center justify-between">
+                <label className="block text-gray-300 font-bold mb-1.5 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <User size={14} className="text-slate-400" /> System Role
+                    <User size={14} className="text-gray-400" /> System Role
                   </span>
-                  <span className="text-[11px] text-slate-400 font-normal">🔒 Read-Only</span>
+                  <span className="text-[11px] text-gray-400 font-normal">🔒 Read-Only</span>
                 </label>
-                <div className="flex items-center justify-between px-4 py-3 bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-slate-700/60 font-medium">
+                <div className="flex items-center justify-between px-4 py-3 bg-white/5 text-gray-200 rounded-xl border border-white/10 font-medium">
                   <span>{role}</span>
-                  <Lock size={14} className="text-slate-400 shrink-0 ml-2" />
+                  <Lock size={14} className="text-gray-400 shrink-0 ml-2" />
                 </div>
               </div>
 
               {/* Locked Department */}
               <div>
-                <label className="block text-slate-600 dark:text-slate-300 font-bold mb-1.5 flex items-center justify-between">
+                <label className="block text-gray-300 font-bold mb-1.5 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <Building2 size={14} className="text-slate-400" /> Assigned Department
+                    <Building2 size={14} className="text-gray-400" /> Assigned Department
                   </span>
-                  <span className="text-[11px] text-slate-400 font-normal">🔒 Read-Only</span>
+                  <span className="text-[11px] text-gray-400 font-normal">🔒 Read-Only</span>
                 </label>
-                <div className="flex items-center justify-between px-4 py-3 bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-slate-700/60 font-medium">
+                <div className="flex items-center justify-between px-4 py-3 bg-white/5 text-gray-200 rounded-xl border border-white/10 font-medium">
                   <span className="truncate">{department}</span>
-                  <Lock size={14} className="text-slate-400 shrink-0 ml-2" />
+                  <Lock size={14} className="text-gray-400 shrink-0 ml-2" />
                 </div>
               </div>
 
               {/* Locked Semester */}
               <div>
-                <label className="block text-slate-600 dark:text-slate-300 font-bold mb-1.5 flex items-center justify-between">
+                <label className="block text-gray-300 font-bold mb-1.5 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <BookOpen size={14} className="text-slate-400" /> Assigned Semester
+                    <BookOpen size={14} className="text-gray-400" /> Assigned Semester
                   </span>
-                  <span className="text-[11px] text-slate-400 font-normal">🔒 Read-Only</span>
+                  <span className="text-[11px] text-gray-400 font-normal">🔒 Read-Only</span>
                 </label>
-                <div className="flex items-center justify-between px-4 py-3 bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-slate-700/60 font-medium">
+                <div className="flex items-center justify-between px-4 py-3 bg-white/5 text-gray-200 rounded-xl border border-white/10 font-medium">
                   <span>{semester}</span>
-                  <Lock size={14} className="text-slate-400 shrink-0 ml-2" />
+                  <Lock size={14} className="text-gray-400 shrink-0 ml-2" />
                 </div>
               </div>
 
               {/* Locked Section */}
               <div>
-                <label className="block text-slate-600 dark:text-slate-300 font-bold mb-1.5 flex items-center justify-between">
+                <label className="block text-gray-300 font-bold mb-1.5 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <Layers size={14} className="text-slate-400" /> Assigned Section
+                    <Layers size={14} className="text-gray-400" /> Assigned Section
                   </span>
-                  <span className="text-[11px] text-slate-400 font-normal">🔒 Read-Only</span>
+                  <span className="text-[11px] text-gray-400 font-normal">🔒 Read-Only</span>
                 </label>
-                <div className="flex items-center justify-between px-4 py-3 bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-slate-700/60 font-medium">
+                <div className="flex items-center justify-between px-4 py-3 bg-white/5 text-gray-200 rounded-xl border border-white/10 font-medium">
                   <span>{section}</span>
-                  <Lock size={14} className="text-slate-400 shrink-0 ml-2" />
+                  <Lock size={14} className="text-gray-400 shrink-0 ml-2" />
                 </div>
               </div>
             </div>
@@ -376,18 +376,18 @@ export const WardCounsellorProfile = () => {
 
         {/* RIGHT COLUMN: Editable Fields (Phone, Alternate Contact, Photo, Bio) */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6 transition-colors duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+          <div className="p-6 rounded-3xl bg-black/40 backdrop-blur-md border border-white/10 shadow-lg space-y-6 transition-colors duration-200">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div>
-                <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                  <User size={18} className="text-blue-500" />
+                <h2 className="text-base font-black text-white flex items-center gap-2">
+                  <User size={18} className="text-purple-400" />
                   <span>Personal Details & Contact Settings</span>
                 </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p className="text-xs text-gray-400 mt-0.5">
                   Update your contact details, bio, and profile picture
                 </p>
               </div>
-              <span className="px-3 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl border border-blue-500/20 font-bold text-xs">
+              <span className="px-3 py-1 bg-purple-500/10 text-purple-300 rounded-xl border border-purple-500/20 font-bold text-xs">
                 Editable
               </span>
             </div>
@@ -396,18 +396,18 @@ export const WardCounsellorProfile = () => {
               
               {/* Profile Picture Upload / URL */}
               <div className="space-y-3">
-                <label className="block text-slate-700 dark:text-slate-300 font-bold flex items-center justify-between">
+                <label className="block text-gray-300 font-bold flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <Camera size={15} className="text-blue-500" /> Profile Picture
+                    <Camera size={15} className="text-purple-400" /> Profile Picture
                   </span>
-                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                  <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
                     <button
                       type="button"
                       onClick={() => setPhotoInputMode('file')}
                       className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
                         photoInputMode === 'file'
-                          ? 'bg-blue-600 text-white shadow'
-                          : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white'
+                          ? 'bg-purple-600 text-white shadow'
+                          : 'text-gray-400 hover:text-white'
                       }`}
                     >
                       <Upload size={12} className="inline mr-1" /> Upload File
@@ -417,8 +417,8 @@ export const WardCounsellorProfile = () => {
                       onClick={() => setPhotoInputMode('url')}
                       className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
                         photoInputMode === 'url'
-                          ? 'bg-blue-600 text-white shadow'
-                          : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white'
+                          ? 'bg-purple-600 text-white shadow'
+                          : 'text-gray-400 hover:text-white'
                       }`}
                     >
                       <LinkIcon size={12} className="inline mr-1" /> Image URL
@@ -427,7 +427,7 @@ export const WardCounsellorProfile = () => {
                 </label>
 
                 {photoInputMode === 'file' ? (
-                  <div className="border-2 border-dashed border-slate-200 dark:border-slate-700/80 rounded-2xl p-4 text-center hover:border-blue-500 dark:hover:border-blue-500 transition-colors">
+                  <div className="border-2 border-dashed border-white/15 bg-white/5 rounded-2xl p-4 text-center hover:border-purple-400 transition-colors">
                     <input
                       type="file"
                       id="profile-photo-file"
@@ -439,13 +439,13 @@ export const WardCounsellorProfile = () => {
                       htmlFor="profile-photo-file"
                       className="cursor-pointer flex flex-col items-center justify-center space-y-2"
                     >
-                      <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-white/10 text-purple-300 flex items-center justify-center">
                         <Upload size={18} />
                       </div>
-                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      <span className="text-xs font-bold text-white">
                         Click to select profile picture
                       </span>
-                      <span className="text-[10px] text-slate-400">
+                      <span className="text-[10px] text-gray-400">
                         Supports PNG, JPG, WEBP (Max 5 MB)
                       </span>
                     </label>
@@ -457,13 +457,13 @@ export const WardCounsellorProfile = () => {
                       value={photoUrl}
                       onChange={(e) => setPhotoUrl(e.target.value)}
                       placeholder="https://example.com/profile-avatar.jpg"
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition-all"
+                      className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white placeholder-gray-400 focus:bg-white/10 focus:ring-1 focus:ring-blue-400 outline-none transition-all"
                     />
                   </div>
                 )}
 
                 {fileError && (
-                  <p className="text-[11px] font-bold text-rose-500 flex items-center gap-1">
+                  <p className="text-[11px] font-bold text-rose-400 flex items-center gap-1">
                     <AlertCircle size={13} /> {fileError}
                   </p>
                 )}
@@ -471,39 +471,39 @@ export const WardCounsellorProfile = () => {
 
               {/* Phone Number */}
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1.5 flex items-center gap-1.5">
-                  <Phone size={14} className="text-blue-500" /> Phone Number
+                <label className="block text-gray-300 font-bold mb-1.5 flex items-center gap-1.5">
+                  <Phone size={14} className="text-purple-400" /> Phone Number
                 </label>
                 <input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+91 98765 43210"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none font-medium transition-all"
+                  className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white placeholder-gray-400 focus:bg-white/10 focus:ring-1 focus:ring-blue-400 outline-none font-medium transition-all"
                 />
               </div>
 
               {/* Alternate Contact */}
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1.5 flex items-center gap-1.5">
-                  <PhoneCall size={14} className="text-blue-500" /> Alternate Contact / Emergency Number
+                <label className="block text-gray-300 font-bold mb-1.5 flex items-center gap-1.5">
+                  <PhoneCall size={14} className="text-purple-400" /> Alternate Contact / Emergency Number
                 </label>
                 <input
                   type="tel"
                   value={alternateContact}
                   onChange={(e) => setAlternateContact(e.target.value)}
                   placeholder="+91 91234 56789"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none font-medium transition-all"
+                  className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white placeholder-gray-400 focus:bg-white/10 focus:ring-1 focus:ring-blue-400 outline-none font-medium transition-all"
                 />
               </div>
 
               {/* Bio / About Section */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-slate-700 dark:text-slate-300 font-bold flex items-center gap-1.5">
-                    <FileText size={14} className="text-blue-500" /> Bio / About Ward Counsellor
+                  <label className="block text-gray-300 font-bold flex items-center gap-1.5">
+                    <FileText size={14} className="text-purple-400" /> Bio / About Ward Counsellor
                   </label>
-                  <span className="text-[10px] text-slate-400 font-medium">
+                  <span className="text-[10px] text-gray-400 font-medium">
                     {bio.length} / 300 characters
                   </span>
                 </div>
@@ -513,19 +513,19 @@ export const WardCounsellorProfile = () => {
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Share a short bio, counselling hours, or advisory notes for students and parents..."
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none font-medium transition-all resize-none leading-relaxed"
+                  className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white placeholder-gray-400 focus:bg-white/10 focus:ring-1 focus:ring-blue-400 outline-none font-medium transition-all resize-none leading-relaxed"
                 />
               </div>
 
             </div>
 
             {/* Action Bar */}
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-end gap-3">
+            <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={fetchProfile}
                 disabled={isSaving}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold transition-all disabled:opacity-50"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold transition-all disabled:opacity-50"
               >
                 Reset Changes
               </button>
@@ -533,7 +533,7 @@ export const WardCounsellorProfile = () => {
               <button
                 type="submit"
                 disabled={isSaving}
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold shadow-lg shadow-purple-500/25 border border-purple-400/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {isSaving ? (
                   <>
