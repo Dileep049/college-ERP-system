@@ -299,194 +299,202 @@ const PrincipalBranchAnalytics = () => {
   if (loading) return <div className="p-8 text-center text-slate-400 text-xs">Loading branch analytics & ward counsellors...</div>;
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
+    <div className="space-y-6 text-xs font-semibold bg-transparent min-h-screen text-white font-sans">
       
-      {/* Header */}
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h2 className="text-lg font-black text-slate-900 dark:text-white">Branch Analytics & Ward Counsellors</h2>
-            <p className="text-xs text-slate-400">View active branch ward counsellors, HOD assignments, and institutional performance metrics</p>
-          </div>
-          <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 text-[10.5px] font-bold rounded-full border border-emerald-500/20">
-            Real-time HOD Sync (Read Only)
+      {/* Universal Glass Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 md:p-8 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <span className="text-[10px] font-extrabold tracking-widest uppercase text-cyan-300 bg-cyan-500/20 px-3 py-0.5 rounded-full border border-cyan-400/30 drop-shadow-md">
+            Department Operations
           </span>
+          <h2 className="text-xl md:text-2xl font-black text-white drop-shadow-md mt-1.5 font-display">Branch Analytics & Ward Counsellors</h2>
+          <p className="text-xs text-gray-200 font-semibold drop-shadow-sm mt-0.5">View active branch ward counsellors, HOD assignments, and institutional performance metrics</p>
         </div>
+        <span className="px-3.5 py-1.5 bg-emerald-500/20 text-emerald-300 text-[10.5px] font-bold rounded-full border border-emerald-400/30 shrink-0 self-start sm:self-auto drop-shadow">
+          Real-time HOD Sync (Read Only)
+        </span>
+      </div>
 
+      {/* Main Glass Content Card */}
+      <div className="p-6 md:p-8 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white space-y-8">
         {/* Branch Bar Chart */}
-        <div className="h-64 min-h-[250px] mb-8">
-          <ResponsiveContainer width="100%" height="100%" minHeight={250}>
-            <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-              <XAxis dataKey="branch" stroke="#94A3B8" />
-              <YAxis domain={[0, 100]} stroke="#94A3B8" />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="passRate" fill="#9333EA" name="Pass Rate %" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="attendance" fill="#10B981" name="Attendance %" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="placementRate" fill="#3B82F6" name="Placement Rate %" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        <div>
+          <h3 className="text-sm font-black text-white uppercase tracking-wider mb-4 drop-shadow-sm">Institutional Branch Comparison Metrics</h3>
+          <div className="h-64 min-h-[250px]">
+            <ResponsiveContainer width="100%" height="100%" minHeight={250}>
+              <BarChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                <XAxis dataKey="branch" stroke="#CBD5E1" />
+                <YAxis domain={[0, 100]} stroke="#CBD5E1" />
+                <Tooltip contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', borderColor: 'rgba(255,255,255,0.2)', borderRadius: '12px', color: '#fff' }} />
+                <Legend />
+                <Bar dataKey="passRate" fill="#A855F7" name="Pass Rate %" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="attendance" fill="#10B981" name="Attendance %" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="placementRate" fill="#38BDF8" name="Placement Rate %" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Branch Ward Counsellors Section Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
-          <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-            <UserCheck className="text-purple-600" size={18} />
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <h3 className="text-sm font-black text-white flex items-center gap-2 drop-shadow-sm">
+            <UserCheck className="text-cyan-400" size={18} />
             Branch Ward Counsellors
           </h3>
-          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Dynamic HOD Assignment</span>
+          <span className="text-[10px] text-cyan-300 font-bold uppercase tracking-wider">Dynamic HOD Assignment</span>
         </div>
 
         {/* Branch Ward Counsellor Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {data.map((b) => (
             <div 
               key={b.branch} 
               onClick={() => setSelectedBranch(b)}
-              className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/50 dark:border-slate-800 hover:border-purple-500/50 hover:shadow-lg transition-all cursor-pointer space-y-3"
+              className="p-5 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 hover:border-cyan-400/50 shadow-lg transition-all cursor-pointer space-y-3 text-white"
             >
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">{b.branch}</h4>
-                <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-black ${b.isAssigned ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
-                  {b.isAssigned ? '🟢 Assigned' : '🟡 Ward Counsellor Not Assigned'}
+                <h4 className="text-xs font-black text-white truncate drop-shadow-sm">{b.branch}</h4>
+                <span className={`px-2.5 py-0.5 rounded-full text-[9.5px] font-black border ${b.isAssigned ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30' : 'bg-amber-500/20 text-amber-300 border-amber-400/30'}`}>
+                  {b.isAssigned ? '🟢 Assigned' : '🟡 Unassigned'}
                 </span>
               </div>
 
               {b.isAssigned ? (
                 <div className="flex items-center gap-3 pt-1">
                   {b.counsellorPhoto ? (
-                    <img src={b.counsellorPhoto} alt={b.counsellorName} className="w-10 h-10 rounded-xl object-cover border border-purple-500/30" />
+                    <img src={b.counsellorPhoto} alt={b.counsellorName} className="w-11 h-11 rounded-xl object-cover border border-cyan-400/40 shadow" />
                   ) : (
-                    <div className="w-10 h-10 rounded-xl bg-purple-600/10 text-purple-600 font-black text-sm flex items-center justify-center border border-purple-500/20">
+                    <div className="w-11 h-11 rounded-xl bg-purple-600/20 text-purple-300 font-black text-sm flex items-center justify-center border border-purple-400/30 shadow">
                       {b.counsellorName?.substring(0, 2).toUpperCase() || 'WC'}
                     </div>
                   )}
                   <div className="overflow-hidden">
-                    <h5 className="text-xs font-black text-slate-900 dark:text-white truncate">{b.counsellorName}</h5>
-                    <p className="text-[10px] text-slate-400 truncate">{b.counsellorEmail}</p>
+                    <h5 className="text-xs font-black text-white truncate drop-shadow-sm">{b.counsellorName}</h5>
+                    <p className="text-[10px] text-gray-300 truncate">{b.counsellorEmail}</p>
                     <div className="flex items-center gap-2 mt-0.5 text-[9.5px]">
-                      <span className="text-purple-600 dark:text-purple-400 font-bold">👥 {b.wardStudentsCount} Ward Students</span>
-                      {b.counsellorId && <span className="text-slate-400">• ID: {b.counsellorId}</span>}
+                      <span className="text-cyan-300 font-bold">👥 {b.wardStudentsCount} Ward Students</span>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl text-center">
-                  <p className="text-xs font-extrabold text-amber-600 dark:text-amber-400">🟡 Ward Counsellor Not Assigned</p>
-                  <p className="text-[9.5px] text-slate-400 mt-0.5">Awaiting HOD assignment</p>
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-center">
+                  <p className="text-xs font-extrabold text-amber-300">🟡 Ward Counsellor Not Assigned</p>
+                  <p className="text-[9.5px] text-gray-400 mt-0.5">Awaiting HOD assignment</p>
                 </div>
               )}
 
-              <div className="flex items-center justify-between text-[10px] pt-2 border-t border-slate-200/40 dark:border-slate-800 text-slate-500 font-medium">
-                <span>HOD: <strong className="text-slate-700 dark:text-slate-300 font-bold">{b.hodName}</strong></span>
-                <span className="text-purple-600 font-bold hover:underline">View Branch Details →</span>
+              <div className="flex items-center justify-between text-[10px] pt-2 border-t border-white/10 text-gray-300 font-medium">
+                <span>HOD: <strong className="text-white font-bold">{b.hodName}</strong></span>
+                <span className="text-cyan-300 font-bold hover:underline">Details →</span>
               </div>
             </div>
           ))}
         </div>
 
         {/* Branch Analytics Table */}
-        <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Branch Comparison Table</h3>
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto">
-          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
-            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
-              <tr>
-                <th className="p-4">Branch / Department</th>
-                <th className="p-4">Ward Counsellor</th>
-                <th className="p-4 text-center">Ward Students</th>
-                <th className="p-4 text-center">Faculty</th>
-                <th className="p-4 text-center">Avg Attendance %</th>
-                <th className="p-4 text-center">Pass Rate %</th>
-                <th className="p-4 text-center">Placement Rate %</th>
-                <th className="p-4 text-right">Details</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {data.map((b) => (
-                <tr key={b.branch} onClick={() => setSelectedBranch(b)} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 cursor-pointer">
-                  <td className="p-4 font-extrabold text-slate-900 dark:text-white">{b.branch}</td>
-                  <td className="p-4">
-                    {b.isAssigned ? (
-                      <div>
-                        <span className="font-extrabold text-slate-900 dark:text-white block">{b.counsellorName}</span>
-                        <span className="text-[10px] text-slate-400 block">{b.counsellorEmail}</span>
-                      </div>
-                    ) : (
-                      <span className="text-amber-600 font-bold text-[10.5px]">🟡 Not Assigned</span>
-                    )}
-                  </td>
-                  <td className="p-4 text-center font-bold text-purple-600">{b.wardStudentsCount}</td>
-                  <td className="p-4 text-center font-bold">{b.faculty}</td>
-                  <td className="p-4 text-center font-extrabold text-emerald-600">{b.attendance}%</td>
-                  <td className="p-4 text-center font-black text-purple-600">{b.passRate}%</td>
-                  <td className="p-4 text-center font-black text-indigo-600">{b.placementRate}%</td>
-                  <td className="p-4 text-right text-purple-600 font-bold text-xs">View Overview</td>
+        <div className="space-y-3 pt-2">
+          <h3 className="text-sm font-black text-white drop-shadow-sm">Branch Comparison Table</h3>
+          <div className="overflow-hidden rounded-2xl border border-white/10 overflow-x-auto">
+            <table className="w-full text-left text-xs font-semibold text-white">
+              <thead className="bg-white/5 uppercase text-[10px] text-gray-300 tracking-wider border-b border-white/10">
+                <tr>
+                  <th className="p-4">Branch / Department</th>
+                  <th className="p-4">Ward Counsellor</th>
+                  <th className="p-4 text-center">Ward Students</th>
+                  <th className="p-4 text-center">Faculty</th>
+                  <th className="p-4 text-center">Avg Attendance %</th>
+                  <th className="p-4 text-center">Pass Rate %</th>
+                  <th className="p-4 text-center">Placement Rate %</th>
+                  <th className="p-4 text-right">Details</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {data.map((b) => (
+                  <tr key={b.branch} onClick={() => setSelectedBranch(b)} className="hover:bg-white/5 transition-colors cursor-pointer">
+                    <td className="p-4 font-extrabold text-white">{b.branch}</td>
+                    <td className="p-4">
+                      {b.isAssigned ? (
+                        <div>
+                          <span className="font-extrabold text-white block">{b.counsellorName}</span>
+                          <span className="text-[10px] text-gray-300 block">{b.counsellorEmail}</span>
+                        </div>
+                      ) : (
+                        <span className="text-amber-300 font-bold text-[10.5px]">🟡 Not Assigned</span>
+                      )}
+                    </td>
+                    <td className="p-4 text-center font-bold text-cyan-300">{b.wardStudentsCount}</td>
+                    <td className="p-4 text-center font-bold text-gray-300">{b.faculty}</td>
+                    <td className="p-4 text-center font-extrabold text-emerald-400">{b.attendance}%</td>
+                    <td className="p-4 text-center font-black text-purple-300">{b.passRate}%</td>
+                    <td className="p-4 text-center font-black text-cyan-400">{b.placementRate}%</td>
+                    <td className="p-4 text-right text-cyan-300 font-bold text-xs">View Overview</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
       {/* Branch Overview Modal */}
       {selectedBranch && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-xl w-full p-6 space-y-6 animate-in fade-in zoom-in duration-150">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-black/80 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.8)] max-w-xl w-full p-6 space-y-6 text-white animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div>
-                <span className="px-2.5 py-0.5 bg-purple-500/10 text-purple-600 text-[10px] font-black uppercase rounded-full">
+                <span className="px-2.5 py-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 text-[10px] font-black uppercase rounded-full">
                   Branch Overview
                 </span>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white mt-1">{selectedBranch.branch}</h3>
+                <h3 className="text-lg font-black text-white drop-shadow-md mt-1 font-display">{selectedBranch.branch}</h3>
               </div>
-              <button onClick={() => setSelectedBranch(null)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-full">
+              <button onClick={() => setSelectedBranch(null)} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer">
                 <X size={20} />
               </button>
             </div>
 
             {/* HOD & Ward Counsellor Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase font-black block">Head of Department (HOD)</span>
-                <h4 className="text-sm font-black text-slate-900 dark:text-white mt-1">{selectedBranch.hodName}</h4>
-                <p className="text-[10.5px] text-purple-600 font-medium">{selectedBranch.hodEmail}</p>
+              <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+                <span className="text-[10px] text-gray-400 uppercase font-black block">Head of Department (HOD)</span>
+                <h4 className="text-sm font-black text-white mt-1">{selectedBranch.hodName}</h4>
+                <p className="text-[10.5px] text-cyan-300 font-medium">{selectedBranch.hodEmail}</p>
               </div>
 
-              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase font-black block">Branch Ward Counsellor</span>
+              <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+                <span className="text-[10px] text-gray-400 uppercase font-black block">Branch Ward Counsellor</span>
                 {selectedBranch.isAssigned ? (
                   <div className="mt-1">
-                    <h4 className="text-sm font-black text-slate-900 dark:text-white">{selectedBranch.counsellorName}</h4>
-                    <p className="text-[10.5px] text-purple-600 font-medium">{selectedBranch.counsellorEmail}</p>
-                    <span className="text-[9.5px] text-emerald-600 font-bold block mt-1">👥 {selectedBranch.wardStudentsCount} Assigned Ward Students</span>
+                    <h4 className="text-sm font-black text-white">{selectedBranch.counsellorName}</h4>
+                    <p className="text-[10.5px] text-cyan-300 font-medium">{selectedBranch.counsellorEmail}</p>
+                    <span className="text-[9.5px] text-emerald-400 font-bold block mt-1">👥 {selectedBranch.wardStudentsCount} Assigned Ward Students</span>
                   </div>
                 ) : (
-                  <p className="text-xs font-bold text-amber-600 mt-1">🟡 Ward Counsellor Not Assigned</p>
+                  <p className="text-xs font-bold text-amber-300 mt-1">🟡 Ward Counsellor Not Assigned</p>
                 )}
               </div>
             </div>
 
             {/* Assigned Faculty Section in Branch Modal */}
             <div className="space-y-2">
-              <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
+              <h4 className="text-xs font-black text-white uppercase tracking-wider">
                 HOD Assigned Teaching Faculty ({branchFacultyAllocations.length})
               </h4>
               {branchFacultyAllocations.length === 0 ? (
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-center text-slate-400 text-xs">
+                <div className="p-3 bg-white/5 rounded-xl text-center text-gray-400 text-xs border border-white/10">
                   No active faculty course assignments recorded for {selectedBranch.branch}.
                 </div>
               ) : (
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                   {branchFacultyAllocations.map(fac => (
-                    <div key={fac.id || fac.allocationId} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/50 dark:border-slate-800 flex items-center justify-between">
+                    <div key={fac.id || fac.allocationId} className="p-3 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-between">
                       <div>
-                        <strong className="text-xs font-black text-slate-900 dark:text-white block">{fac.facultyName}</strong>
-                        <span className="text-[10.5px] text-purple-600 dark:text-purple-400 font-bold">{fac.subjectName || fac.subject}</span>
+                        <strong className="text-xs font-black text-white block">{fac.facultyName}</strong>
+                        <span className="text-[10.5px] text-cyan-300 font-bold">{fac.subjectName || fac.subject}</span>
                       </div>
                       <div className="text-right text-[11px]">
-                        <span className="text-indigo-600 font-bold block">{fac.semester || 'Semester 1'} • {fac.section || 'Section A'}</span>
-                        <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-full text-[9.5px] font-black uppercase">Assigned</span>
+                        <span className="text-gray-300 font-bold block">{fac.semester || 'Semester 1'} • {fac.section || 'Section A'}</span>
+                        <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-full text-[9.5px] font-black uppercase">Assigned</span>
                       </div>
                     </div>
                   ))}
@@ -496,30 +504,30 @@ const PrincipalBranchAnalytics = () => {
 
             {/* Metrics Breakdown Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-                <span className="text-[9.5px] text-slate-400 block font-bold">Students</span>
-                <span className="text-base font-black text-slate-900 dark:text-white">{selectedBranch.students}</span>
+              <div className="p-3 bg-white/5 rounded-2xl border border-white/10">
+                <span className="text-[9.5px] text-gray-400 block font-bold">Students</span>
+                <span className="text-base font-black text-white">{selectedBranch.students}</span>
               </div>
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-                <span className="text-[9.5px] text-slate-400 block font-bold">Faculty</span>
-                <span className="text-base font-black text-slate-900 dark:text-white">{selectedBranch.faculty}</span>
+              <div className="p-3 bg-white/5 rounded-2xl border border-white/10">
+                <span className="text-[9.5px] text-gray-400 block font-bold">Faculty</span>
+                <span className="text-base font-black text-white">{selectedBranch.faculty}</span>
               </div>
-              <div className="p-3 bg-emerald-500/10 text-emerald-600 rounded-2xl">
+              <div className="p-3 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-2xl">
                 <span className="text-[9.5px] block font-bold">Attendance</span>
                 <span className="text-base font-black">{selectedBranch.attendance}%</span>
               </div>
-              <div className="p-3 bg-purple-500/10 text-purple-600 rounded-2xl">
+              <div className="p-3 bg-purple-500/20 text-purple-300 border border-purple-400/30 rounded-2xl">
                 <span className="text-[9.5px] block font-bold">Pass Rate</span>
                 <span className="text-base font-black">{selectedBranch.passRate}%</span>
               </div>
-              <div className="p-3 bg-indigo-500/10 text-indigo-600 rounded-2xl">
+              <div className="p-3 bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 rounded-2xl">
                 <span className="text-[9.5px] block font-bold">Placement</span>
                 <span className="text-base font-black">{selectedBranch.placementRate}%</span>
               </div>
             </div>
 
-            <div className="text-right pt-2 border-t border-slate-100 dark:border-slate-800">
-              <button onClick={() => setSelectedBranch(null)} className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-xs rounded-xl shadow-md">
+            <div className="text-right pt-2 border-t border-white/10">
+              <button onClick={() => setSelectedBranch(null)} className="px-5 py-2.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold text-xs rounded-xl cursor-pointer transition-all">
                 Close Overview
               </button>
             </div>
@@ -546,73 +554,76 @@ const PrincipalSemesterResults = () => {
     fetchResults();
   }, [dept, year, semester]);
 
-  if (!data) return <div className="p-8 text-center text-slate-400 text-xs">Loading semester results...</div>;
+  if (!data) return <div className="p-8 text-center text-gray-400 text-xs font-bold">Loading semester results...</div>;
 
   const s = data.summary;
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
-      {/* Header & Filters */}
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-6 text-xs font-semibold bg-transparent min-h-screen text-white font-sans">
+      {/* Header & Filters Glass Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 md:p-8 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-black text-slate-900 dark:text-white">Semester Result Analytics</h2>
-          <p className="text-xs text-slate-400">Institutional academic performance breakdown and subject alerts</p>
+          <span className="text-[10px] font-extrabold tracking-widest uppercase text-cyan-300 bg-cyan-500/20 px-3 py-0.5 rounded-full border border-cyan-400/30 drop-shadow-md">
+            Academic Performance
+          </span>
+          <h2 className="text-xl md:text-2xl font-black text-white drop-shadow-md mt-1.5 font-display">Semester Result Analytics</h2>
+          <p className="text-xs text-gray-200 font-semibold drop-shadow-sm mt-0.5">Institutional academic performance breakdown and subject alerts</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <select value={dept} onChange={e => setDept(e.target.value)} className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold">
-            <option value="All Departments">All Departments</option>
+          <select value={dept} onChange={e => setDept(e.target.value)} className="px-3.5 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white text-xs font-bold focus:bg-white/10 focus:border-cyan-400 focus:outline-none cursor-pointer">
+            <option value="All Departments" className="bg-slate-900 text-white">All Departments</option>
             {COLLEGE_DEPARTMENTS.map((d, idx) => (
-              <option key={`${d}-${idx}`} value={d}>{d}</option>
+              <option key={`${d}-${idx}`} value={d} className="bg-slate-900 text-white">{d}</option>
             ))}
           </select>
-          <select value={year} onChange={e => setYear(e.target.value)} className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold">
-            <option value="2025-26">2025-26</option>
-            <option value="2026-27">2026-27</option>
+          <select value={year} onChange={e => setYear(e.target.value)} className="px-3.5 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white text-xs font-bold focus:bg-white/10 focus:border-cyan-400 focus:outline-none cursor-pointer">
+            <option value="2025-26" className="bg-slate-900 text-white">2025-26</option>
+            <option value="2026-27" className="bg-slate-900 text-white">2026-27</option>
           </select>
-          <select value={semester} onChange={e => setSemester(e.target.value)} className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold">
-            {KBN_SEMESTERS.map(s => <option key={s} value={s}>{s}</option>)}
+          <select value={semester} onChange={e => setSemester(e.target.value)} className="px-3.5 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white text-xs font-bold focus:bg-white/10 focus:border-cyan-400 focus:outline-none cursor-pointer">
+            {KBN_SEMESTERS.map(sem => <option key={sem} value={sem} className="bg-slate-900 text-white">{sem}</option>)}
           </select>
         </div>
       </div>
 
       {/* Semester Performance Dashboard Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 text-center">
-        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
-          <span className="text-[10px] text-slate-400 block uppercase font-bold">Total Students</span>
-          <span className="text-xl font-black text-slate-900 dark:text-white">{s.totalStudents}</span>
+        <div className="p-4 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white">
+          <span className="text-[10px] text-gray-300 block uppercase font-bold">Total Students</span>
+          <span className="text-xl font-black text-white">{s.totalStudents}</span>
         </div>
-        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
-          <span className="text-[10px] text-slate-400 block uppercase font-bold">Appeared</span>
-          <span className="text-xl font-black text-purple-600">{s.appearedStudents}</span>
+        <div className="p-4 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white">
+          <span className="text-[10px] text-gray-300 block uppercase font-bold">Appeared</span>
+          <span className="text-xl font-black text-cyan-300">{s.appearedStudents}</span>
         </div>
-        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
-          <span className="text-[10px] text-slate-400 block uppercase font-bold">Passed</span>
-          <span className="text-xl font-black text-emerald-600">{s.passedStudents}</span>
+        <div className="p-4 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white">
+          <span className="text-[10px] text-gray-300 block uppercase font-bold">Passed</span>
+          <span className="text-xl font-black text-emerald-400">{s.passedStudents}</span>
         </div>
-        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
-          <span className="text-[10px] text-slate-400 block uppercase font-bold">Failed</span>
-          <span className="text-xl font-black text-rose-500">{s.failedStudents}</span>
+        <div className="p-4 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white">
+          <span className="text-[10px] text-gray-300 block uppercase font-bold">Failed</span>
+          <span className="text-xl font-black text-rose-400">{s.failedStudents}</span>
         </div>
-        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
-          <span className="text-[10px] text-slate-400 block uppercase font-bold">Pass Rate %</span>
-          <span className="text-xl font-black text-purple-600">{s.passPercentage}%</span>
+        <div className="p-4 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white">
+          <span className="text-[10px] text-gray-300 block uppercase font-bold">Pass Rate %</span>
+          <span className="text-xl font-black text-purple-300">{s.passPercentage}%</span>
         </div>
-        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
-          <span className="text-[10px] text-slate-400 block uppercase font-bold">Avg %</span>
-          <span className="text-xl font-black text-indigo-600">{s.averagePercentage}%</span>
+        <div className="p-4 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white">
+          <span className="text-[10px] text-gray-300 block uppercase font-bold">Avg %</span>
+          <span className="text-xl font-black text-cyan-300">{s.averagePercentage}%</span>
         </div>
       </div>
 
       {/* Low Performance Alert Banner */}
       {data.lowPerformanceAlerts.length > 0 && (
-        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-3xl space-y-2">
-          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-black text-xs">
+        <div className="p-5 bg-amber-500/10 backdrop-blur-md border border-amber-500/30 rounded-2xl space-y-2 text-white">
+          <div className="flex items-center gap-2 text-amber-300 font-black text-xs">
             <AlertTriangle size={18} />
             <span>Academic Performance Alerts (Critical / Attention Required)</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {data.lowPerformanceAlerts.map(al => (
-              <div key={al.subject} className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-amber-500/20 text-xs font-bold text-slate-800 dark:text-slate-200">
+              <div key={al.subject} className="p-3 bg-black/40 backdrop-blur-md rounded-xl border border-amber-500/20 text-xs font-bold text-gray-200">
                 {al.message}
               </div>
             ))}
@@ -622,70 +633,72 @@ const PrincipalSemesterResults = () => {
 
       {/* Semester Trend & Branch Comparison Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
-          <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-4">Semester-wise Performance Trend</h3>
+        <div className="p-6 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white">
+          <h3 className="text-xs font-black uppercase text-cyan-300 tracking-wider mb-4">Semester-wise Performance Trend</h3>
           <div className="h-60 min-h-[240px]">
             <ResponsiveContainer width="100%" height="100%" minHeight={240}>
               <LineChart data={data.semesterTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="semester" stroke="#94A3B8" />
-                <YAxis domain={[60, 100]} stroke="#94A3B8" />
-                <Tooltip />
-                <Line type="monotone" dataKey="passRate" stroke="#9333EA" strokeWidth={3} dot={{ r: 5 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                <XAxis dataKey="semester" stroke="#CBD5E1" />
+                <YAxis domain={[60, 100]} stroke="#CBD5E1" />
+                <Tooltip contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', borderColor: 'rgba(255,255,255,0.2)', borderRadius: '12px', color: '#fff' }} />
+                <Line type="monotone" dataKey="passRate" stroke="#A855F7" strokeWidth={3} dot={{ r: 5, fill: '#A855F7' }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
-          <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-4">Branch-wise Semester Performance ({semester})</h3>
+        <div className="p-6 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white">
+          <h3 className="text-xs font-black uppercase text-cyan-300 tracking-wider mb-4">Branch-wise Semester Performance ({semester})</h3>
           <div className="h-60 min-h-[240px]">
             <ResponsiveContainer width="100%" height="100%" minHeight={240}>
               <BarChart data={data.branchComparison}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="branch" stroke="#94A3B8" />
-                <YAxis domain={[50, 100]} stroke="#94A3B8" />
-                <Tooltip />
-                <Bar dataKey="passRate" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                <XAxis dataKey="branch" stroke="#CBD5E1" />
+                <YAxis domain={[50, 100]} stroke="#CBD5E1" />
+                <Tooltip contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', borderColor: 'rgba(255,255,255,0.2)', borderRadius: '12px', color: '#fff' }} />
+                <Bar dataKey="passRate" fill="#38BDF8" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      {/* Subject Performance Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden overflow-x-auto p-6 space-y-4">
-        <h3 className="text-base font-black text-slate-900 dark:text-white">Subject-wise Academic Performance</h3>
-        <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
-          <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
-            <tr>
-              <th className="p-3">Subject Name</th>
-              <th className="p-3 text-center">Appeared</th>
-              <th className="p-3 text-center">Passed</th>
-              <th className="p-3 text-center">Failed</th>
-              <th className="p-3 text-center">Pass Rate %</th>
-              <th className="p-3 text-center">Avg Marks</th>
-              <th className="p-3 text-center">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {data.subjects.map((sub) => (
-              <tr key={sub.name} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                <td className="p-3 font-extrabold text-slate-900 dark:text-white">{sub.name}</td>
-                <td className="p-3 text-center font-bold">{sub.appeared}</td>
-                <td className="p-3 text-center font-bold text-emerald-600">{sub.passed}</td>
-                <td className="p-3 text-center font-bold text-rose-500">{sub.failed}</td>
-                <td className="p-3 text-center font-black text-purple-600">{sub.passRate}%</td>
-                <td className="p-3 text-center font-bold">{sub.avgMarks}</td>
-                <td className="p-3 text-center">
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${sub.status === 'Critical' ? 'bg-rose-500/10 text-rose-600' : sub.status === 'Attention' ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
-                    {sub.status}
-                  </span>
-                </td>
+      {/* Subject Performance Table Card */}
+      <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] overflow-hidden p-6 space-y-4 text-white">
+        <h3 className="text-base font-black text-white drop-shadow-sm">Subject-wise Academic Performance</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs font-semibold text-white">
+            <thead className="bg-white/5 uppercase text-[10px] text-gray-300 tracking-wider border-b border-white/10">
+              <tr>
+                <th className="p-3.5">Subject Name</th>
+                <th className="p-3.5 text-center">Appeared</th>
+                <th className="p-3.5 text-center">Passed</th>
+                <th className="p-3.5 text-center">Failed</th>
+                <th className="p-3.5 text-center">Pass Rate %</th>
+                <th className="p-3.5 text-center">Avg Marks</th>
+                <th className="p-3.5 text-center">Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {data.subjects.map((sub) => (
+                <tr key={sub.name} className="hover:bg-white/5 transition-colors">
+                  <td className="p-3.5 font-extrabold text-white">{sub.name}</td>
+                  <td className="p-3.5 text-center font-bold text-gray-300">{sub.appeared}</td>
+                  <td className="p-3.5 text-center font-bold text-emerald-400">{sub.passed}</td>
+                  <td className="p-3.5 text-center font-bold text-rose-400">{sub.failed}</td>
+                  <td className="p-3.5 text-center font-black text-purple-300">{sub.passRate}%</td>
+                  <td className="p-3.5 text-center font-bold text-cyan-300">{sub.avgMarks}</td>
+                  <td className="p-3.5 text-center">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${sub.status === 'Critical' ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' : sub.status === 'Attention' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'}`}>
+                      {sub.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -706,55 +719,69 @@ const PrincipalAcademicPerformance = () => {
   if (!data) return <div className="p-8 text-center text-slate-400 text-xs">Loading academic risk analytics...</div>;
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
-        <h2 className="text-lg font-black text-slate-900 dark:text-white mb-1">Academic Risk Analytics & Marks Distribution</h2>
-        <p className="text-xs text-slate-400 mb-6">Identify students requiring academic intervention and monitor grade distributions</p>
+    <div className="space-y-6 text-xs font-semibold bg-transparent min-h-screen text-white font-sans">
+      {/* Universal Glass Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 md:p-8 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <span className="text-[10px] font-extrabold tracking-widest uppercase text-cyan-300 bg-cyan-500/20 px-3 py-0.5 rounded-full border border-cyan-400/30 drop-shadow-md">
+            Academic Risk Oversight
+          </span>
+          <h2 className="text-xl md:text-2xl font-black text-white drop-shadow-md mt-1.5 font-display">Academic Risk Analytics & Marks Distribution</h2>
+          <p className="text-xs text-gray-200 font-semibold drop-shadow-sm mt-0.5">Identify students requiring academic intervention and monitor grade distributions</p>
+        </div>
+      </div>
 
+      {/* Main Glass Content Card */}
+      <div className="p-6 md:p-8 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white space-y-8">
         {/* Marks Distribution Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-8">
-          {data.distribution.map((d) => (
-            <div key={d.range} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl text-center border border-slate-200/40 dark:border-slate-800">
-              <span className="text-[10px] text-slate-400 block uppercase font-bold">{d.range}</span>
-              <span className="text-2xl font-black text-purple-600 mt-1 block">{d.count}</span>
-              <span className="text-[9px] text-slate-400 block mt-0.5">Students</span>
-            </div>
-          ))}
+        <div>
+          <h3 className="text-xs font-black uppercase text-cyan-300 tracking-wider mb-3">Marks Distribution Overview</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            {data.distribution.map((d) => (
+              <div key={d.range} className="p-4 bg-white/5 rounded-2xl text-center border border-white/10 shadow-sm">
+                <span className="text-[10px] text-gray-400 block uppercase font-bold">{d.range}</span>
+                <span className="text-2xl font-black text-cyan-300 mt-1 block">{d.count}</span>
+                <span className="text-[9px] text-gray-300 block mt-0.5">Students</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Students Requiring Attention Table */}
-        <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3">Students Requiring Attention (At Risk)</h3>
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto">
-          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
-            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
-              <tr>
-                <th className="p-3">Roll Number</th>
-                <th className="p-3">Student Name</th>
-                <th className="p-3">Branch</th>
-                <th className="p-3">Semester</th>
-                <th className="p-3 text-center">Attendance %</th>
-                <th className="p-3">Primary Concern</th>
-                <th className="p-3 text-center">Risk Level</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {data.atRiskStudents.map((st, index) => (
-                <tr key={`${st.rollNumber || st.id || 'st'}-${index}`} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                  <td className="p-3 font-mono font-bold">{st.rollNumber}</td>
-                  <td className="p-3 font-extrabold text-slate-900 dark:text-white">{st.name}</td>
-                  <td className="p-3 font-bold text-purple-600">{st.department}</td>
-                  <td className="p-3 text-slate-500">{st.semester}</td>
-                  <td className={`p-3 text-center font-black ${st.attendance < 75 ? 'text-rose-500' : 'text-emerald-600'}`}>{st.attendance}%</td>
-                  <td className="p-3 text-slate-500">{st.result}</td>
-                  <td className="p-3 text-center">
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black ${st.risk === 'High' ? 'bg-rose-500/10 text-rose-600' : st.risk === 'Medium' ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
-                      {st.risk === 'High' ? '🔴 High' : st.risk === 'Medium' ? '🟡 Medium' : '🟢 Low'}
-                    </span>
-                  </td>
+        <div className="space-y-3">
+          <h3 className="text-sm font-black text-white drop-shadow-sm">Students Requiring Attention (At Risk)</h3>
+          <div className="overflow-hidden rounded-2xl border border-white/10 overflow-x-auto">
+            <table className="w-full text-left text-xs font-semibold text-white">
+              <thead className="bg-white/5 uppercase text-[10px] text-gray-300 tracking-wider border-b border-white/10">
+                <tr>
+                  <th className="p-3.5">Roll Number</th>
+                  <th className="p-3.5">Student Name</th>
+                  <th className="p-3.5">Branch</th>
+                  <th className="p-3.5">Semester</th>
+                  <th className="p-3.5 text-center">Attendance %</th>
+                  <th className="p-3.5">Primary Concern</th>
+                  <th className="p-3.5 text-center">Risk Level</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {data.atRiskStudents.map((st, index) => (
+                  <tr key={`${st.rollNumber || st.id || 'st'}-${index}`} className="hover:bg-white/5 transition-colors">
+                    <td className="p-3.5 font-mono font-bold text-cyan-300">{st.rollNumber}</td>
+                    <td className="p-3.5 font-extrabold text-white">{st.name}</td>
+                    <td className="p-3.5 font-bold text-purple-300">{st.department}</td>
+                    <td className="p-3.5 text-gray-300">{st.semester}</td>
+                    <td className={`p-3.5 text-center font-black ${st.attendance < 75 ? 'text-rose-400' : 'text-emerald-400'}`}>{st.attendance}%</td>
+                    <td className="p-3.5 text-gray-300">{st.result}</td>
+                    <td className="p-3.5 text-center">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border ${st.risk === 'High' ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' : st.risk === 'Medium' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'}`}>
+                        {st.risk === 'High' ? '🔴 High' : st.risk === 'Medium' ? '🟡 Medium' : '🟢 Low'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -961,233 +988,232 @@ const PrincipalFacultyOverview = ({ principal }) => {
     : [];
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
-      {/* Banner */}
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 text-xs font-semibold bg-transparent min-h-screen text-white font-sans">
+      {/* Universal Glass Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 md:p-8 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-3 py-0.5 bg-purple-500/10 text-purple-600 rounded-full text-[10px] font-black uppercase">
+            <span className="px-3 py-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 rounded-full text-[10px] font-black uppercase">
               Principal Executive View
             </span>
-            <span className="px-3 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-full text-[10px] font-black uppercase">
+            <span className="px-3 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-full text-[10px] font-black uppercase">
               View Only
             </span>
           </div>
-          <h1 className="text-xl font-black text-slate-900 dark:text-white mt-1">Faculty & Subject Course Allocations</h1>
-          <p className="text-xs text-slate-400 mt-0.5">Real-time breakdown of ALL registered faculty members and their subject course allocations</p>
+          <h1 className="text-xl md:text-2xl font-black text-white drop-shadow-md mt-1.5 font-display">Faculty & Subject Course Allocations</h1>
+          <p className="text-xs text-gray-200 font-semibold drop-shadow-sm mt-0.5">Real-time breakdown of ALL registered faculty members and their subject course allocations</p>
         </div>
       </div>
 
-      {/* Filters & Search */}
-      <div className="p-4 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md flex flex-wrap items-center justify-between gap-3">
+      {/* Filters & Search Glass Panel */}
+      <div className="p-5 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex flex-wrap items-center justify-between gap-3 text-white">
         <div className="flex flex-wrap items-center gap-3 flex-1">
           <div className="relative min-w-[220px]">
-            <Search size={14} className="absolute left-3 top-3 text-slate-400" />
+            <Search size={14} className="absolute left-3.5 top-3 text-gray-400" />
             <input
               type="text"
               placeholder="Search faculty, email, or subject..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-semibold"
+              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:border-cyan-400 text-xs font-semibold"
             />
           </div>
 
           <select
             value={branchFilter}
             onChange={(e) => setBranchFilter(e.target.value)}
-            className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold"
+            className="px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white text-xs font-bold focus:bg-white/10 focus:border-cyan-400 focus:outline-none cursor-pointer"
           >
-            <option value="All Branches">All Branches</option>
+            <option value="All Branches" className="bg-slate-900 text-white">All Branches</option>
             {KBN_BRANCHES.map((b, idx) => (
-              <option key={`${b}-${idx}`} value={b}>{b}</option>
+              <option key={`${b}-${idx}`} value={b} className="bg-slate-900 text-white">{b}</option>
             ))}
           </select>
 
           <select
             value={semesterFilter}
             onChange={(e) => setSemesterFilter(e.target.value)}
-            className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold"
+            className="px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white text-xs font-bold focus:bg-white/10 focus:border-cyan-400 focus:outline-none cursor-pointer"
           >
-            <option value="All Semesters">All Semesters</option>
-            <option value="Semester 1">Semester 1</option>
-            <option value="Semester 2">Semester 2</option>
-            <option value="Semester 3">Semester 3</option>
-            <option value="Semester 4">Semester 4</option>
-            <option value="Semester 5">Semester 5</option>
-            <option value="Semester 6">Semester 6</option>
+            <option value="All Semesters" className="bg-slate-900 text-white">All Semesters</option>
+            <option value="Semester 1" className="bg-slate-900 text-white">Semester 1</option>
+            <option value="Semester 2" className="bg-slate-900 text-white">Semester 2</option>
+            <option value="Semester 3" className="bg-slate-900 text-white">Semester 3</option>
+            <option value="Semester 4" className="bg-slate-900 text-white">Semester 4</option>
+            <option value="Semester 5" className="bg-slate-900 text-white">Semester 5</option>
+            <option value="Semester 6" className="bg-slate-900 text-white">Semester 6</option>
           </select>
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold"
+            className="px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white text-xs font-bold focus:bg-white/10 focus:border-cyan-400 focus:outline-none cursor-pointer"
           >
-            <option value="All Statuses">All Statuses</option>
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
-            <option value="Reassigned">Reassigned</option>
+            <option value="All Statuses" className="bg-slate-900 text-white">All Statuses</option>
+            <option value="Active" className="bg-slate-900 text-white">Active</option>
+            <option value="Inactive" className="bg-slate-900 text-white">Inactive</option>
+            <option value="Reassigned" className="bg-slate-900 text-white">Reassigned</option>
           </select>
         </div>
 
-        <span className="text-[11px] font-bold text-slate-400">
+        <span className="text-[11px] font-bold text-cyan-300">
           Showing {filteredAllocations.length} Faculty Members & Allocations
         </span>
       </div>
 
-      {/* Faculty Assignment Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden overflow-x-auto">
-        <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
-          <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
-            <tr>
-              <th className="p-4">Faculty Member</th>
-              <th className="p-4">Designation</th>
-              <th className="p-4">Official Contact</th>
-              <th className="p-4">Branch / Department</th>
-              <th className="p-4 text-center">Semester</th>
-              <th className="p-4 text-center">Section</th>
-              <th className="p-4">Assigned Subject</th>
-              <th className="p-4 text-center">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {loading ? (
+      {/* Faculty Assignment Table Card */}
+      <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] overflow-hidden text-white">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs font-semibold text-white">
+            <thead className="bg-white/5 uppercase text-[10px] text-gray-300 tracking-wider border-b border-white/10">
               <tr>
-                <td colSpan="8" className="p-8 text-center text-slate-400 animate-pulse">Loading faculty user directory...</td>
+                <th className="p-4">Faculty Member</th>
+                <th className="p-4">Designation</th>
+                <th className="p-4">Official Contact</th>
+                <th className="p-4">Branch / Department</th>
+                <th className="p-4 text-center">Semester</th>
+                <th className="p-4 text-center">Section</th>
+                <th className="p-4">Assigned Subject</th>
+                <th className="p-4 text-center">Status</th>
               </tr>
-            ) : filteredAllocations.length === 0 ? (
-              <tr>
-                <td colSpan="8" className="p-8 text-center text-slate-400">No faculty accounts match the selected filters.</td>
-              </tr>
-            ) : (
-              filteredAllocations.map((alloc, idx) => (
-                <tr
-                  key={alloc.recordKey || `${alloc.uid}-${idx}`}
-                  onClick={() => setSelectedFaculty(alloc)}
-                  className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 cursor-pointer transition-all"
-                >
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      {alloc.facultyPhoto ? (
-                        <img src={alloc.facultyPhoto} alt={alloc.facultyName} className="w-10 h-10 rounded-xl object-cover border border-purple-500/30 shrink-0" />
-                      ) : (
-                        <div className="w-10 h-10 rounded-xl bg-purple-600/10 text-purple-600 font-black flex items-center justify-center border border-purple-500/20 shrink-0">
-                          {alloc.facultyName?.substring(0, 2).toUpperCase() || 'FC'}
-                        </div>
-                      )}
-                      <div>
-                        <strong className="text-slate-900 dark:text-white font-extrabold text-xs block">{alloc.facultyName}</strong>
-                        <span className="text-[10px] text-slate-400 font-mono">ID: {alloc.facultyId || alloc.uid || 'N/A'}</span>
-                      </div>
-                    </div>
-                  </td>
-
-                  <td className="p-4 font-bold text-slate-600 dark:text-slate-300">
-                    {alloc.facultyDesignation}
-                  </td>
-
-                  <td className="p-4">
-                    <span className="text-slate-900 dark:text-white block font-medium">{alloc.facultyEmail}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">📞 {alloc.facultyPhone}</span>
-                  </td>
-
-                  <td className="p-4 font-black">
-                    {alloc.branch && alloc.branch !== 'N/A' ? (
-                      <span className="text-purple-600 dark:text-purple-400">{alloc.branch}</span>
-                    ) : (
-                      <span className="text-slate-400 italic font-normal">Not Assigned</span>
-                    )}
-                  </td>
-
-                  {/* Rule 4: Clean Tailwind CSS fallback for unassigned Semester */}
-                  <td className="p-4 text-center">
-                    {alloc.semester && alloc.semester !== 'Not Assigned' && alloc.semester !== 'N/A' ? (
-                      <span className="font-bold text-indigo-600 dark:text-indigo-400">{alloc.semester}</span>
-                    ) : (
-                      <span className="text-slate-400 italic font-normal">Not Assigned</span>
-                    )}
-                  </td>
-
-                  {/* Rule 4: Clean Tailwind CSS fallback for unassigned Section */}
-                  <td className="p-4 text-center">
-                    {alloc.section && alloc.section !== 'Not Assigned' && alloc.section !== 'N/A' ? (
-                      <span className="font-bold text-slate-700 dark:text-slate-300">{alloc.section}</span>
-                    ) : (
-                      <span className="text-slate-400 italic font-normal">Not Assigned</span>
-                    )}
-                  </td>
-
-                  {/* Rule 4: Clean Tailwind CSS fallback for unassigned Subject */}
-                  <td className="p-4 font-bold">
-                    {alloc.subjectName && alloc.subjectName !== 'Not Assigned' && alloc.subjectName !== 'N/A' ? (
-                      <span className="font-black text-slate-900 dark:text-white">{alloc.subjectName}</span>
-                    ) : (
-                      <span className="text-slate-400 italic font-normal">Not Assigned</span>
-                    )}
-                  </td>
-
-                  <td className="p-4 text-center">
-                    <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-full text-[10px] font-black">
-                      {alloc.status || 'Active'}
-                    </span>
-                  </td>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {loading ? (
+                <tr>
+                  <td colSpan="8" className="p-8 text-center text-gray-400 animate-pulse">Loading faculty user directory...</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : filteredAllocations.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="p-8 text-center text-gray-400">No faculty accounts match the selected filters.</td>
+                </tr>
+              ) : (
+                filteredAllocations.map((alloc, idx) => (
+                  <tr
+                    key={alloc.recordKey || `${alloc.uid}-${idx}`}
+                    onClick={() => setSelectedFaculty(alloc)}
+                    className="hover:bg-white/5 cursor-pointer transition-colors"
+                  >
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        {alloc.facultyPhoto ? (
+                          <img src={alloc.facultyPhoto} alt={alloc.facultyName} className="w-10 h-10 rounded-xl object-cover border border-cyan-400/30 shrink-0" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-300 font-black flex items-center justify-center border border-purple-400/30 shrink-0">
+                            {alloc.facultyName?.substring(0, 2).toUpperCase() || 'FC'}
+                          </div>
+                        )}
+                        <div>
+                          <strong className="text-white font-extrabold text-xs block">{alloc.facultyName}</strong>
+                          <span className="text-[10px] text-gray-400 font-mono">ID: {alloc.facultyId || alloc.uid || 'N/A'}</span>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="p-4 font-bold text-gray-300">
+                      {alloc.facultyDesignation}
+                    </td>
+
+                    <td className="p-4">
+                      <span className="text-white block font-medium">{alloc.facultyEmail}</span>
+                      <span className="text-[10px] text-gray-400 font-mono">📞 {alloc.facultyPhone}</span>
+                    </td>
+
+                    <td className="p-4 font-black">
+                      {alloc.branch && alloc.branch !== 'N/A' ? (
+                        <span className="text-cyan-300">{alloc.branch}</span>
+                      ) : (
+                        <span className="text-gray-500 italic font-normal">Not Assigned</span>
+                      )}
+                    </td>
+
+                    <td className="p-4 text-center">
+                      {alloc.semester && alloc.semester !== 'Not Assigned' && alloc.semester !== 'N/A' ? (
+                        <span className="font-bold text-indigo-300">{alloc.semester}</span>
+                      ) : (
+                        <span className="text-gray-500 italic font-normal">Not Assigned</span>
+                      )}
+                    </td>
+
+                    <td className="p-4 text-center">
+                      {alloc.section && alloc.section !== 'Not Assigned' && alloc.section !== 'N/A' ? (
+                        <span className="font-bold text-gray-300">{alloc.section}</span>
+                      ) : (
+                        <span className="text-gray-500 italic font-normal">Not Assigned</span>
+                      )}
+                    </td>
+
+                    <td className="p-4 font-bold">
+                      {alloc.subjectName && alloc.subjectName !== 'Not Assigned' && alloc.subjectName !== 'N/A' ? (
+                        <span className="font-black text-white">{alloc.subjectName}</span>
+                      ) : (
+                        <span className="text-gray-500 italic font-normal">Not Assigned</span>
+                      )}
+                    </td>
+
+                    <td className="p-4 text-center">
+                      <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-full text-[10px] font-black">
+                        {alloc.status || 'Active'}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Faculty Details Drawer Modal */}
       {selectedFaculty && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-lg w-full p-6 space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-black/80 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.8)] max-w-lg w-full p-6 space-y-6 text-white animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div>
-                <span className="px-2.5 py-0.5 bg-purple-500/10 text-purple-600 text-[10px] font-black uppercase rounded-full">
+                <span className="px-2.5 py-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 text-[10px] font-black uppercase rounded-full">
                   Faculty Member Profile
                 </span>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white mt-1">{selectedFaculty.facultyName}</h3>
+                <h3 className="text-lg font-black text-white drop-shadow-md mt-1 font-display">{selectedFaculty.facultyName}</h3>
               </div>
-              <button onClick={() => setSelectedFaculty(null)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white">
+              <button onClick={() => setSelectedFaculty(null)} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer">
                 <X size={20} />
               </button>
             </div>
 
             {/* Profile Summary */}
-            <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
               {selectedFaculty.facultyPhoto ? (
-                <img src={selectedFaculty.facultyPhoto} alt={selectedFaculty.facultyName} className="w-16 h-16 rounded-2xl object-cover border-2 border-purple-500/30 shrink-0" />
+                <img src={selectedFaculty.facultyPhoto} alt={selectedFaculty.facultyName} className="w-16 h-16 rounded-2xl object-cover border-2 border-cyan-400/40 shrink-0" />
               ) : (
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white font-black text-xl flex items-center justify-center shadow-md shrink-0">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white font-black text-xl flex items-center justify-center shadow-md shrink-0 border border-purple-400/30">
                   {selectedFaculty.facultyName?.substring(0, 2).toUpperCase()}
                 </div>
               )}
               <div>
-                <h4 className="text-sm font-black text-slate-900 dark:text-white">{selectedFaculty.facultyName}</h4>
-                <p className="text-xs text-purple-600 dark:text-purple-400 font-bold">{selectedFaculty.facultyDesignation}</p>
-                <p className="text-[11px] text-slate-400">{selectedFaculty.facultyEmail}</p>
-                <p className="text-[11px] text-slate-400 font-mono">📞 {selectedFaculty.facultyPhone}</p>
+                <h4 className="text-sm font-black text-white">{selectedFaculty.facultyName}</h4>
+                <p className="text-xs text-cyan-300 font-bold">{selectedFaculty.facultyDesignation}</p>
+                <p className="text-[11px] text-gray-300">{selectedFaculty.facultyEmail}</p>
+                <p className="text-[11px] text-gray-400 font-mono">📞 {selectedFaculty.facultyPhone}</p>
               </div>
             </div>
 
             {/* Assignments List */}
             <div className="space-y-3">
-              <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
+              <h4 className="text-xs font-black text-white uppercase tracking-wider">
                 Active Academic Assignments ({facultyAllAssignments.length})
               </h4>
 
               {facultyAllAssignments.length === 0 ? (
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl text-center text-slate-400 italic font-normal">
+                <div className="p-4 bg-white/5 rounded-2xl text-center text-gray-400 italic font-normal border border-white/10">
                   No subject course allocations assigned by HOD yet.
                 </div>
               ) : (
                 facultyAllAssignments.map((asg, idx) => (
-                  <div key={idx} className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-800 space-y-1">
+                  <div key={idx} className="p-3.5 bg-white/5 rounded-2xl border border-white/10 space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-slate-900 dark:text-white">{asg.subjectName || asg.subject}</span>
-                      <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-full text-[9.5px] font-black">Active</span>
+                      <span className="font-extrabold text-white">{asg.subjectName || asg.subject}</span>
+                      <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-full text-[9.5px] font-black">Active</span>
                     </div>
-                    <div className="text-[11px] text-purple-600 dark:text-purple-400 font-bold">
+                    <div className="text-[11px] text-cyan-300 font-bold">
                       {asg.branch || asg.department} • {asg.semester} • {asg.section}
                     </div>
                   </div>
@@ -1195,13 +1221,13 @@ const PrincipalFacultyOverview = ({ principal }) => {
               )}
             </div>
 
-            <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl text-[11px] text-slate-600 dark:text-slate-300">
-              <strong className="text-purple-700 dark:text-purple-300 block">📌 Principal View Only:</strong>
+            <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl text-[11px] text-gray-300">
+              <strong className="text-purple-300 block">📌 Principal View Only:</strong>
               This faculty profile is registered in the ERP system. Course assignments are managed by respective HODs.
             </div>
 
-            <div className="text-right border-t border-slate-100 dark:border-slate-800 pt-3">
-              <button onClick={() => setSelectedFaculty(null)} className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-xs rounded-xl">
+            <div className="text-right border-t border-white/10 pt-3">
+              <button onClick={() => setSelectedFaculty(null)} className="px-5 py-2.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold text-xs rounded-xl cursor-pointer transition-all">
                 Close Profile
               </button>
             </div>
@@ -1230,136 +1256,138 @@ const PrincipalWardCounsellorOverview = ({ principal }) => {
   }, [principal]);
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
-      {/* Banner */}
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 text-xs font-semibold bg-transparent min-h-screen text-white font-sans">
+      {/* Universal Glass Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 md:p-8 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-3 py-0.5 bg-purple-500/10 text-purple-600 rounded-full text-[10px] font-black uppercase">
+            <span className="px-3 py-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 rounded-full text-[10px] font-black uppercase">
               Principal Executive View
             </span>
-            <span className="px-3 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-full text-[10px] font-black uppercase">
+            <span className="px-3 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-full text-[10px] font-black uppercase">
               View Only
             </span>
           </div>
-          <h2 className="text-xl font-black text-slate-900 dark:text-white mt-1">Branch Ward Counsellors Overview</h2>
-          <p className="text-xs text-slate-400 mt-0.5">Assigned faculty mentors monitoring student ward attendance & performance</p>
+          <h2 className="text-xl md:text-2xl font-black text-white drop-shadow-md mt-1.5 font-display">Branch Ward Counsellors Overview</h2>
+          <p className="text-xs text-gray-200 font-semibold drop-shadow-sm mt-0.5">Assigned faculty mentors monitoring student ward attendance & performance</p>
         </div>
       </div>
 
-      {/* Ward Counsellor Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md overflow-hidden overflow-x-auto">
-        <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
-          <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
-            <tr>
-              <th className="p-4">Ward Counsellor</th>
-              <th className="p-4">Designation</th>
-              <th className="p-4">Official Email</th>
-              <th className="p-4">Phone Number</th>
-              <th className="p-4">Assigned Branch</th>
-              <th className="p-4 text-center">Ward Students</th>
-              <th className="p-4 text-center">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {loading ? (
+      {/* Ward Counsellor Table Card */}
+      <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] overflow-hidden text-white">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs font-semibold text-white">
+            <thead className="bg-white/5 uppercase text-[10px] text-gray-300 tracking-wider border-b border-white/10">
               <tr>
-                <td colSpan="7" className="p-8 text-center text-slate-400 animate-pulse">Loading branch ward counsellors...</td>
+                <th className="p-4">Ward Counsellor</th>
+                <th className="p-4">Designation</th>
+                <th className="p-4">Official Email</th>
+                <th className="p-4">Phone Number</th>
+                <th className="p-4">Assigned Branch</th>
+                <th className="p-4 text-center">Ward Students</th>
+                <th className="p-4 text-center">Status</th>
               </tr>
-            ) : counsellors.length === 0 ? (
-              <tr>
-                <td colSpan="7" className="p-8 text-center text-slate-400">No active ward counsellors assigned.</td>
-              </tr>
-            ) : (
-              counsellors.map((c) => (
-                <tr
-                  key={c.id}
-                  onClick={() => setSelectedCounsellor(c)}
-                  className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 cursor-pointer transition-all"
-                >
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      {c.facultyPhoto ? (
-                        <img src={c.facultyPhoto} alt={c.facultyName} className="w-10 h-10 rounded-xl object-cover border border-purple-500/30 shrink-0" />
-                      ) : (
-                        <div className="w-10 h-10 rounded-xl bg-purple-600/10 text-purple-600 font-black flex items-center justify-center border border-purple-500/20 shrink-0">
-                          {c.facultyName?.substring(0, 2).toUpperCase() || 'WC'}
-                        </div>
-                      )}
-                      <div>
-                        <strong className="text-slate-900 dark:text-white font-extrabold text-xs block">{c.facultyName}</strong>
-                        <span className="text-[10px] text-purple-600 dark:text-purple-400 font-bold">Faculty Ward Mentor</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4 font-bold text-slate-600 dark:text-slate-300">{c.facultyDesignation || c.designation || 'Faculty Member'}</td>
-                  <td className="p-4 font-medium text-slate-900 dark:text-white">{c.facultyEmail || c.email}</td>
-                  <td className="p-4 font-mono text-slate-500">{c.facultyPhone || '9876543211'}</td>
-                  <td className="p-4 font-black text-purple-600 dark:text-purple-400">{c.department}</td>
-                  <td className="p-4 text-center font-black text-indigo-600">{c.wardStudentsCount || 181}</td>
-                  <td className="p-4 text-center">
-                    <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-full text-[10px] font-black">
-                      {c.status || 'Active'}
-                    </span>
-                  </td>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {loading ? (
+                <tr>
+                  <td colSpan="7" className="p-8 text-center text-gray-400 animate-pulse">Loading branch ward counsellors...</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : counsellors.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="p-8 text-center text-gray-400">No active ward counsellors assigned.</td>
+                </tr>
+              ) : (
+                counsellors.map((c) => (
+                  <tr
+                    key={c.id}
+                    onClick={() => setSelectedCounsellor(c)}
+                    className="hover:bg-white/5 cursor-pointer transition-colors"
+                  >
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        {c.facultyPhoto ? (
+                          <img src={c.facultyPhoto} alt={c.facultyName} className="w-10 h-10 rounded-xl object-cover border border-cyan-400/30 shrink-0" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-300 font-black flex items-center justify-center border border-purple-400/30 shrink-0">
+                            {c.facultyName?.substring(0, 2).toUpperCase() || 'WC'}
+                          </div>
+                        )}
+                        <div>
+                          <strong className="text-white font-extrabold text-xs block">{c.facultyName}</strong>
+                          <span className="text-[10px] text-cyan-300 font-bold">Faculty Ward Mentor</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4 font-bold text-gray-300">{c.facultyDesignation || c.designation || 'Faculty Member'}</td>
+                    <td className="p-4 font-medium text-white">{c.facultyEmail || c.email}</td>
+                    <td className="p-4 font-mono text-gray-400">{c.facultyPhone || '9876543211'}</td>
+                    <td className="p-4 font-black text-cyan-300">{c.department}</td>
+                    <td className="p-4 text-center font-black text-indigo-300">{c.wardStudentsCount || 181}</td>
+                    <td className="p-4 text-center">
+                      <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-full text-[10px] font-black">
+                        {c.status || 'Active'}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Ward Counsellor Details Modal */}
       {selectedCounsellor && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-lg w-full p-6 space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-black/80 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.8)] max-w-lg w-full p-6 space-y-6 text-white animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div>
-                <span className="px-2.5 py-0.5 bg-purple-500/10 text-purple-600 text-[10px] font-black uppercase rounded-full">
+                <span className="px-2.5 py-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 text-[10px] font-black uppercase rounded-full">
                   Ward Counsellor Profile
                 </span>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white mt-1">{selectedCounsellor.facultyName}</h3>
+                <h3 className="text-lg font-black text-white drop-shadow-md mt-1 font-display">{selectedCounsellor.facultyName}</h3>
               </div>
-              <button onClick={() => setSelectedCounsellor(null)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white">
+              <button onClick={() => setSelectedCounsellor(null)} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer">
                 <X size={20} />
               </button>
             </div>
 
             {/* Profile Info */}
-            <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
               {selectedCounsellor.facultyPhoto ? (
-                <img src={selectedCounsellor.facultyPhoto} alt={selectedCounsellor.facultyName} className="w-16 h-16 rounded-2xl object-cover border-2 border-purple-500/30 shrink-0" />
+                <img src={selectedCounsellor.facultyPhoto} alt={selectedCounsellor.facultyName} className="w-16 h-16 rounded-2xl object-cover border-2 border-cyan-400/40 shrink-0" />
               ) : (
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white font-black text-xl flex items-center justify-center shadow-md shrink-0">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white font-black text-xl flex items-center justify-center shadow-md shrink-0 border border-purple-400/30">
                   {selectedCounsellor.facultyName?.substring(0, 2).toUpperCase()}
                 </div>
               )}
               <div>
-                <h4 className="text-sm font-black text-slate-900 dark:text-white">{selectedCounsellor.facultyName}</h4>
-                <p className="text-xs text-purple-600 font-bold">{selectedCounsellor.department} Ward Counsellor</p>
-                <p className="text-[11px] text-slate-400">{selectedCounsellor.facultyEmail || selectedCounsellor.email}</p>
-                <p className="text-[11px] text-slate-400 font-mono">📞 {selectedCounsellor.facultyPhone || '9876543211'}</p>
+                <h4 className="text-sm font-black text-white">{selectedCounsellor.facultyName}</h4>
+                <p className="text-xs text-cyan-300 font-bold">{selectedCounsellor.department} Ward Counsellor</p>
+                <p className="text-[11px] text-gray-300">{selectedCounsellor.facultyEmail || selectedCounsellor.email}</p>
+                <p className="text-[11px] text-gray-400 font-mono">📞 {selectedCounsellor.facultyPhone || '9876543211'}</p>
               </div>
             </div>
 
             {/* Metrics */}
             <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-                <span className="text-[9.5px] text-slate-400 font-bold block">Assigned Wards</span>
-                <span className="text-lg font-black text-purple-600">{selectedCounsellor.wardStudentsCount || 181}</span>
+              <div className="p-3 bg-white/5 rounded-2xl border border-white/10">
+                <span className="text-[9.5px] text-gray-400 font-bold block">Assigned Wards</span>
+                <span className="text-lg font-black text-cyan-300">{selectedCounsellor.wardStudentsCount || 181}</span>
               </div>
-              <div className="p-3 bg-emerald-500/10 text-emerald-600 rounded-2xl">
+              <div className="p-3 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-2xl">
                 <span className="text-[9.5px] font-bold block">Attendance Avg</span>
                 <span className="text-lg font-black">84.2%</span>
               </div>
-              <div className="p-3 bg-rose-500/10 text-rose-600 rounded-2xl">
+              <div className="p-3 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-2xl">
                 <span className="text-[9.5px] font-bold block">Low Att (&lt;75%)</span>
                 <span className="text-lg font-black">12 Wards</span>
               </div>
             </div>
 
-            <div className="text-right border-t border-slate-100 dark:border-slate-800 pt-3">
-              <button onClick={() => setSelectedCounsellor(null)} className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-xs rounded-xl">
+            <div className="text-right border-t border-white/10 pt-3">
+              <button onClick={() => setSelectedCounsellor(null)} className="px-5 py-2.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold text-xs rounded-xl cursor-pointer transition-all">
                 Close Details
               </button>
             </div>
@@ -1383,14 +1411,23 @@ const PrincipalAttendanceAnalytics = () => {
   }, []);
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
-        <h2 className="text-lg font-black text-slate-900 dark:text-white mb-1">Branch-wise Attendance Analytics</h2>
-        <p className="text-xs text-slate-400 mb-6">Institutional attendance compliance and low attendance tracking across departments</p>
+    <div className="space-y-6 text-xs font-semibold bg-transparent min-h-screen text-white font-sans">
+      {/* Universal Glass Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 md:p-8 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <span className="text-[10px] font-extrabold tracking-widest uppercase text-cyan-300 bg-cyan-500/20 px-3 py-0.5 rounded-full border border-cyan-400/30 drop-shadow-md">
+            Institutional Compliance
+          </span>
+          <h2 className="text-xl md:text-2xl font-black text-white drop-shadow-md mt-1.5 font-display">Branch-wise Attendance Analytics</h2>
+          <p className="text-xs text-gray-200 font-semibold drop-shadow-sm mt-0.5">Institutional attendance compliance and low attendance tracking across departments</p>
+        </div>
+      </div>
 
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto">
-          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
-            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+      <div className="p-6 md:p-8 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white space-y-4">
+        <h3 className="text-sm font-black text-white drop-shadow-sm">Departmental Attendance Metrics</h3>
+        <div className="overflow-hidden rounded-2xl border border-white/10 overflow-x-auto">
+          <table className="w-full text-left text-xs font-semibold text-white">
+            <thead className="bg-white/5 uppercase text-[10px] text-gray-300 tracking-wider border-b border-white/10">
               <tr>
                 <th className="p-4">Department / Branch</th>
                 <th className="p-4 text-center">Avg Attendance %</th>
@@ -1399,14 +1436,14 @@ const PrincipalAttendanceAnalytics = () => {
                 <th className="p-4 text-center">Students Below 75%</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-white/5">
               {data.map((b) => (
-                <tr key={b.branch} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                  <td className="p-4 font-extrabold text-slate-900 dark:text-white">{b.branch}</td>
-                  <td className="p-4 text-center font-black text-emerald-600">{b.attendance}%</td>
-                  <td className="p-4 text-center font-bold text-emerald-600">{b.attendance}%</td>
-                  <td className="p-4 text-center font-bold text-rose-500">{(100 - b.attendance).toFixed(1)}%</td>
-                  <td className="p-4 text-center font-black text-rose-600">{Math.round(b.students * 0.12)} Students</td>
+                <tr key={b.branch} className="hover:bg-white/5 transition-colors">
+                  <td className="p-4 font-extrabold text-white">{b.branch}</td>
+                  <td className="p-4 text-center font-black text-emerald-400">{b.attendance}%</td>
+                  <td className="p-4 text-center font-bold text-emerald-400">{b.attendance}%</td>
+                  <td className="p-4 text-center font-bold text-rose-400">{(100 - b.attendance).toFixed(1)}%</td>
+                  <td className="p-4 text-center font-black text-rose-300">{Math.round(b.students * 0.12)} Students</td>
                 </tr>
               ))}
             </tbody>
@@ -1429,72 +1466,83 @@ const PrincipalPlacementAnalytics = () => {
     fetchPlacement();
   }, []);
 
-  if (!data) return <div className="p-8 text-center text-slate-400 text-xs">Loading placement analytics...</div>;
+  if (!data) return <div className="p-8 text-center text-gray-400 text-xs font-bold">Loading placement analytics...</div>;
 
   const ov = data.overview;
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-6">
+    <div className="space-y-6 text-xs font-semibold bg-transparent min-h-screen text-white font-sans">
+      {/* Universal Glass Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 md:p-8 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-black text-slate-900 dark:text-white">Corporate Placement Overview</h2>
-          <p className="text-xs text-slate-400">Institutional recruitment statistics and branch-wise placement performance</p>
+          <span className="text-[10px] font-extrabold tracking-widest uppercase text-cyan-300 bg-cyan-500/20 px-3 py-0.5 rounded-full border border-cyan-400/30 drop-shadow-md">
+            Recruitment & Careers
+          </span>
+          <h2 className="text-xl md:text-2xl font-black text-white drop-shadow-md mt-1.5 font-display">Corporate Placement Overview</h2>
+          <p className="text-xs text-gray-200 font-semibold drop-shadow-sm mt-0.5">Institutional recruitment statistics and branch-wise placement performance</p>
         </div>
+      </div>
+
+      <div className="p-6 md:p-8 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] space-y-6 text-white">
+        <h3 className="text-sm font-black text-white drop-shadow-sm">Institutional Placement KPIs</h3>
 
         {/* Placement KPIs */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 text-center">
-          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-            <span className="text-[9.5px] text-slate-400 block font-bold">Eligible</span>
-            <span className="text-lg font-black text-slate-900 dark:text-white">{ov.eligibleStudents}</span>
+          <div className="p-3.5 bg-white/5 rounded-2xl border border-white/10">
+            <span className="text-[9.5px] text-gray-400 block font-bold">Eligible</span>
+            <span className="text-lg font-black text-white">{ov.eligibleStudents}</span>
           </div>
-          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-            <span className="text-[9.5px] text-slate-400 block font-bold">Registered</span>
-            <span className="text-lg font-black text-purple-600">{ov.registeredStudents}</span>
+          <div className="p-3.5 bg-white/5 rounded-2xl border border-white/10">
+            <span className="text-[9.5px] text-gray-400 block font-bold">Registered</span>
+            <span className="text-lg font-black text-cyan-300">{ov.registeredStudents}</span>
           </div>
-          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-            <span className="text-[9.5px] text-slate-400 block font-bold">Placed</span>
-            <span className="text-lg font-black text-emerald-600">{ov.placedStudents}</span>
+          <div className="p-3.5 bg-white/5 rounded-2xl border border-white/10">
+            <span className="text-[9.5px] text-gray-400 block font-bold">Placed</span>
+            <span className="text-lg font-black text-emerald-400">{ov.placedStudents}</span>
           </div>
-          <div className="p-3.5 bg-purple-500/10 text-purple-600 rounded-2xl">
+          <div className="p-3.5 bg-purple-500/20 text-purple-300 border border-purple-400/30 rounded-2xl">
             <span className="text-[9.5px] block font-bold">Placement Rate</span>
             <span className="text-lg font-black">{ov.placementRate}%</span>
           </div>
-          <div className="p-3.5 bg-indigo-500/10 text-indigo-600 rounded-2xl">
+          <div className="p-3.5 bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 rounded-2xl">
             <span className="text-[9.5px] block font-bold">Companies</span>
             <span className="text-lg font-black">{ov.companiesParticipated}</span>
           </div>
-          <div className="p-3.5 bg-emerald-500/10 text-emerald-600 rounded-2xl">
+          <div className="p-3.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-2xl">
             <span className="text-[9.5px] block font-bold">Highest Package</span>
             <span className="text-lg font-black">{ov.highestPackage}</span>
           </div>
-          <div className="p-3.5 bg-amber-500/10 text-amber-600 rounded-2xl">
+          <div className="p-3.5 bg-amber-500/20 text-amber-300 border border-amber-400/30 rounded-2xl">
             <span className="text-[9.5px] block font-bold">Avg Package</span>
             <span className="text-lg font-black">{ov.averagePackage}</span>
           </div>
         </div>
 
         {/* Branch Placement Table */}
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto">
-          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
-            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
-              <tr>
-                <th className="p-4">Branch / Department</th>
-                <th className="p-4 text-center">Eligible Students</th>
-                <th className="p-4 text-center">Students Placed</th>
-                <th className="p-4 text-center">Placement %</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {data.branchPlacements.map((bp) => (
-                <tr key={bp.department} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                  <td className="p-4 font-extrabold text-slate-900 dark:text-white">{bp.department}</td>
-                  <td className="p-4 text-center font-bold text-slate-700 dark:text-slate-300">{bp.eligible}</td>
-                  <td className="p-4 text-center font-black text-emerald-600">{bp.placed}</td>
-                  <td className="p-4 text-center font-black text-purple-600">{bp.placementRate}%</td>
+        <div className="space-y-3 pt-2">
+          <h4 className="text-xs font-black uppercase text-cyan-300 tracking-wider">Branch Placement Distribution</h4>
+          <div className="overflow-hidden rounded-2xl border border-white/10 overflow-x-auto">
+            <table className="w-full text-left text-xs font-semibold text-white">
+              <thead className="bg-white/5 uppercase text-[10px] text-gray-300 tracking-wider border-b border-white/10">
+                <tr>
+                  <th className="p-4">Branch / Department</th>
+                  <th className="p-4 text-center">Eligible Students</th>
+                  <th className="p-4 text-center">Students Placed</th>
+                  <th className="p-4 text-center">Placement %</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {data.branchPlacements.map((bp) => (
+                  <tr key={bp.department} className="hover:bg-white/5 transition-colors">
+                    <td className="p-4 font-extrabold text-white">{bp.department}</td>
+                    <td className="p-4 text-center font-bold text-gray-300">{bp.eligible}</td>
+                    <td className="p-4 text-center font-black text-emerald-400">{bp.placed}</td>
+                    <td className="p-4 text-center font-black text-cyan-300">{bp.placementRate}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -1520,16 +1568,23 @@ const PrincipalLeaves = () => {
   };
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
+    <div className="space-y-6 text-xs font-semibold bg-transparent min-h-screen text-white font-sans">
+      {/* Universal Glass Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 md:p-8 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-black text-slate-900 dark:text-white">Faculty & Staff Leaves Review</h2>
-          <p className="text-xs text-slate-400">Institutional leave applications and approval oversight</p>
+          <span className="text-[10px] font-extrabold tracking-widest uppercase text-cyan-300 bg-cyan-500/20 px-3 py-0.5 rounded-full border border-cyan-400/30 drop-shadow-md">
+            Staff Administration
+          </span>
+          <h2 className="text-xl md:text-2xl font-black text-white drop-shadow-md mt-1.5 font-display">Faculty & Staff Leaves Review</h2>
+          <p className="text-xs text-gray-200 font-semibold drop-shadow-sm mt-0.5">Institutional leave applications and approval oversight</p>
         </div>
+      </div>
 
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto">
-          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
-            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+      <div className="p-6 md:p-8 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] space-y-4 text-white">
+        <h3 className="text-sm font-black text-white drop-shadow-sm">Leave Applications Log</h3>
+        <div className="overflow-hidden rounded-2xl border border-white/10 overflow-x-auto">
+          <table className="w-full text-left text-xs font-semibold text-white">
+            <thead className="bg-white/5 uppercase text-[10px] text-gray-300 tracking-wider border-b border-white/10">
               <tr>
                 <th className="p-4">Applicant</th>
                 <th className="p-4">Department</th>
@@ -1540,26 +1595,26 @@ const PrincipalLeaves = () => {
                 <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-white/5">
               {leaves.length === 0 ? (
-                <tr><td colSpan="7" className="p-8 text-center text-slate-400">No pending leave applications.</td></tr>
+                <tr><td colSpan="7" className="p-8 text-center text-gray-400">No pending leave applications recorded.</td></tr>
               ) : leaves.map((l) => (
-                <tr key={l.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                  <td className="p-4 font-bold text-slate-900 dark:text-white">{l.facultyName || l.applicantName || 'Faculty Member'}</td>
-                  <td className="p-4 font-bold text-purple-600">{l.department}</td>
-                  <td className="p-4 text-slate-500">{l.leaveType || 'Casual Leave'}</td>
-                  <td className="p-4 text-slate-500">{l.startDate} to {l.endDate}</td>
-                  <td className="p-4 text-slate-500">{l.reason}</td>
+                <tr key={l.id} className="hover:bg-white/5 transition-colors">
+                  <td className="p-4 font-bold text-white">{l.facultyName || l.applicantName || 'Faculty Member'}</td>
+                  <td className="p-4 font-bold text-cyan-300">{l.department}</td>
+                  <td className="p-4 text-gray-300">{l.leaveType || 'Casual Leave'}</td>
+                  <td className="p-4 text-gray-300">{l.startDate} to {l.endDate}</td>
+                  <td className="p-4 text-gray-300">{l.reason}</td>
                   <td className="p-4">
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${l.status === 'approved' ? 'bg-emerald-500/10 text-emerald-600' : l.status === 'rejected' ? 'bg-rose-500/10 text-rose-600' : 'bg-amber-500/10 text-amber-600'}`}>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${l.status === 'approved' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30' : l.status === 'rejected' ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' : 'bg-amber-500/20 text-amber-300 border-amber-500/30'}`}>
                       {l.status}
                     </span>
                   </td>
                   <td className="p-4 text-right space-x-2">
                     {l.status === 'pending' && (
                       <>
-                        <button onClick={() => handleAction(l.id, 'approved')} className="px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-[11px] font-bold">Approve</button>
-                        <button onClick={() => handleAction(l.id, 'rejected')} className="px-2.5 py-1 bg-rose-600 text-white rounded-lg text-[11px] font-bold">Reject</button>
+                        <button onClick={() => handleAction(l.id, 'approved')} className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[11px] font-bold shadow-md cursor-pointer transition-all">Approve</button>
+                        <button onClick={() => handleAction(l.id, 'rejected')} className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-[11px] font-bold shadow-md cursor-pointer transition-all">Reject</button>
                       </>
                     )}
                   </td>
@@ -1584,17 +1639,28 @@ const PrincipalCalendar = () => {
   ];
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
-        <h2 className="text-lg font-black text-slate-900 dark:text-white">Institutional Academic Calendar</h2>
+    <div className="space-y-6 text-xs font-semibold bg-transparent min-h-screen text-white font-sans">
+      {/* Universal Glass Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 md:p-8 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <span className="text-[10px] font-extrabold tracking-widest uppercase text-cyan-300 bg-cyan-500/20 px-3 py-0.5 rounded-full border border-cyan-400/30 drop-shadow-md">
+            Schedules & Deadlines
+          </span>
+          <h2 className="text-xl md:text-2xl font-black text-white drop-shadow-md mt-1.5 font-display">Institutional Academic Calendar</h2>
+          <p className="text-xs text-gray-200 font-semibold drop-shadow-sm mt-0.5">Key examination milestones, practical assessments, and university holidays</p>
+        </div>
+      </div>
+
+      <div className="p-6 md:p-8 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] space-y-4 text-white">
+        <h3 className="text-sm font-black text-white drop-shadow-sm">Upcoming Institutional Events</h3>
         <div className="space-y-3">
           {events.map((ev, i) => (
-            <div key={i} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex items-center justify-between border border-slate-200/40 dark:border-slate-800">
+            <div key={i} className="p-4 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-between border border-white/10 transition-colors">
               <div>
-                <h4 className="text-sm font-black text-slate-900 dark:text-white">{ev.title}</h4>
-                <p className="text-xs text-purple-600 dark:text-purple-400 font-bold mt-0.5">{ev.date}</p>
+                <h4 className="text-sm font-black text-white">{ev.title}</h4>
+                <p className="text-xs text-cyan-300 font-bold mt-0.5">{ev.date}</p>
               </div>
-              <span className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase ${ev.type === 'Exam' ? 'bg-purple-500/10 text-purple-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+              <span className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase border ${ev.type === 'Exam' ? 'bg-purple-500/20 text-purple-300 border-purple-400/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'}`}>
                 {ev.type}
               </span>
             </div>
@@ -1614,12 +1680,23 @@ const PrincipalDocuments = () => {
   ];
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
-        <h2 className="text-lg font-black text-slate-900 dark:text-white">Document Dispatch & Certification Track</h2>
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-x-auto">
-          <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-300">
-            <thead className="bg-slate-50 dark:bg-slate-800/60 uppercase text-[10px] text-slate-400 tracking-wider">
+    <div className="space-y-6 text-xs font-semibold bg-transparent min-h-screen text-white font-sans">
+      {/* Universal Glass Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 md:p-8 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <span className="text-[10px] font-extrabold tracking-widest uppercase text-cyan-300 bg-cyan-500/20 px-3 py-0.5 rounded-full border border-cyan-400/30 drop-shadow-md">
+            Registry & Archives
+          </span>
+          <h2 className="text-xl md:text-2xl font-black text-white drop-shadow-md mt-1.5 font-display">Document Dispatch & Certification Track</h2>
+          <p className="text-xs text-gray-200 font-semibold drop-shadow-sm mt-0.5">Verification and approval log for student certificates, transcripts, and credentials</p>
+        </div>
+      </div>
+
+      <div className="p-6 md:p-8 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] space-y-4 text-white">
+        <h3 className="text-sm font-black text-white drop-shadow-sm">Dispatched & Pending Certificates</h3>
+        <div className="overflow-hidden rounded-2xl border border-white/10 overflow-x-auto">
+          <table className="w-full text-left text-xs font-semibold text-white">
+            <thead className="bg-white/5 uppercase text-[10px] text-gray-300 tracking-wider border-b border-white/10">
               <tr>
                 <th className="p-4">Req ID</th>
                 <th className="p-4">Student</th>
@@ -1629,16 +1706,16 @@ const PrincipalDocuments = () => {
                 <th className="p-4">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-white/5">
               {docs.map((d) => (
-                <tr key={d.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                  <td className="p-4 font-mono font-bold">{d.id}</td>
-                  <td className="p-4 font-bold text-slate-900 dark:text-white">{d.student}</td>
-                  <td className="p-4 font-bold text-purple-600">{d.dept}</td>
-                  <td className="p-4 text-slate-500">{d.type}</td>
-                  <td className="p-4 text-slate-500">{d.date}</td>
+                <tr key={d.id} className="hover:bg-white/5 transition-colors">
+                  <td className="p-4 font-mono font-bold text-cyan-300">{d.id}</td>
+                  <td className="p-4 font-bold text-white">{d.student}</td>
+                  <td className="p-4 font-bold text-purple-300">{d.dept}</td>
+                  <td className="p-4 text-gray-300">{d.type}</td>
+                  <td className="p-4 text-gray-300">{d.date}</td>
                   <td className="p-4">
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${d.status === 'Dispatched' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${d.status === 'Dispatched' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30' : 'bg-amber-500/20 text-amber-300 border-amber-400/30'}`}>
                       {d.status}
                     </span>
                   </td>
@@ -1662,18 +1739,29 @@ const PrincipalReports = () => {
   ];
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
-        <h2 className="text-lg font-black text-slate-900 dark:text-white">Institutional Report Compiler</h2>
+    <div className="space-y-6 text-xs font-semibold bg-transparent min-h-screen text-white font-sans">
+      {/* Universal Glass Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 md:p-8 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <span className="text-[10px] font-extrabold tracking-widest uppercase text-cyan-300 bg-cyan-500/20 px-3 py-0.5 rounded-full border border-cyan-400/30 drop-shadow-md">
+            Executive Intelligence
+          </span>
+          <h2 className="text-xl md:text-2xl font-black text-white drop-shadow-md mt-1.5 font-display">Institutional Report Compiler</h2>
+          <p className="text-xs text-gray-200 font-semibold drop-shadow-sm mt-0.5">Generate, view, and export compliance and institutional intelligence dossiers</p>
+        </div>
+      </div>
+
+      <div className="p-6 md:p-8 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] space-y-4 text-white">
+        <h3 className="text-sm font-black text-white drop-shadow-sm">Available Institutional Dossiers</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {reports.map((r, i) => (
-            <div key={i} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/40 dark:border-slate-800 flex items-center justify-between">
+            <div key={i} className="p-5 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 flex items-center justify-between transition-all">
               <div>
-                <span className="text-[9.5px] uppercase font-bold text-purple-600 block">{r.cat}</span>
-                <h4 className="text-xs font-black text-slate-900 dark:text-white mt-0.5">{r.title}</h4>
-                <span className="text-[9.5px] text-slate-400 block mt-1">Export Format: {r.format}</span>
+                <span className="text-[9.5px] uppercase font-bold text-cyan-300 block">{r.cat}</span>
+                <h4 className="text-xs font-black text-white mt-0.5">{r.title}</h4>
+                <span className="text-[9.5px] text-gray-300 block mt-1">Export Format: {r.format}</span>
               </div>
-              <button onClick={() => window.print()} className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1">
+              <button onClick={() => window.print()} className="px-3.5 py-2 bg-blue-600/80 hover:bg-blue-600 border border-blue-400/40 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105">
                 <Printer size={14} />
                 <span>Export</span>
               </button>
