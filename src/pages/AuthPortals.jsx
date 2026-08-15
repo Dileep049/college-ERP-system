@@ -1,26 +1,47 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { mockDB } from '../services/firebase';
-import { Building2, Mail, Lock, Award, AlertCircle } from 'lucide-react';
+import { Building2, Mail, Lock, Award, AlertCircle, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { ThemeToggle } from '../components/ThemeToggle';
 
-// Unified Base Auth Form Layout
+// Unified 3D Base Auth Form Layout
 const AuthContainer = ({ title, subtitle, children }) => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-12 transition-colors duration-250">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(14,165,233,0.06),transparent_50%)] pointer-events-none"></div>
-      <div className="w-full max-w-md bg-slate-900 rounded-3xl border border-slate-800 shadow-2xl p-6 sm:p-8 relative z-10">
-        
+    <div className="min-h-screen flex flex-col justify-between bg-[var(--bg-primary)] px-4 py-8 sm:py-12 transition-colors duration-200 relative">
+      {/* 3D Ambient Background Glows */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[140px] pointer-events-none"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[140px] pointer-events-none"></div>
+
+      {/* Top Header bar */}
+      <div className="max-w-md w-full mx-auto flex items-center justify-between relative z-20">
+        <Link
+          to="/"
+          className="btn-3d btn-3d-secondary py-2 px-3.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        >
+          <ArrowLeft size={14} />
+          <span>All Portals</span>
+        </Link>
+        <ThemeToggle />
+      </div>
+
+      {/* Center 3D Auth Modal */}
+      <div className="w-full max-w-md mx-auto card-3d-elevated p-6 sm:p-8 relative z-10 my-auto">
         {/* Logo and Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex p-3.5 bg-gradient-to-tr from-blue-600 to-sky-400 rounded-2xl text-white shadow-lg shadow-blue-500/20 mb-4">
-            <Building2 size={26} />
+        <div className="text-center mb-6">
+          <div className="inline-flex p-3.5 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl text-white shadow-lg shadow-blue-500/20 border border-blue-400/30 mb-4">
+            <ShieldCheck size={28} />
           </div>
-          <h2 className="text-2xl font-extrabold font-display text-white tracking-tight">{title}</h2>
-          <p className="text-sm font-medium text-slate-400 mt-2">{subtitle}</p>
+          <h2 className="text-2xl font-black font-display text-[var(--text-primary)] tracking-tight">{title}</h2>
+          <p className="text-xs font-semibold text-[var(--text-muted)] mt-1.5">{subtitle}</p>
         </div>
 
         {children}
+      </div>
+
+      {/* Footer */}
+      <div className="text-center text-xs font-semibold text-[var(--text-muted)] mt-6">
+        <p>ACADEMIA ERP Secure Authentication • Multi-Role Access Control</p>
       </div>
     </div>
   );
@@ -74,10 +95,10 @@ const CommonPortalLogin = ({ roleLabel, roleFilter, prefillEmail, dashboardPath 
   };
 
   return (
-    <AuthContainer title={`${roleLabel} Portal`} subtitle={`Sign in with your email credentials to access your portal`}>
+    <AuthContainer title={`${roleLabel} Portal`} subtitle={`Sign in to access your administrative and academic portal`}>
       
       {error && (
-        <div className="mb-4 p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-rose-400 font-bold text-xs flex items-center gap-2">
+        <div className="mb-4 p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-rose-500 font-bold text-xs flex items-center gap-2">
           <AlertCircle size={16} className="shrink-0" />
           <span>{error}</span>
         </div>
@@ -86,35 +107,35 @@ const CommonPortalLogin = ({ roleLabel, roleFilter, prefillEmail, dashboardPath 
       {/* Direct Email & Password Login Form */}
       <form onSubmit={handleEmailSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">
+          <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">
             Email Address
           </label>
           <div className="relative">
-            <Mail size={16} className="absolute left-3.5 top-3.5 text-slate-400" />
+            <Mail size={16} className="absolute left-3.5 top-3.5 text-[var(--text-muted)]" />
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={prefillEmail}
               required
-              className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-700 bg-slate-800 text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium"
+              className="input-3d pl-10"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">
+          <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">
             Password
           </label>
           <div className="relative">
-            <Lock size={16} className="absolute left-3.5 top-3.5 text-slate-400" />
+            <Lock size={16} className="absolute left-3.5 top-3.5 text-[var(--text-muted)]" />
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
-              className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-700 bg-slate-800 text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium"
+              className="input-3d pl-10"
             />
           </div>
         </div>
@@ -122,7 +143,7 @@ const CommonPortalLogin = ({ roleLabel, roleFilter, prefillEmail, dashboardPath 
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35 transition-all mt-6 flex items-center justify-center gap-2"
+          className="btn-3d btn-3d-primary w-full py-3 text-sm mt-6"
         >
           {loading ? (
             <>
@@ -136,15 +157,15 @@ const CommonPortalLogin = ({ roleLabel, roleFilter, prefillEmail, dashboardPath 
       </form>
 
       {/* Quick One-Click Demo Access */}
-      <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800/80 text-center">
-        <p className="text-[11px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">
-          Quick Demo Access
+      <div className="mt-6 pt-5 border-t border-[var(--border-subtle)] text-center">
+        <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3">
+          Quick One-Click Demo Access
         </p>
         <button
           type="button"
           onClick={handleDemoAccess}
           disabled={loading}
-          className="w-full py-2.5 px-4 rounded-xl border border-dashed border-blue-200 dark:border-blue-800 hover:border-blue-500 dark:hover:border-blue-500 bg-blue-50/20 dark:bg-blue-950/10 hover:bg-blue-50 dark:hover:bg-blue-950/20 text-xs font-bold text-blue-600 dark:text-blue-400 transition-all flex items-center justify-center gap-2"
+          className="btn-3d btn-3d-secondary w-full py-2.5 text-xs text-[var(--accent)] font-bold flex items-center justify-center gap-2 border-dashed border-[var(--accent)]/40 hover:border-[var(--accent)]"
         >
           <Award size={15} />
           <span>One-Click Access as {roleLabel}</span>

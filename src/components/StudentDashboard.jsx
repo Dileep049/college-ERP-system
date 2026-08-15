@@ -286,7 +286,7 @@ export const StudentDashboard = ({ onNavigate }) => {
     <div className="space-y-6 text-slate-800 dark:text-slate-100 font-sans">
       
       {/* 1. HERO HEADER WITH LOCKED ASSIGNED SCOPE (NO DROPDOWNS) */}
-      <div className="relative overflow-hidden p-6 md:p-8 rounded-3xl bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 text-white shadow-2xl">
+      <div className="relative overflow-hidden p-6 md:p-8 rounded-3xl bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 text-white shadow-2xl border border-white/10" style={{ boxShadow: 'var(--shadow-3d-card), inset 0 1px 0 rgba(255, 255, 255, 0.2)' }}>
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -298,7 +298,7 @@ export const StudentDashboard = ({ onNavigate }) => {
               </span>
             </div>
 
-            <h1 className="text-2xl md:text-4xl font-black tracking-tight">
+            <h1 className="text-2xl md:text-4xl font-black font-display tracking-tight text-white">
               Welcome back, {profile.fullName}
             </h1>
             <p className="text-xs md:text-sm text-blue-200 font-medium">
@@ -307,7 +307,7 @@ export const StudentDashboard = ({ onNavigate }) => {
           </div>
 
           {/* LOCKED ACADEMIC CLASS SCOPE CARD - STRICT NO DROPDOWNS */}
-          <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 space-y-2 shrink-0">
+          <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 space-y-2 shrink-0 shadow-lg">
             <div className="text-[10px] font-black uppercase text-blue-200 tracking-wider flex items-center gap-1">
               <Layers size={12} /> Assigned Class Scope (Locked)
             </div>
@@ -329,77 +329,77 @@ export const StudentDashboard = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* 2. STATS SUMMARY CARDS */}
+      {/* 2. 3D STATS SUMMARY CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
         {/* Attendance Card */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl flex items-center justify-between">
+        <div className="stat-card-3d flex items-center justify-between">
           <div>
-            <span className="text-[10.5px] font-extrabold uppercase text-slate-400 tracking-wider block mb-1">
+            <span className="text-[10.5px] font-bold uppercase text-[var(--text-muted)] tracking-wider block mb-1">
               Attendance Ratio
             </span>
-            <span className="text-2xl font-black text-slate-900 dark:text-white">
+            <span className="text-2xl font-black text-[var(--text-primary)]">
               {attendancePercentage}%
             </span>
-            <span className="text-[10px] text-emerald-500 font-bold block mt-1">
+            <span className="badge-3d badge-3d-success block mt-2 w-fit">
               {totalClasses > 0 ? `${presentClasses}/${totalClasses} Lectures` : 'Eligible for Exams'}
             </span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-black">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black border border-emerald-500/20 shadow-sm">
             <UserCheck size={22} />
           </div>
         </div>
 
         {/* Active Assignments */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl flex items-center justify-between">
+        <div className="stat-card-3d flex items-center justify-between">
           <div>
-            <span className="text-[10.5px] font-extrabold uppercase text-slate-400 tracking-wider block mb-1">
+            <span className="text-[10.5px] font-bold uppercase text-[var(--text-muted)] tracking-wider block mb-1">
               Class Assignments
             </span>
-            <span className="text-2xl font-black text-slate-900 dark:text-white">
+            <span className="text-2xl font-black text-[var(--text-primary)]">
               {assignments.length}
             </span>
-            <span className="text-[10px] text-blue-500 font-bold block mt-1">
+            <span className="badge-3d badge-3d-info block mt-2 w-fit">
               Scoped to {profile.section}
             </span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center font-black">
+          <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-black border border-blue-500/20 shadow-sm">
             <FileText size={22} />
           </div>
         </div>
 
         {/* Study Notes */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl flex items-center justify-between">
+        <div className="stat-card-3d flex items-center justify-between">
           <div>
-            <span className="text-[10.5px] font-extrabold uppercase text-slate-400 tracking-wider block mb-1">
+            <span className="text-[10.5px] font-bold uppercase text-[var(--text-muted)] tracking-wider block mb-1">
               Study Materials
             </span>
-            <span className="text-2xl font-black text-slate-900 dark:text-white">
+            <span className="text-2xl font-black text-[var(--text-primary)]">
               {notes.length}
             </span>
-            <span className="text-[10px] text-purple-500 font-bold block mt-1">
+            <span className="badge-3d badge-3d-purple block mt-2 w-fit">
               Available Docs
             </span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-600 flex items-center justify-center font-black">
+          <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center font-black border border-purple-500/20 shadow-sm">
             <BookOpen size={22} />
           </div>
         </div>
 
         {/* Current CGPA */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl flex items-center justify-between">
+        <div className="stat-card-3d flex items-center justify-between">
           <div>
-            <span className="text-[10.5px] font-extrabold uppercase text-slate-400 tracking-wider block mb-1">
+            <span className="text-[10.5px] font-bold uppercase text-[var(--text-muted)] tracking-wider block mb-1">
               Cumulative CGPA
             </span>
-            <span className="text-2xl font-black text-slate-900 dark:text-white">
+            <span className="text-2xl font-black text-[var(--text-primary)]">
               {profile.gpa}
             </span>
-            <span className="text-[10px] text-amber-500 font-bold block mt-1">
+            <span className="badge-3d badge-3d-warning block mt-2 w-fit">
               Grade A+ Standing
             </span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-black">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-black border border-amber-500/20 shadow-sm">
             <Award size={22} />
           </div>
         </div>
@@ -410,21 +410,21 @@ export const StudentDashboard = ({ onNavigate }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Class Assignments Scoped to Branch & Section */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div className="card-3d p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
             <div>
-              <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <FileText className="text-blue-600" size={16} />
+              <h3 className="text-sm font-black text-[var(--text-primary)] flex items-center gap-2">
+                <FileText className="text-[var(--accent)]" size={16} />
                 Class Assignments ({assignments.length})
               </h3>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
                 Filtered automatically for {profile.branch} • {profile.semester} • {profile.section}
               </p>
             </div>
             {onNavigate && (
               <button 
                 onClick={() => onNavigate('assignments')} 
-                className="text-[11px] text-blue-600 dark:text-blue-400 font-bold hover:underline"
+                className="text-[11px] text-[var(--accent)] font-bold hover:underline"
               >
                 View All →
               </button>
@@ -432,21 +432,21 @@ export const StudentDashboard = ({ onNavigate }) => {
           </div>
 
           {loadingData ? (
-            <div className="py-8 text-center text-xs text-slate-400 animate-pulse">Querying Firestore assignments...</div>
+            <div className="py-8 text-center text-xs text-[var(--text-muted)] animate-pulse">Querying Firestore assignments...</div>
           ) : assignments.length === 0 ? (
-            <div className="py-8 text-center text-xs text-slate-400 font-medium">
+            <div className="py-8 text-center text-xs text-[var(--text-muted)] font-medium">
               No pending assignments for {profile.section}.
             </div>
           ) : (
             <div className="space-y-3">
               {assignments.slice(0, 3).map(a => (
-                <div key={a.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
+                <div key={a.id} className="p-4 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border)] flex items-center justify-between gap-4 shadow-sm">
                   <div>
-                    <span className="px-2 py-0.5 bg-blue-500/10 text-blue-600 rounded text-[9.5px] font-black uppercase">
+                    <span className="badge-3d badge-3d-info">
                       {a.subject || 'General'}
                     </span>
-                    <h4 className="font-black text-slate-900 dark:text-white text-xs mt-1">{a.title}</h4>
-                    <p className="text-[10.5px] text-slate-400 mt-0.5 line-clamp-1">{a.description}</p>
+                    <h4 className="font-black text-[var(--text-primary)] text-xs mt-1.5">{a.title}</h4>
+                    <p className="text-[10.5px] text-[var(--text-muted)] mt-0.5 line-clamp-1">{a.description}</p>
                     <span className="text-[9.5px] text-rose-500 font-bold block mt-1">Due: {a.dueDate}</span>
                   </div>
                   {a.fileUrl && (
@@ -454,7 +454,7 @@ export const StudentDashboard = ({ onNavigate }) => {
                       href={a.fileUrl} 
                       target="_blank" 
                       rel="noreferrer" 
-                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 shrink-0 shadow-sm"
+                      className="btn-3d btn-3d-primary py-1.5 px-3 text-xs shrink-0"
                     >
                       <Download size={12} /> Doc
                     </a>
@@ -466,14 +466,14 @@ export const StudentDashboard = ({ onNavigate }) => {
         </div>
 
         {/* Study Materials Scoped to Branch & Section */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div className="card-3d p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
             <div>
-              <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <BookOpen className="text-purple-600" size={16} />
+              <h3 className="text-sm font-black text-[var(--text-primary)] flex items-center gap-2">
+                <BookOpen className="text-purple-500" size={16} />
                 Course Notes ({notes.length})
               </h3>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
                 Published by faculty for {profile.branch} ({profile.section})
               </p>
             </div>
@@ -488,28 +488,28 @@ export const StudentDashboard = ({ onNavigate }) => {
           </div>
 
           {loadingData ? (
-            <div className="py-8 text-center text-xs text-slate-400 animate-pulse">Querying Firestore notes...</div>
+            <div className="py-8 text-center text-xs text-[var(--text-muted)] animate-pulse">Querying Firestore notes...</div>
           ) : notes.length === 0 ? (
-            <div className="py-8 text-center text-xs text-slate-400 font-medium">
+            <div className="py-8 text-center text-xs text-[var(--text-muted)] font-medium">
               No study materials published yet for {profile.semester}.
             </div>
           ) : (
             <div className="space-y-3">
               {notes.slice(0, 3).map(n => (
-                <div key={n.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
+                <div key={n.id} className="p-4 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border)] flex items-center justify-between gap-4 shadow-sm">
                   <div>
-                    <span className="px-2 py-0.5 bg-purple-500/10 text-purple-600 rounded text-[9.5px] font-black uppercase">
+                    <span className="badge-3d badge-3d-purple">
                       {n.subject || 'General'}
                     </span>
-                    <h4 className="font-black text-slate-900 dark:text-white text-xs mt-1">{n.topic || n.title}</h4>
-                    <p className="text-[10.5px] text-slate-400 mt-0.5 line-clamp-1">{n.description}</p>
+                    <h4 className="font-black text-[var(--text-primary)] text-xs mt-1.5">{n.topic || n.title}</h4>
+                    <p className="text-[10.5px] text-[var(--text-muted)] mt-0.5 line-clamp-1">{n.description}</p>
                   </div>
                   {n.fileUrl && (
                     <a 
                       href={n.fileUrl} 
                       target="_blank" 
                       rel="noreferrer" 
-                      className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 shrink-0 shadow-sm"
+                      className="btn-3d btn-3d-secondary py-1.5 px-3 text-xs shrink-0 text-purple-600 dark:text-purple-400"
                     >
                       <Download size={12} /> Notes
                     </a>

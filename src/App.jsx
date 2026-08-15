@@ -44,117 +44,160 @@ import {
   Users
 } from 'lucide-react';
 
-// STUNNING LANDING PAGE / SELECTOR
+import { ThemeToggle } from './components/ThemeToggle';
+
+// STUNNING 3D LANDING PAGE / ERP GATEWAY
 const LandingPage = () => {
   const portalRoles = [
     {
       title: 'Student Portal',
-      description: 'Submit leaves, download notes, check attendance, settle fees, view marks & assignments, check checkouts.',
+      description: 'Submit leaves, download notes, check attendance, settle fees, view marks & assignments, and access results.',
       link: '/student/login',
-      color: 'from-blue-500 to-indigo-500',
+      gradient: 'from-blue-600 to-indigo-600',
+      badge: 'Academics & Leaves',
+      badgeClass: 'badge-3d badge-3d-info',
       icon: GraduationCap
     },
     {
       title: 'Faculty Portal',
-      description: 'Log attendance, enter internal marks, upload notes/assignments, and view student progress.',
+      description: 'Log attendance, enter internal marks, upload notes/assignments, and view student progress analytics.',
       link: '/faculty/login',
-      color: 'from-emerald-500 to-teal-500',
+      gradient: 'from-emerald-600 to-teal-600',
+      badge: 'Instruction & Marks',
+      badgeClass: 'badge-3d badge-3d-success',
       icon: BookOpen
     },
     {
       title: 'HOD Portal',
       description: 'Departmental overview, branch analytics, allocate subjects, monitor attendance/marks, and review counsellor files.',
       link: '/hod/login',
-      color: 'from-purple-500 to-indigo-500',
+      gradient: 'from-purple-600 to-indigo-600',
+      badge: 'Department Control',
+      badgeClass: 'badge-3d badge-3d-purple',
       icon: Building2
     },
     {
       title: 'Principal Panel',
       description: 'Institutional performance oversight, branch comparisons, collections/assets reports, and request overrides.',
       link: '/principal/login',
-      color: 'from-amber-500 to-orange-500',
+      gradient: 'from-amber-600 to-orange-600',
+      badge: 'Executive Oversight',
+      badgeClass: 'badge-3d badge-3d-warning',
       icon: Building
     },
     {
       title: 'Placement Center',
       description: 'Register partner firms, publish job openings, screen candidate criteria, and publish selection results.',
       link: '/placement/login',
-      color: 'from-sky-500 to-blue-500',
+      gradient: 'from-sky-600 to-blue-600',
+      badge: 'Drives & Careers',
+      badgeClass: 'badge-3d badge-3d-info',
       icon: Briefcase
     },
     {
       title: 'Ward Counsellor Portal',
-      description: 'Scope branch wards directory, write counseling reviews, log parent-teacher meetings, and review issues.',
+      description: 'Scope branch wards directory, write counseling reviews, log parent-teacher meetings, and review student leaves.',
       link: '/counsellor/login',
-      color: 'from-sky-655 to-blue-650',
+      gradient: 'from-cyan-600 to-blue-600',
+      badge: 'Mentorship & Care',
+      badgeClass: 'badge-3d badge-3d-info',
       icon: UserCheck
     },
     {
       title: 'Central Library Portal',
-      description: 'CRUD Central textbook collections, manage direct textbook checkouts, return calculator, circulation log audits.',
+      description: 'Central textbook collections, manage direct textbook checkouts, return calculator, circulation log audits.',
       link: '/librarian/login',
-      color: 'from-teal-500 to-indigo-500',
+      gradient: 'from-teal-600 to-emerald-600',
+      badge: 'Circulation & Books',
+      badgeClass: 'badge-3d badge-3d-success',
       icon: Library
     },
     {
       title: 'Parent Portal',
-      description: 'Monitor child\'s attendance, view results, track leave requests, and see fee reports.',
+      description: 'Monitor child\'s attendance, view results, track leave requests, and see fee reports with complete transparency.',
       link: '/parent/login',
-      color: 'from-pink-500 to-rose-500',
+      gradient: 'from-pink-600 to-rose-600',
+      badge: 'Ward Tracking',
+      badgeClass: 'badge-3d badge-3d-purple',
       icon: Users
     },
     {
       title: 'System Admin',
       description: 'Manage users directory (create/edit/delete all 8 roles), reset credentials, academic year and fees structures.',
       link: '/admin/login',
-      color: 'from-rose-500 to-red-500',
+      gradient: 'from-rose-600 to-red-600',
+      badge: 'System Governance',
+      badgeClass: 'badge-3d badge-3d-danger',
       icon: Lock
     }
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-between py-12 px-4 transition-colors duration-250 relative">
-      {/* Background gradients */}
-      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-500/5 dark:bg-blue-500/5 blur-[100px] pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-500/5 dark:bg-purple-500/5 blur-[100px] pointer-events-none"></div>
+    <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col justify-between py-8 px-4 sm:px-6 transition-colors duration-200 relative">
+      {/* 3D Ambient Background Highlights */}
+      <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-10 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[120px] pointer-events-none"></div>
 
-      <div className="max-w-6xl w-full mx-auto space-y-12 relative z-10">
+      <div className="max-w-7xl w-full mx-auto space-y-10 relative z-10">
         
-        {/* Header Branding */}
-        <div className="text-center space-y-3">
-          <div className="inline-flex p-3.5 bg-gradient-to-tr from-blue-600 to-sky-400 rounded-2xl text-white shadow-xl shadow-blue-500/10">
-            <ShieldCheck size={28} />
+        {/* Top Floating Navbar for Landing */}
+        <div className="flex items-center justify-between p-3.5 px-6 rounded-2xl card-3d-glass border border-[var(--border)]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20 border border-blue-400/30">
+              <ShieldCheck size={22} />
+            </div>
+            <div>
+              <span className="font-extrabold text-base tracking-tight font-display text-[var(--text-primary)]">ACADEMIA ERP</span>
+              <p className="text-[10px] text-[var(--accent)] font-bold uppercase tracking-wider -mt-0.5">Enterprise Cloud Portal</p>
+            </div>
           </div>
-          <h1 className="text-3xl md:text-5xl font-black font-display text-slate-900 dark:text-white tracking-tight">
-            KBN COLLEGE
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+          </div>
+        </div>
+
+        {/* Header Hero Section */}
+        <div className="text-center space-y-4 max-w-2xl mx-auto pt-4">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--surface-elevated)] border border-[var(--border)] text-xs font-bold text-[var(--accent)] shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+            <span>Academic Session 2026-2027 Active</span>
+          </div>
+          <h1 className="text-3xl sm:text-5xl font-black font-display text-[var(--text-primary)] tracking-tight">
+            KBN COLLEGE ERP
           </h1>
-          <p className="text-sm md:text-base font-semibold text-slate-500 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
-            Institutional ERP Systems Administration Portal. Select your dashboard to sign in.
+          <p className="text-xs sm:text-sm font-semibold text-[var(--text-muted)] leading-relaxed">
+            Next-Generation Smart Campus Administration & Academic Management Platform. Select your dedicated portal below to proceed.
           </p>
         </div>
 
-        {/* Portal selection grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* 3D Portal Selection Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 pt-2">
           {portalRoles.map((portal) => {
             const Icon = portal.icon;
             return (
               <Link
                 key={portal.title}
                 to={portal.link}
-                className="group relative p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/85 hover:border-blue-500 dark:hover:border-blue-500 shadow-xl shadow-slate-100/50 dark:shadow-none hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between min-h-[14rem] h-auto"
+                className="card-3d-interactive p-5 sm:p-6 flex flex-col justify-between min-h-[13.5rem] group w-full"
               >
                 <div>
-                  <div className={`w-11 h-11 rounded-2xl bg-gradient-to-tr ${portal.color} text-white flex items-center justify-center shadow-lg`}>
-                    <Icon size={18} />
+                  <div className="flex items-center justify-between mb-3 sm:mb-4">
+                    <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr ${portal.gradient} text-white flex items-center justify-center shadow-lg shadow-blue-500/10 border border-white/20 group-hover:scale-105 transition-transform duration-200 shrink-0`}>
+                      <Icon size={20} className="sm:w-[22px] sm:h-[22px]" />
+                    </div>
+                    <span className={portal.badgeClass}>{portal.badge}</span>
                   </div>
-                  <h3 className="text-xs font-black text-slate-850 dark:text-white mt-4">{portal.title}</h3>
-                  <p className="text-[10px] text-slate-450 dark:text-slate-400 mt-2 font-bold leading-relaxed">
+                  <h3 className="card-title text-base sm:text-lg font-black font-display tracking-tight group-hover:text-[var(--accent)] transition-colors">
+                    {portal.title}
+                  </h3>
+                  <p className="card-description text-xs sm:text-sm mt-2 font-medium leading-relaxed">
                     {portal.description}
                   </p>
                 </div>
-                <div className="mt-4 flex items-center text-[10px] font-bold text-blue-650 dark:text-blue-400 gap-1 group-hover:gap-2 transition-all">
-                  <span>Enter Portal</span>
-                  <span>→</span>
+
+                <div className="card-link mt-5 pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between text-xs font-bold">
+                  <span>Enter {portal.title}</span>
+                  <span className="transform group-hover:translate-x-1.5 transition-transform text-sm">→</span>
                 </div>
               </Link>
             );
@@ -164,8 +207,8 @@ const LandingPage = () => {
       </div>
 
       {/* Footer */}
-      <footer className="text-center text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-12">
-        <p>© 2026 KBN College ERP Hub. Powered by React, Tailwind & Firebase.</p>
+      <footer className="text-center text-xs font-semibold text-[var(--text-muted)] mt-12 py-4">
+        <p>© 2026 KBN College Smart ERP System • Built with 3D Design Architecture</p>
       </footer>
     </div>
   );

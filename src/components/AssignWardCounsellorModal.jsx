@@ -312,31 +312,31 @@ export const AssignWardCounsellorModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 max-w-lg w-full rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+    <div className="modal-3d-backdrop">
+      <form onSubmit={handleSubmit} className="modal-3d-content max-w-lg p-6 space-y-4">
+        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
           <div>
-            <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-purple-600" />
+            <h3 className="text-base font-black font-display text-[var(--text-primary)] flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               Assign Ward Counsellor
             </h3>
-            <p className="text-xs text-purple-600 dark:text-purple-400 font-bold">
+            <p className="text-xs text-purple-600 dark:text-purple-400 font-bold mt-0.5">
               Set Department, Counsellor & Login Credentials
             </p>
           </div>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+          <button type="button" onClick={onClose} className="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"><X size={18} /></button>
         </div>
 
         <div className="space-y-3.5 text-xs">
           {/* Field 1: Primary Trigger — Select Branch / Department */}
           <div>
-            <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block font-bold text-[var(--text-secondary)] mb-1">
               1. Select Branch / Department <span className="text-rose-500">*</span>
             </label>
             <select
               value={formData.department}
               onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              className="select-3d"
               required
             >
               <option value="">[ Select Department First ]</option>
@@ -356,13 +356,13 @@ export const AssignWardCounsellorModal = ({
 
           {/* Field 2: Dynamically Filtered — Select Ward Counsellor */}
           <div>
-            <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block font-bold text-[var(--text-secondary)] mb-1">
               2. Select Ward Counsellor ({formData.department ? formData.department : 'Select Branch First'}) <span className="text-rose-500">*</span>
             </label>
             <select
               value={formData.wardCounsellorId}
               onChange={handleUserSelect}
-              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              className="select-3d"
               required
               disabled={!formData.department || loading || facultyUsers.length === 0}
             >
@@ -388,7 +388,7 @@ export const AssignWardCounsellorModal = ({
           {/* 3. STYLING & UI FIELDS: Email Address & Password Inputs */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+              <label className="block font-bold text-[var(--text-secondary)] mb-1 flex items-center gap-1">
                 <Mail size={13} className="text-purple-500" />
                 3. Email Address <span className="text-rose-500">*</span>
               </label>
@@ -398,12 +398,12 @@ export const AssignWardCounsellorModal = ({
                 placeholder="counsellor@kbn.edu"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-gray-400 font-bold focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                className="input-3d"
               />
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+              <label className="block font-bold text-[var(--text-secondary)] mb-1 flex items-center gap-1">
                 <Lock size={13} className="text-purple-500" />
                 4. Login Password <span className="text-rose-500">*</span>
               </label>
@@ -414,7 +414,7 @@ export const AssignWardCounsellorModal = ({
                 placeholder="•••••••• (Min 6 chars)"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-gray-400 font-bold focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                className="input-3d"
               />
             </div>
           </div>
@@ -422,13 +422,13 @@ export const AssignWardCounsellorModal = ({
           {/* Field 5 & 6: Select Semester & Select Section */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-bold text-[var(--text-secondary)] mb-1">
                 5. Select Semester <span className="text-rose-500">*</span>
               </label>
               <select
                 value={formData.semester}
                 onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
-                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                className="select-3d"
                 required
               >
                 <option value="Semester 1">Semester 1</option>
@@ -443,13 +443,13 @@ export const AssignWardCounsellorModal = ({
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-bold text-[var(--text-secondary)] mb-1">
                 6. Select Section <span className="text-rose-500">*</span>
               </label>
               <select
                 value={formData.section}
                 onChange={(e) => setFormData({ ...formData, section: e.target.value })}
-                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                className="select-3d"
                 required
               >
                 <option value="Section A">Section A</option>
@@ -462,13 +462,13 @@ export const AssignWardCounsellorModal = ({
 
           {/* Field 7: Select Academic Year */}
           <div>
-            <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block font-bold text-[var(--text-secondary)] mb-1">
               7. Select Academic Year <span className="text-rose-500">*</span>
             </label>
             <select
               value={formData.academicYear}
               onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })}
-              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              className="select-3d"
               required
             >
               <option value="2026-2027">2026-2027</option>
@@ -478,18 +478,18 @@ export const AssignWardCounsellorModal = ({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[var(--border-subtle)]">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold transition-all"
+            className="btn-3d btn-3d-secondary py-2 px-4 text-xs font-bold"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={submitting || !formData.department || facultyUsers.length === 0}
-            className="px-5 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-purple-500/20"
+            className="btn-3d btn-3d-primary py-2 px-5 text-xs font-bold"
           >
             {submitting ? 'Creating Credential...' : 'Save Assignment & Credentials'}
           </button>

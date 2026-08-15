@@ -1,71 +1,876 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   3D DESIGN SYSTEM TOKENS & COLOR MATRIX (ACADEMIA ERP)
+   ========================================================================== */
+
+:root {
+  /* Canvas & Backgrounds */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-tertiary: #e2e8f0;
+  --card-bg: #ffffff;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --surface-glass: rgba(255, 255, 255, 0.9);
+  --surface-glass-strong: rgba(255, 255, 255, 0.98);
+  
+  /* Text & Typography */
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-inverted: #ffffff;
+
+  /* Borders & Dividers */
+  --border-color: #e2e8f0;
+  --border: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --border-highlight: rgba(255, 255, 255, 0.95);
+  --border-focus: #2563eb;
+
+  /* Primary Accent Brand */
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-active: #1e40af;
+  --accent-subtle: #eff6ff;
+  --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+  --accent-glow: rgba(37, 99, 235, 0.25);
+
+  /* Status Colors */
+  --success: #10b981;
+  --success-bg: #ecfdf5;
+  --success-border: #a7f3d0;
+  --success-text: #065f46;
+  --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+
+  --warning: #f59e0b;
+  --warning-bg: #fffbeb;
+  --warning-border: #fde68a;
+  --warning-text: #92400e;
+  --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+
+  --danger: #ef4444;
+  --danger-bg: #fef2f2;
+  --danger-border: #fecaca;
+  --danger-text: #991b1b;
+  --danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+
+  --info: #0ea5e9;
+  --info-bg: #f0f9ff;
+  --info-border: #bae6fd;
+  --info-text: #075985;
+  --info-gradient: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+
+  --purple: #8b5cf6;
+  --purple-bg: #f5f3ff;
+  --purple-border: #ddd6fe;
+  --purple-text: #5b21b6;
+  --purple-gradient: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+
+  /* 3D Shadows & Layering */
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  
+  /* 3D Tactile Depths & Bevels */
+  --shadow-3d-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(15, 23, 42, 0.06), 0 12px 24px -6px rgba(15, 23, 42, 0.08);
+  --shadow-3d-hover: 0 2px 3px rgba(0, 0, 0, 0.04), 0 8px 20px rgba(15, 23, 42, 0.08), 0 20px 32px -8px rgba(15, 23, 42, 0.12);
+  --inner-bevel-top: inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
+  --inner-bevel-depth: inset 0 -2px 0 0 rgba(0, 0, 0, 0.05);
+
+  /* Button 3D Edges */
+  --btn-edge-primary: #1d4ed8;
+  --btn-edge-secondary: #cbd5e1;
+  --btn-edge-success: #047857;
+  --btn-edge-warning: #b45309;
+  --btn-edge-danger: #b91c1c;
+
+  /* Form Elements */
+  --input-bg: #ffffff;
+  --input-border: #cbd5e1;
+  --input-focus-border: #2563eb;
+  --input-focus-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2), inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* ==========================================================================
+   DARK THEME PALETTE & 3D DEPTH TOKENS
+   ========================================================================== */
+
+html.dark, body.dark, .dark {
+  /* Canvas & Backgrounds */
+  --bg-primary: #090d16;
+  --bg-secondary: #0f172a;
+  --bg-tertiary: #1e293b;
+  --card-bg: #131b2e;
+  --surface: #131b2e;
+  --surface-elevated: #18223a;
+  --surface-glass: rgba(19, 27, 46, 0.85);
+  --surface-glass-strong: rgba(24, 34, 58, 0.95);
+
+  /* Text & Typography */
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-inverted: #0f172a;
+
+  /* Borders & Dividers */
+  --border-color: #1e293b;
+  --border: #1e293b;
+  --border-subtle: #152033;
+  --border-highlight: rgba(255, 255, 255, 0.08);
+  --border-focus: #60a5fa;
+
+  /* Primary Accent Brand */
+  --accent: #3b82f6;
+  --accent-hover: #60a5fa;
+  --accent-active: #2563eb;
+  --accent-subtle: rgba(59, 130, 246, 0.12);
+  --accent-gradient: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%);
+  --accent-glow: rgba(59, 130, 246, 0.35);
+
+  /* Status Colors */
+  --success: #34d399;
+  --success-bg: rgba(16, 185, 129, 0.15);
+  --success-border: rgba(16, 185, 129, 0.35);
+  --success-text: #6ee7b7;
+  --success-gradient: linear-gradient(135deg, #34d399 0%, #059669 100%);
+
+  --warning: #fbbf24;
+  --warning-bg: rgba(245, 158, 11, 0.15);
+  --warning-border: rgba(245, 158, 11, 0.35);
+  --warning-text: #fde68a;
+  --warning-gradient: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+
+  --danger: #f87171;
+  --danger-bg: rgba(239, 68, 68, 0.15);
+  --danger-border: rgba(239, 68, 68, 0.35);
+  --danger-text: #fca5a5;
+  --danger-gradient: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
+
+  --info: #38bdf8;
+  --info-bg: rgba(14, 165, 233, 0.15);
+  --info-border: rgba(14, 165, 233, 0.35);
+  --info-text: #7dd3fc;
+  --info-gradient: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+
+  --purple: #a78bfa;
+  --purple-bg: rgba(139, 92, 246, 0.15);
+  --purple-border: rgba(139, 92, 246, 0.35);
+  --purple-text: #c4b5fd;
+  --purple-gradient: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
+
+  /* 3D Shadows & Layering */
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+
+  /* 3D Tactile Depths & Bevels */
+  --shadow-3d-card: 0 1px 2px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.4), 0 16px 32px -8px rgba(0, 0, 0, 0.6);
+  --shadow-3d-hover: 0 2px 3px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.5), 0 24px 40px -10px rgba(0, 0, 0, 0.8);
+  --inner-bevel-top: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+  --inner-bevel-depth: inset 0 -2px 0 0 rgba(0, 0, 0, 0.4);
+
+  /* Button 3D Edges */
+  --btn-edge-primary: #1e3a8a;
+  --btn-edge-secondary: #0f172a;
+  --btn-edge-success: #064e3b;
+  --btn-edge-warning: #78350f;
+  --btn-edge-danger: #7f1d1d;
+
+  /* Form Elements */
+  --input-bg: #0f172a;
+  --input-border: #334155;
+  --input-focus-border: #60a5fa;
+  --input-focus-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25), inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* ==========================================================================
+   GLOBAL RESET & SMOOTH TYPOGRAPHY WITH GUARANTEED CONTRAST
+   ========================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
 body {
-  background-color: #f8fafc;
-  color: #0f172a;
-  font-family: Inter, system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
 }
 
-html.dark body, body.dark, .dark body {
-  background-color: #0b0f19;
-  color: #f8fafc;
+/* Guaranteed Readable Headings and Text */
+h1, h2, h3, h4, h5, h6, .font-display, .card-title {
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
-/* Custom scrollbar */
+p, .card-description {
+  color: var(--text-secondary);
+}
+
+.card-muted, .text-muted {
+  color: var(--text-muted);
+}
+
+.card-link {
+  color: var(--accent);
+}
+
+/* Custom 3D Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
 }
+
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--bg-primary);
 }
+
 ::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
+  background: #cbd5e1;
   border-radius: 9999px;
+  border: 2px solid var(--bg-primary);
 }
+
 .dark ::-webkit-scrollbar-thumb {
-  background-color: #334155;
-}
-::-webkit-scrollbar-thumb:hover {
-  background-color: #94a3b8;
-}
-.dark ::-webkit-scrollbar-thumb:hover {
-  background-color: #475569;
+  background: #334155;
+  border: 2px solid var(--bg-primary);
 }
 
-/* Glassmorphism Utilities */
-.glass {
-  background: rgba(255, 255, 255, 0.65);
+::selection {
+  background: rgba(59, 130, 246, 0.3);
+  color: inherit;
+}
+
+/* ==========================================================================
+   REUSABLE 3D CARD SYSTEM (GUARANTEED CONTRAST & RESPONSIVENESS)
+   ========================================================================== */
+
+.card-3d {
+  background-color: var(--surface) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-3d-card), var(--inner-bevel-top);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.card-3d-elevated {
+  background-color: var(--surface-elevated) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+  box-shadow: var(--shadow-3d-card), var(--inner-bevel-top), var(--inner-bevel-depth);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  box-sizing: border-box;
+}
+
+.card-3d-interactive {
+  background-color: var(--surface) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-3d-card), var(--inner-bevel-top);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease;
+  cursor: pointer;
+  box-sizing: border-box;
+  text-decoration: none;
+  display: flex;
+}
+
+.card-3d-interactive:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-3d-hover), var(--inner-bevel-top), 0 0 20px var(--accent-glow);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.card-3d-interactive:active {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-3d-card), var(--inner-bevel-top);
+}
+
+/* Frosted Glass 3D Card */
+.card-3d-glass {
+  background-color: var(--surface-glass) !important;
+  color: var(--text-primary) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--border-highlight);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-3d-card), var(--inner-bevel-top);
+  box-sizing: border-box;
 }
 
-.dark .glass {
-  background: rgba(15, 23, 42, 0.55);
+/* Stat Metric 3D Card */
+.stat-card-3d {
+  background-color: var(--surface) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow-3d-card), var(--inner-bevel-top);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.stat-card-3d:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-3d-hover), var(--inner-bevel-top);
+}
+
+.stat-card-3d::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent 70%);
+  pointer-events: none;
+}
+
+/* Explicit Card Typography Rules */
+.card-3d .card-title,
+.card-3d-interactive .card-title,
+.card-3d-elevated .card-title {
+  color: var(--text-primary) !important;
+}
+
+.card-3d .card-description,
+.card-3d-interactive .card-description,
+.card-3d-elevated .card-description {
+  color: var(--text-secondary) !important;
+}
+
+.card-3d .card-link,
+.card-3d-interactive .card-link,
+.card-3d-elevated .card-link {
+  color: var(--accent) !important;
+}
+
+/* ==========================================================================
+   TACTILE 3D BUTTONS (EXPLICIT HIGH CONTRAST)
+   ========================================================================== */
+
+.btn-3d {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1), filter 0.15s ease, background 0.15s ease;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.btn-3d:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Primary 3D Button */
+.btn-3d-primary {
+  background: var(--accent-gradient) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 3px 0 0 var(--btn-edge-primary), 0 4px 10px 0 var(--accent-glow), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+}
+
+.btn-3d-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0 0 var(--btn-edge-primary), 0 8px 16px 0 var(--accent-glow), inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
+  filter: brightness(1.05);
+  color: #ffffff !important;
+}
+
+.btn-3d-primary:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 0 var(--btn-edge-primary), 0 2px 4px 0 var(--accent-glow), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  color: #ffffff !important;
+}
+
+/* Secondary / Neutral 3D Button */
+.btn-3d-secondary {
+  background-color: var(--surface-elevated) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border);
+  box-shadow: 0 3px 0 0 var(--btn-edge-secondary), var(--shadow-sm), var(--inner-bevel-top);
+}
+
+.btn-3d-secondary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0 0 var(--btn-edge-secondary), var(--shadow-md), var(--inner-bevel-top);
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+.btn-3d-secondary:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 0 var(--btn-edge-secondary), var(--inner-bevel-top);
+  color: var(--text-primary) !important;
+}
+
+/* Success 3D Button */
+.btn-3d-success {
+  background: var(--success-gradient) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 3px 0 0 var(--btn-edge-success), 0 4px 10px 0 rgba(16, 185, 129, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+}
+
+.btn-3d-success:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0 0 var(--btn-edge-success), 0 8px 16px 0 rgba(16, 185, 129, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
+  filter: brightness(1.05);
+  color: #ffffff !important;
+}
+
+.btn-3d-success:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 0 var(--btn-edge-success), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  color: #ffffff !important;
+}
+
+/* Danger 3D Button */
+.btn-3d-danger {
+  background: var(--danger-gradient) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 3px 0 0 var(--btn-edge-danger), 0 4px 10px 0 rgba(239, 68, 68, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+}
+
+.btn-3d-danger:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0 0 var(--btn-edge-danger), 0 8px 16px 0 rgba(239, 68, 68, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
+  filter: brightness(1.05);
+  color: #ffffff !important;
+}
+
+.btn-3d-danger:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 0 var(--btn-edge-danger), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  color: #ffffff !important;
+}
+
+/* Warning 3D Button */
+.btn-3d-warning {
+  background: var(--warning-gradient) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 3px 0 0 var(--btn-edge-warning), 0 4px 10px 0 rgba(245, 158, 11, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+}
+
+.btn-3d-warning:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0 0 var(--btn-edge-warning), 0 8px 16px 0 rgba(245, 158, 11, 0.4);
+  filter: brightness(1.05);
+  color: #ffffff !important;
+}
+
+.btn-3d-warning:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 0 var(--btn-edge-warning);
+  color: #ffffff !important;
+}
+
+/* Ghost 3D Button */
+.btn-3d-ghost {
+  background: transparent;
+  color: var(--text-secondary) !important;
+  border: 1px solid transparent;
+}
+
+.btn-3d-ghost:hover:not(:disabled) {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  transform: translateY(-1px);
+}
+
+.btn-3d-ghost:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* ==========================================================================
+   3D FORM INPUTS & SELECTS
+   ========================================================================== */
+
+.input-3d, .select-3d, .textarea-3d {
+  width: 100%;
+  background-color: var(--input-bg) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--input-border);
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05), var(--shadow-sm);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.input-3d::placeholder, .textarea-3d::placeholder {
+  color: var(--text-muted) !important;
+  opacity: 0.75;
+}
+
+.input-3d:focus, .select-3d:focus, .textarea-3d:focus {
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-shadow);
+}
+
+.input-3d:disabled, .select-3d:disabled, .textarea-3d:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--bg-secondary) !important;
+}
+
+/* ==========================================================================
+   3D TABLE SYSTEM (ELEVATED, RESPONSIVE, CLEAR)
+   ========================================================================== */
+
+.table-3d-container {
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-3d-card), var(--inner-bevel-top);
+  overflow-x: auto;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.table-3d {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+  font-size: 0.8125rem;
+}
+
+.table-3d thead th {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-secondary) !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.6875rem;
+  letter-spacing: 0.05em;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.table-3d thead th:first-child {
+  border-top-left-radius: 1.25rem;
+}
+
+.table-3d thead th:last-child {
+  border-top-right-radius: 1.25rem;
+}
+
+.table-3d tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.table-3d tbody tr:hover {
+  background-color: var(--bg-secondary);
+}
+
+.table-3d tbody td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary) !important;
+  vertical-align: middle;
+}
+
+.table-3d tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table-3d tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 1.25rem;
+}
+
+.table-3d tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 1.25rem;
+}
+
+/* ==========================================================================
+   3D STATUS BADGES & PILLS
+   ========================================================================== */
+
+.badge-3d {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  white-space: nowrap;
+}
+
+.badge-3d-success {
+  background: var(--success-bg);
+  color: var(--success-text);
+  border-color: var(--success-border);
+}
+
+.badge-3d-warning {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border-color: var(--warning-border);
+}
+
+.badge-3d-danger {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border-color: var(--danger-border);
+}
+
+.badge-3d-info {
+  background: var(--info-bg);
+  color: var(--info-text);
+  border-color: var(--info-border);
+}
+
+.badge-3d-purple {
+  background: var(--purple-bg);
+  color: var(--purple-text);
+  border-color: var(--purple-border);
+}
+
+.badge-3d-neutral {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-color: var(--border);
+}
+
+/* ==========================================================================
+   3D MODALS & OVERLAYS (RESPONSIVE VIEWPORT FIT)
+   ========================================================================== */
+
+.modal-3d-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(9, 13, 22, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.modal-3d-content {
+  background-color: var(--surface-elevated) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-highlight);
+  border-radius: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4), var(--inner-bevel-top);
+  max-width: 36rem;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   NAVIGATION & SIDEBAR 3D UTILITIES
+   ========================================================================== */
+
+.sidebar-3d-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary) !important;
+  text-decoration: none;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+}
+
+.sidebar-3d-nav-item:hover {
+  transform: translateX(4px);
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+.sidebar-3d-nav-item.active {
+  background: var(--accent-gradient) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  font-weight: 700;
+}
+
+.sidebar-3d-nav-item.active:hover {
+  transform: translateX(2px);
+  color: #ffffff !important;
+}
+
+/* Navbar 3D floating header */
+.navbar-3d {
+  background-color: var(--surface-glass) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
 }
 
-.glass-flat {
-  background: rgba(255, 255, 255, 0.9);
+/* ==========================================================================
+   KEYFRAME ANIMATIONS
+   ========================================================================== */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.dark .glass-flat {
-  background: rgba(30, 41, 59, 0.9);
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.text-gradient {
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-  background-image: linear-gradient(to right, #2563eb, #0ea5e9);
+@keyframes modalPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.94) translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
-.dark .text-gradient {
-  background-image: linear-gradient(to right, #60a5fa, #7dd3fc);
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+.animate-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Subtle 3D Pulse for Badges/Indicators */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0);
+  }
+}
+
+.pulse-glow {
+  animation: pulseGlow 2.5s infinite;
+}
+
+/* ==========================================================================
+   RESPONSIVE BREAKPOINTS & MOBILE VIEWPORT SYSTEM
+   ========================================================================== */
+
+/* Tablet (768px - 1199px) */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .card-3d, .card-3d-elevated, .card-3d-interactive {
+    padding: 1.5rem;
+    border-radius: 1.25rem;
+  }
+}
+
+/* Mobile (<= 767px) */
+@media (max-width: 767px) {
+  .card-3d, .card-3d-elevated, .card-3d-interactive {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 1.25rem;
+    padding: 1.25rem;
+    box-sizing: border-box;
+  }
+
+  .stat-card-3d {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 1rem;
+  }
+
+  .modal-3d-content {
+    margin: 0.5rem;
+    max-width: calc(100vw - 1rem);
+    max-height: calc(100vh - 2rem);
+    padding: 1.25rem;
+    border-radius: 1.25rem;
+  }
+
+  .table-3d-container {
+    border-radius: 1rem;
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
+  }
+
+  .btn-3d {
+    min-height: 2.625rem;
+    font-size: 0.8125rem;
+  }
+}
+
+/* Small Mobile (<= 480px) */
+@media (max-width: 480px) {
+  .card-3d, .card-3d-elevated, .card-3d-interactive {
+    padding: 1rem;
+    border-radius: 1rem;
+  }
+
+  .modal-3d-content {
+    padding: 1rem;
+  }
+}
+

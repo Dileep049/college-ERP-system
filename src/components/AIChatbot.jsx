@@ -339,78 +339,86 @@ export const AIChatbot = ({ user }) => {
 
   return (
     <>
-      {/* Floating Button */}
+      {/* Floating 3D Action button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 p-4 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all z-50 group border border-blue-500/35"
-        title="Academia AI Assistant"
+        className="fixed bottom-6 right-6 p-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl hover:scale-105 active:scale-95 transition-all z-50 flex items-center justify-center border border-white/20"
+        style={{
+          boxShadow: '0 12px 28px -6px rgba(37, 99, 235, 0.45), 0 6px 12px -3px rgba(37, 99, 235, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)'
+        }}
+        title="Ask Academia AI Assistant"
       >
-        {isOpen ? <X size={22} /> : <MessageSquare size={22} />}
+        {isOpen ? <X size={22} /> : <Bot size={22} className="animate-pulse" />}
         {!isOpen && (
-          <span className="absolute -top-1 -right-1 flex h-3 w-3">
+          <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900"></span>
           </span>
         )}
       </button>
 
-      {/* Chat window */}
+      {/* 3D Chat window */}
       {isOpen && (
-        <div className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 w-[calc(100vw-2rem)] max-w-sm sm:w-96 h-[480px] sm:h-[500px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/95 rounded-3xl shadow-2xl z-50 flex flex-col overflow-hidden animate-slide-up">
+        <div 
+          className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 w-[calc(100vw-2rem)] max-w-sm sm:w-96 h-[480px] sm:h-[500px] bg-[var(--surface)] border border-[var(--border)] rounded-3xl z-50 flex flex-col overflow-hidden animate-slide-up"
+          style={{
+            boxShadow: 'var(--shadow-3d-card), 0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+          }}
+        >
           
           {/* Header */}
-          <div className="p-4 bg-gradient-to-r from-blue-600 to-indigo-650 text-white flex items-center justify-between">
+          <div className="p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-between border-b border-white/10" style={{ boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.2)' }}>
             <div className="flex items-center gap-2.5">
-              <div className="p-2 bg-white/10 rounded-xl">
+              <div className="p-2 bg-white/10 rounded-xl border border-white/10">
                 <Bot size={18} className="animate-pulse" />
               </div>
               <div>
-                <h4 className="font-extrabold text-sm tracking-tight flex items-center gap-1">
+                <h4 className="font-black text-sm tracking-tight flex items-center gap-1 font-display">
                   <span>Academia Assistant</span>
                   <Sparkles size={12} className="text-amber-300 fill-amber-300" />
                 </h4>
-                <p className="text-[10px] text-blue-100 font-bold uppercase tracking-wider">Advanced AI Agent</p>
+                <p className="text-[10px] text-blue-100 font-bold uppercase tracking-wider">Advanced AI Copilot</p>
               </div>
             </div>
-            <button onClick={() => setIsOpen(false)} className="p-1 rounded-lg hover:bg-white/10 text-white/80">
+            <button onClick={() => setIsOpen(false)} className="p-1.5 rounded-xl hover:bg-white/15 text-white/90 transition-colors">
               <X size={16} />
             </button>
           </div>
 
           {/* Messages list */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-slate-50 dark:bg-slate-950/40">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-[var(--bg-primary)]">
             {messages.map((msg) => {
               const isBot = msg.sender === 'bot';
               return (
                 <div key={msg.id} className={`flex items-start gap-2.5 ${!isBot ? 'flex-row-reverse' : ''}`}>
-                  <div className={`p-2 rounded-xl shrink-0 ${isBot ? 'bg-blue-600/10 text-blue-600 dark:bg-blue-400/10 dark:text-blue-400' : 'bg-slate-205 dark:bg-slate-800 text-slate-600 dark:text-slate-350'}`}>
+                  <div className={`p-2 rounded-xl shrink-0 ${isBot ? 'bg-blue-600/10 text-blue-600 dark:text-blue-400' : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)]'}`}>
                     {isBot ? <Bot size={14} /> : <User size={14} />}
                   </div>
-                  <div className="max-w-[80%] space-y-2">
+                  <div className="max-w-[80%] space-y-1.5">
                     <div className={`rounded-2xl p-3 text-xs font-semibold leading-relaxed whitespace-pre-line ${
                       isBot 
-                        ? 'bg-white dark:bg-slate-850 text-slate-800 dark:text-slate-200 rounded-tl-none border border-slate-200/50 dark:border-slate-800/50' 
-                        : 'bg-blue-600 text-white rounded-tr-none'
+                        ? 'bg-[var(--surface)] text-[var(--text-primary)] rounded-tl-none border border-[var(--border)] shadow-sm' 
+                        : 'bg-blue-600 text-white rounded-tr-none shadow-sm'
                     }`}>
                       <p>{msg.text}</p>
                       
                       {/* --- WIDGETS RENDER --- */}
                       {isBot && msg.widget && (
-                        <div className="mt-3.5 pt-3.5 border-t border-slate-100 dark:border-slate-800/80 space-y-3">
+                        <div className="mt-3 pt-3 border-t border-[var(--border-subtle)] space-y-2.5">
                           
                           {/* 1. Attendance widget */}
                           {msg.widget.type === 'attendance' && (
-                            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200/40 dark:border-slate-800 text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                            <div className="p-2.5 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] text-[11px] font-bold text-[var(--text-primary)]">
                               <div className="flex justify-between items-center mb-2">
                                 <span>Attendance Rate</span>
-                                <span className={msg.widget.data.eligible ? 'text-emerald-500' : 'text-rose-500'}>
+                                <span className={msg.widget.data.eligible ? 'text-emerald-600 dark:text-emerald-400 font-extrabold' : 'text-rose-600 dark:text-rose-400 font-extrabold'}>
                                   {msg.widget.data.percentage}%
                                 </span>
                               </div>
-                              <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden mb-2">
+                              <div className="w-full h-1.5 bg-[var(--border)] rounded-full overflow-hidden mb-2">
                                 <div className={`h-full rounded-full ${msg.widget.data.eligible ? 'bg-emerald-500' : 'bg-rose-500'}`} style={{ width: `${msg.widget.data.percentage}%` }}></div>
                               </div>
-                              <p className="text-[9.5px] text-slate-450 dark:text-slate-400">
+                              <p className="text-[9.5px] text-[var(--text-muted)] font-medium">
                                 Attended: {msg.widget.data.attended} / {msg.widget.data.total} lectures.
                               </p>
                             </div>
@@ -420,22 +428,22 @@ export const AIChatbot = ({ user }) => {
                           {msg.widget.type === 'placements' && (
                             <div className="space-y-2">
                               {msg.widget.data.map(d => (
-                                <div key={d.driveId} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200/40 dark:border-slate-800 text-[10px]">
-                                  <div className="flex justify-between font-black text-slate-800 dark:text-slate-200">
+                                <div key={d.driveId} className="p-2.5 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] text-[10px]">
+                                  <div className="flex justify-between font-black text-[var(--text-primary)]">
                                     <span>{d.companyName}</span>
-                                    <span className="text-blue-600 dark:text-blue-400">{d.salaryPackage}</span>
+                                    <span className="text-[var(--accent)]">{d.salaryPackage}</span>
                                   </div>
-                                  <p className="text-slate-500 dark:text-slate-400 font-bold mt-1">{d.role}</p>
-                                  <p className="text-[9px] text-slate-450 dark:text-slate-500 font-bold mt-0.5">Eligibility: {d.eligibility}</p>
+                                  <p className="text-[var(--text-secondary)] font-bold mt-1">{d.role}</p>
+                                  <p className="text-[9px] text-[var(--text-muted)] font-medium mt-0.5">Eligibility: {d.eligibility}</p>
                                   
                                   <div className="mt-2.5 flex items-center justify-between">
-                                    <span className="text-[9px] text-slate-400">{d.driveDate}</span>
+                                    <span className="text-[9px] text-[var(--text-muted)]">{d.driveDate}</span>
                                     {d.applied ? (
-                                      <span className="text-emerald-500 text-[9px] font-black uppercase">✓ Registered</span>
+                                      <span className="badge-3d badge-3d-success text-[9px]">✓ Registered</span>
                                     ) : (
                                       <button
                                         onClick={() => handleApplyJobFromChat(d.driveId, d.companyName)}
-                                        className="px-2.5 py-1 bg-blue-600 text-white rounded-lg text-[9px] font-bold shadow hover:bg-blue-700"
+                                        className="btn-3d btn-3d-primary py-1 px-2.5 text-[9px]"
                                       >
                                         Apply
                                       </button>
@@ -450,12 +458,12 @@ export const AIChatbot = ({ user }) => {
                           {msg.widget.type === 'timetable' && (
                             <div className="space-y-1.5 max-h-36 overflow-y-auto">
                               {msg.widget.data.map((slot, idx) => (
-                                <div key={idx} className="p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 text-[10px] flex justify-between items-center">
+                                <div key={idx} className="p-2 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[10px] flex justify-between items-center">
                                   <div>
-                                    <p className="font-extrabold text-slate-800 dark:text-slate-200">{slot.subject}</p>
-                                    <span className="text-[9px] text-slate-450 dark:text-slate-500">{slot.room} • {slot.faculty}</span>
+                                    <p className="font-extrabold text-[var(--text-primary)]">{slot.subject}</p>
+                                    <span className="text-[9px] text-[var(--text-muted)]">{slot.room} • {slot.faculty}</span>
                                   </div>
-                                  <span className="text-[9.5px] text-blue-600 dark:text-blue-450 font-bold shrink-0">{slot.time}</span>
+                                  <span className="text-[9.5px] text-[var(--accent)] font-bold shrink-0">{slot.time}</span>
                                 </div>
                               ))}
                             </div>
@@ -463,12 +471,12 @@ export const AIChatbot = ({ user }) => {
 
                           {/* 4. Results widget */}
                           {msg.widget.type === 'results' && (
-                            <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200/40 dark:border-slate-800 text-[10px] space-y-2">
-                              <p className="font-black text-slate-800 dark:text-slate-200 text-center border-b pb-1 dark:border-slate-800">Semester {msg.widget.data.semester} Results (GPA: {msg.widget.data.gpa})</p>
+                            <div className="p-2.5 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[10px] space-y-2">
+                              <p className="font-black text-[var(--text-primary)] text-center border-b pb-1 border-[var(--border-subtle)]">Semester {msg.widget.data.semester} Results (GPA: {msg.widget.data.gpa})</p>
                               {msg.widget.data.marks.map((m, idx) => (
-                                <div key={idx} className="flex justify-between font-bold text-slate-650 dark:text-slate-350">
+                                <div key={idx} className="flex justify-between font-bold text-[var(--text-secondary)]">
                                   <span>{m.subject}</span>
-                                  <span>Grade {m.grade}</span>
+                                  <span className="text-[var(--text-primary)] font-extrabold">Grade {m.grade}</span>
                                 </div>
                               ))}
                             </div>
@@ -478,12 +486,12 @@ export const AIChatbot = ({ user }) => {
                           {msg.widget.type === 'timetable_faculty' && (
                             <div className="space-y-1.5 max-h-36 overflow-y-auto">
                               {msg.widget.data.map((slot, idx) => (
-                                <div key={idx} className="p-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 text-[10px] flex justify-between items-center">
+                                <div key={idx} className="p-2 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[10px] flex justify-between items-center">
                                   <div>
-                                    <p className="font-extrabold text-slate-800 dark:text-slate-200">{slot.subject}</p>
-                                    <span className="text-[9px] text-slate-450 dark:text-slate-500">{slot.day} • {slot.branch} (Sem {slot.semester})</span>
+                                    <p className="font-extrabold text-[var(--text-primary)]">{slot.subject}</p>
+                                    <span className="text-[9px] text-[var(--text-muted)]">{slot.day} • {slot.branch} (Sem {slot.semester})</span>
                                   </div>
-                                  <span className="text-[9px] text-blue-600 font-bold">{slot.time}</span>
+                                  <span className="text-[9px] text-[var(--accent)] font-bold">{slot.time}</span>
                                 </div>
                               ))}
                             </div>
@@ -497,12 +505,12 @@ export const AIChatbot = ({ user }) => {
                                 <span className="font-black text-rose-500 block uppercase text-[8px] mb-1">Absent Students ({msg.widget.data.students.length})</span>
                                 <div className="space-y-1 max-h-24 overflow-y-auto">
                                   {msg.widget.data.students.length === 0 ? (
-                                    <p className="text-slate-450">All students present today.</p>
+                                    <p className="text-[var(--text-muted)]">All students present today.</p>
                                   ) : (
                                     msg.widget.data.students.map((s, idx) => (
-                                      <div key={idx} className="flex justify-between font-bold text-slate-650 dark:text-slate-350 bg-slate-50 dark:bg-slate-900 p-1 rounded">
+                                      <div key={idx} className="flex justify-between font-bold text-[var(--text-secondary)] bg-[var(--surface-elevated)] p-1 rounded">
                                         <span>{s.name}</span>
-                                        <span className="text-slate-450">{s.rollNumber}</span>
+                                        <span className="text-[var(--text-muted)] font-mono">{s.rollNumber}</span>
                                       </div>
                                     ))
                                   )}
@@ -513,12 +521,12 @@ export const AIChatbot = ({ user }) => {
                                 <span className="font-black text-amber-500 block uppercase text-[8px] mb-1">Absent Faculty ({msg.widget.data.faculty.length})</span>
                                 <div className="space-y-1 max-h-24 overflow-y-auto">
                                   {msg.widget.data.faculty.length === 0 ? (
-                                    <p className="text-slate-450">All faculty members active today.</p>
+                                    <p className="text-[var(--text-muted)]">All faculty members active today.</p>
                                   ) : (
                                     msg.widget.data.faculty.map((f, idx) => (
-                                      <div key={idx} className="flex justify-between font-bold text-slate-650 dark:text-slate-355 bg-slate-50 dark:bg-slate-900 p-1 rounded">
+                                      <div key={idx} className="flex justify-between font-bold text-[var(--text-secondary)] bg-[var(--surface-elevated)] p-1 rounded">
                                         <span>{f.name}</span>
-                                        <span className="text-slate-450 italic truncate max-w-[50%]">{f.reason}</span>
+                                        <span className="text-[var(--text-muted)] italic truncate max-w-[50%]">{f.reason}</span>
                                       </div>
                                     ))
                                   )}
@@ -530,7 +538,7 @@ export const AIChatbot = ({ user }) => {
                         </div>
                       )}
                     </div>
-                    <span className="text-[8px] text-slate-400 dark:text-slate-500 font-bold block">
+                    <span className="text-[8px] text-[var(--text-muted)] font-bold block">
                       {msg.time}
                     </span>
                   </div>
@@ -541,12 +549,12 @@ export const AIChatbot = ({ user }) => {
           </div>
 
           {/* Quick Suggestions Roster */}
-          <div className="px-4 py-2 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50 flex flex-wrap gap-1.5 shrink-0">
+          <div className="px-3 py-2 border-t border-[var(--border-subtle)] bg-[var(--surface-elevated)] flex flex-wrap gap-1.5 shrink-0">
             {getSuggestions().map((s, idx) => (
               <button
                 key={idx}
                 onClick={() => handleSuggestionClick(s.query)}
-                className="px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 text-[9.5px] font-bold text-slate-600 dark:text-slate-300 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 hover:text-blue-650 transition-all shadow-sm"
+                className="px-2 py-1 bg-[var(--surface)] border border-[var(--border)] text-[9.5px] font-bold text-[var(--text-secondary)] rounded-lg hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all shadow-xs"
               >
                 {s.label}
               </button>
@@ -554,17 +562,17 @@ export const AIChatbot = ({ user }) => {
           </div>
 
           {/* Message Form input */}
-          <form onSubmit={handleSubmitMessage} className="p-3 border-t border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900 flex items-center gap-2 shrink-0">
+          <form onSubmit={handleSubmitMessage} className="p-3 border-t border-[var(--border-subtle)] bg-[var(--surface)] flex items-center gap-2 shrink-0">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={`Ask Academia AI Copilot...`}
-              className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-white font-medium"
+              className="input-3d flex-1 py-2 text-xs"
             />
             <button
               type="submit"
-              className="p-2.5 bg-blue-600 hover:bg-blue-755 text-white rounded-xl transition-colors shadow shadow-blue-500/20"
+              className="btn-3d btn-3d-primary p-2.5"
             >
               <Send size={14} />
             </button>

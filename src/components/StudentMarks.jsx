@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db, isFirebaseConfigured, mockDB } from '../services/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { Award, FileText } from 'lucide-react';
 
 export const StudentMarks = ({ student, currentUser, isParent }) => {
   const activeStudent = student || currentUser || {};
@@ -108,38 +109,43 @@ export const StudentMarks = ({ student, currentUser, isParent }) => {
   }, [activeStudent?.uid, activeStudent?.rollNumber]);
 
   return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
-      <div className="border-b pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div>
-          <h3 className="text-base font-black text-slate-900 dark:text-white">My Internal Marks Ledger (Read-Only)</h3>
-          <p className="text-xs text-slate-400">Mid 1 (20) + Mid 2 (20) + Assignments (10) = Total (50 Marks)</p>
+    <div className="card-3d p-6 space-y-6 text-xs font-semibold">
+      <div className="border-b border-[var(--border-subtle)] pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-md">
+            <Award size={20} />
+          </div>
+          <div>
+            <h3 className="text-base font-black font-display text-[var(--text-primary)]">My Internal Marks Ledger</h3>
+            <p className="text-xs text-[var(--text-muted)]">Mid 1 (20) + Mid 2 (20) + Assignments (10) = Total (50 Marks)</p>
+          </div>
         </div>
         {activeStudent?.rollNumber && (
-          <span className="px-3 py-1 bg-blue-500/10 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0">
+          <span className="badge-3d badge-3d-info shrink-0">
             Roll No: {activeStudent.rollNumber}
           </span>
         )}
       </div>
 
       {loading ? (
-        <div className="py-12 text-center animate-pulse text-slate-400 font-bold">Loading internal marks ledger...</div>
+        <div className="py-12 text-center animate-pulse text-[var(--text-muted)] font-bold">Loading internal marks ledger...</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+        <div className="table-3d-container">
+          <table className="table-3d">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 text-[10px]">
-                <th className="px-5 py-3">Subject</th>
-                <th className="px-5 py-3 text-center">Mid 1 (20)</th>
-                <th className="px-5 py-3 text-center">Mid 2 (20)</th>
-                <th className="px-5 py-3 text-center">Assignments (10)</th>
-                <th className="px-5 py-3 text-center">Total (50)</th>
-                <th className="px-5 py-3 text-right">Performance Status</th>
+              <tr>
+                <th>Subject</th>
+                <th className="text-center">Mid 1 (20)</th>
+                <th className="text-center">Mid 2 (20)</th>
+                <th className="text-center">Assignments (10)</th>
+                <th className="text-center">Total (50)</th>
+                <th className="text-right">Performance Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-bold">
+            <tbody>
               {marksData.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="py-12 text-center text-slate-400 italic font-medium">
+                  <td colSpan="6" className="py-12 text-center text-[var(--text-muted)] italic font-medium">
                     No internal marks published yet.
                   </td>
                 </tr>
@@ -152,31 +158,31 @@ export const StudentMarks = ({ student, currentUser, isParent }) => {
                   const pct = (total / 50) * 100;
 
                   let statusLabel = 'Excellent';
-                  let statusClass = 'bg-emerald-500/10 text-emerald-600';
+                  let statusBadgeClass = 'badge-3d badge-3d-success';
                   if (pct < 50) {
                     statusLabel = 'Needs Improvement';
-                    statusClass = 'bg-rose-500/10 text-rose-500';
+                    statusBadgeClass = 'badge-3d badge-3d-danger';
                   } else if (pct < 70) {
                     statusLabel = 'Satisfactory';
-                    statusClass = 'bg-amber-500/10 text-amber-500';
+                    statusBadgeClass = 'badge-3d badge-3d-warning';
                   }
 
                   return (
-                    <tr key={mark.id || mark.docId || index} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
-                      <td className="px-5 py-4 font-black text-slate-900 dark:text-white">
+                    <tr key={mark.id || mark.docId || index}>
+                      <td className="font-bold text-[var(--text-primary)]">
                         {mark.subject || 'General'}
                         {mark.status && (
-                          <span className="block text-[9px] font-extrabold text-slate-400 uppercase mt-0.5">
+                          <span className="block text-[9px] font-bold text-[var(--text-muted)] uppercase mt-0.5">
                             Status: {mark.status}
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-4 text-center text-slate-700 dark:text-slate-300">{m1}</td>
-                      <td className="px-5 py-4 text-center text-slate-700 dark:text-slate-300">{m2}</td>
-                      <td className="px-5 py-4 text-center text-slate-700 dark:text-slate-300">{ass}</td>
-                      <td className="px-5 py-4 text-center font-black text-blue-600 dark:text-blue-400">{total} / 50</td>
-                      <td className="px-5 py-4 text-right">
-                        <span className={`px-3 py-1 rounded-xl text-[9.5px] uppercase font-extrabold ${statusClass}`}>
+                      <td className="text-center text-[var(--text-secondary)] font-mono">{m1}</td>
+                      <td className="text-center text-[var(--text-secondary)] font-mono">{m2}</td>
+                      <td className="text-center text-[var(--text-secondary)] font-mono">{ass}</td>
+                      <td className="text-center font-black text-[var(--accent)] font-mono">{total} / 50</td>
+                      <td className="text-right">
+                        <span className={statusBadgeClass}>
                           {statusLabel}
                         </span>
                       </td>

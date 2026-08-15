@@ -57,26 +57,26 @@ export const IDCardGenerator = ({ user }) => {
   const isStudent = user.role === 'student';
 
   return (
-    <div className="flex flex-col md:flex-row items-center gap-6 sm:gap-8 p-4 sm:p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-xl max-w-3xl mx-auto w-full min-w-0">
+    <div className="flex flex-col md:flex-row items-center gap-6 sm:gap-8 p-6 card-3d max-w-3xl mx-auto w-full min-w-0 font-sans">
       
       {/* Upload & Instructions */}
       <div className="flex-1 space-y-4 text-xs font-semibold">
-        <h3 className="text-base font-extrabold text-slate-850 dark:text-white">ID Card Generator</h3>
-        <p className="text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">
+        <h3 className="text-base font-black font-display text-[var(--text-primary)]">Institutional ID Card Generator</h3>
+        <p className="text-[var(--text-muted)] leading-relaxed font-medium">
           Your digital identity card is generated automatically from your registered profile. Please upload a clear passport-sized face photo to finalize the card details.
         </p>
 
         <div>
-          <label className="block text-slate-500 dark:text-slate-400 mb-2 font-bold uppercase">Upload Portrait Photo</label>
-          <div className="relative border border-dashed border-slate-200 dark:border-slate-800 hover:border-blue-500 rounded-xl p-4 text-center cursor-pointer bg-slate-50 dark:bg-slate-950">
+          <label className="block text-[var(--text-secondary)] mb-2 font-bold uppercase text-[10px]">Upload Portrait Photo</label>
+          <div className="relative border-2 border-dashed border-[var(--border)] hover:border-[var(--accent)] rounded-2xl p-4 text-center cursor-pointer bg-[var(--surface-elevated)] transition-all">
             <input
               type="file"
               onChange={handlePhotoUpload}
               accept="image/*"
               className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
             />
-            <div className="flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400 font-bold">
-              <Upload size={16} />
+            <div className="flex items-center justify-center gap-2 text-[var(--text-secondary)] font-bold">
+              <Upload size={16} className="text-[var(--accent)]" />
               <span>Select Face Photo</span>
             </div>
           </div>
@@ -85,7 +85,7 @@ export const IDCardGenerator = ({ user }) => {
         <button
           onClick={downloadCard}
           disabled={downloading}
-          className="w-full py-3 bg-blue-600 hover:bg-blue-755 disabled:bg-slate-200 text-white rounded-xl font-bold shadow-lg shadow-blue-500/10 transition-all flex items-center justify-center gap-2"
+          className="btn-3d btn-3d-primary w-full py-3 text-xs font-bold"
         >
           <Download size={16} />
           <span>{downloading ? 'Generating Image...' : 'Download ID Card (PNG)'}</span>

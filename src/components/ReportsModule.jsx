@@ -179,40 +179,50 @@ export const ReportsModule = ({ userRole = 'admin', currentUser = null }) => {
     <div className="space-y-6 text-xs font-semibold">
       
       {/* Header Banner */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 text-white shadow-xl flex items-center justify-between">
+      <div className="p-6 rounded-3xl bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 text-white shadow-xl flex items-center justify-between border border-white/10" style={{ boxShadow: 'var(--shadow-3d-card), inset 0 1px 0 rgba(255, 255, 255, 0.2)' }}>
         <div>
           <span className="px-3 py-1 bg-white/20 text-white rounded-lg text-[10px] uppercase font-black tracking-wider border border-white/20 block w-fit mb-2">
             Central Reporting Center
           </span>
-          <h2 className="text-2xl font-extrabold font-display">Academic & Attendance Analytics Reports</h2>
+          <h2 className="text-2xl font-black font-display tracking-tight text-white">Academic & Attendance Analytics Reports</h2>
           <p className="text-xs text-blue-100 mt-1">Generate, audit, print, and export official daily, weekly, monthly, and departmental compliance reports</p>
         </div>
-        <div className="p-4 bg-white/10 rounded-2xl border border-white/10 shrink-0">
-          <FileText size={32} />
+        <div className="p-3.5 bg-white/10 rounded-2xl border border-white/10 shrink-0 hidden sm:flex">
+          <FileText size={28} />
         </div>
       </div>
 
-      {/* Control Panel / Filters */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
-          <div className="flex flex-wrap gap-2">
+      {/* Top Filter and Controls 3D Card */}
+      <div className="card-3d p-6 space-y-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--border-subtle)] pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-md">
+              <BarChart2 size={20} />
+            </div>
+            <div>
+              <h2 className="text-lg font-black font-display text-[var(--text-primary)]">Institutional Reports Center</h2>
+              <p className="text-xs text-[var(--text-muted)]">Generate, preview and export official college academic attendance logs</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
             {[
-              { id: 'daily', label: 'Daily Report' },
-              { id: 'weekly', label: 'Weekly Report' },
-              { id: 'monthly', label: 'Monthly Report' },
-              { id: 'semester', label: 'Semester Report' },
-              { id: 'department', label: 'Department Report' },
-              { id: 'student', label: 'Student Report' },
-              { id: 'faculty', label: 'Faculty Report' },
-              { id: 'ward', label: 'Ward Counsellor Report' }
+              { id: 'daily', label: 'Daily' },
+              { id: 'weekly', label: 'Weekly' },
+              { id: 'monthly', label: 'Monthly' },
+              { id: 'semester', label: 'Semester' },
+              { id: 'department', label: 'Department' },
+              { id: 'student', label: 'Student' },
+              { id: 'faculty', label: 'Faculty' },
+              { id: 'ward', label: 'Ward Counsellor' }
             ].map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setReportType(tab.id)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`btn-3d py-1.5 px-3 text-xs ${
                   reportType === tab.id
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 font-extrabold'
-                    : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
+                    ? 'btn-3d-primary'
+                    : 'btn-3d-secondary'
                 }`}
               >
                 {tab.label}
@@ -223,36 +233,36 @@ export const ReportsModule = ({ userRole = 'admin', currentUser = null }) => {
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={loadReport}
-              className="p-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 rounded-xl"
+              className="btn-3d btn-3d-secondary p-2.5"
               title="Refresh Report Data"
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             </button>
             <button
               onClick={handleExportCSV}
-              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md shadow-emerald-500/20 flex items-center gap-2"
+              className="btn-3d btn-3d-success py-2 px-3.5 text-xs"
             >
               <Download size={14} />
-              Export Excel / CSV
+              <span>Export CSV</span>
             </button>
             <button
               onClick={handleExportPDF}
-              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md shadow-indigo-500/20 flex items-center gap-2"
+              className="btn-3d btn-3d-primary py-2 px-3.5 text-xs"
             >
               <Printer size={14} />
-              Print / Save PDF
+              <span>Print PDF</span>
             </button>
           </div>
         </div>
 
         {/* Filter Selectors */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 pt-1">
           <div>
-            <label className="block text-[10px] text-slate-400 dark:text-slate-500 uppercase font-black mb-1">Department</label>
+            <label className="block text-[10px] text-[var(--text-muted)] uppercase font-black mb-1">Department</label>
             <select
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-white"
+              className="select-3d"
             >
               {KBN_BRANCHES.map(b => (
                 <option key={b} value={b}>{b}</option>
@@ -261,11 +271,11 @@ export const ReportsModule = ({ userRole = 'admin', currentUser = null }) => {
           </div>
 
           <div>
-            <label className="block text-[10px] text-slate-400 dark:text-slate-500 uppercase font-black mb-1">Semester</label>
+            <label className="block text-[10px] text-[var(--text-muted)] uppercase font-black mb-1">Semester</label>
             <select
               value={semester}
               onChange={(e) => setSemester(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-white"
+              className="select-3d"
             >
               {KBN_SEMESTERS.map(s => (
                 <option key={s} value={s}>{s}</option>
@@ -274,11 +284,11 @@ export const ReportsModule = ({ userRole = 'admin', currentUser = null }) => {
           </div>
 
           <div>
-            <label className="block text-[10px] text-slate-400 dark:text-slate-500 uppercase font-black mb-1">Section</label>
+            <label className="block text-[10px] text-[var(--text-muted)] uppercase font-black mb-1">Section</label>
             <select
               value={section}
               onChange={(e) => setSection(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-white"
+              className="select-3d"
             >
               <option value="EM">English Medium (EM)</option>
               <option value="TM">Telugu Medium (TM)</option>
@@ -288,22 +298,22 @@ export const ReportsModule = ({ userRole = 'admin', currentUser = null }) => {
           </div>
 
           <div>
-            <label className="block text-[10px] text-slate-400 dark:text-slate-500 uppercase font-black mb-1">Start Date</label>
+            <label className="block text-[10px] text-[var(--text-muted)] uppercase font-black mb-1">Start Date</label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-white"
+              className="input-3d"
             />
           </div>
 
           <div>
-            <label className="block text-[10px] text-slate-400 dark:text-slate-500 uppercase font-black mb-1">End Date</label>
+            <label className="block text-[10px] text-[var(--text-muted)] uppercase font-black mb-1">End Date</label>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-white"
+              className="input-3d"
             />
           </div>
         </div>
@@ -311,110 +321,110 @@ export const ReportsModule = ({ userRole = 'admin', currentUser = null }) => {
         {reportType === 'student' && (
           <div className="pt-2">
             <div className="relative">
-              <Search className="absolute left-3.5 top-2.5 text-slate-400" size={16} />
+              <Search className="absolute left-3.5 top-2.5 text-[var(--text-muted)]" size={16} />
               <input
                 type="text"
                 placeholder="Search report by Roll Number (e.g. 245901) or Student Name..."
                 value={searchRoll}
                 onChange={(e) => setSearchRoll(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-white"
+                className="input-3d pl-10"
               />
             </div>
           </div>
         )}
       </div>
 
-      {/* Summary KPI Cards */}
+      {/* 3D Summary KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-md">
-          <span className="text-[10px] text-slate-400 uppercase font-extrabold block">Classes Conducted</span>
-          <span className="text-xl font-black text-slate-900 dark:text-white mt-1 block">{summaryStats.totalClasses}</span>
+        <div className="stat-card-3d">
+          <span className="text-[10px] text-[var(--text-muted)] uppercase font-bold block">Classes Conducted</span>
+          <span className="text-2xl font-black text-[var(--text-primary)] mt-1 block">{summaryStats.totalClasses}</span>
         </div>
-        <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-md">
-          <span className="text-[10px] text-slate-400 uppercase font-extrabold block">Present Marks</span>
-          <span className="text-xl font-black text-emerald-500 mt-1 block">{summaryStats.presentCount}</span>
+        <div className="stat-card-3d">
+          <span className="text-[10px] text-[var(--text-muted)] uppercase font-bold block">Present Marks</span>
+          <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 block">{summaryStats.presentCount}</span>
         </div>
-        <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-md">
-          <span className="text-[10px] text-slate-400 uppercase font-extrabold block">Absents Recorded</span>
-          <span className="text-xl font-black text-rose-500 mt-1 block">{summaryStats.absentCount}</span>
+        <div className="stat-card-3d">
+          <span className="text-[10px] text-[var(--text-muted)] uppercase font-bold block">Absents Recorded</span>
+          <span className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-1 block">{summaryStats.absentCount}</span>
         </div>
-        <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-md">
-          <span className="text-[10px] text-slate-400 uppercase font-extrabold block">Average Attendance %</span>
-          <span className={`text-xl font-black mt-1 block ${summaryStats.avgPercentage >= 75 ? 'text-blue-600' : 'text-amber-500'}`}>
+        <div className="stat-card-3d">
+          <span className="text-[10px] text-[var(--text-muted)] uppercase font-bold block">Average Attendance</span>
+          <span className={`text-2xl font-black mt-1 block ${summaryStats.avgPercentage >= 75 ? 'text-[var(--accent)]' : 'text-amber-500'}`}>
             {summaryStats.avgPercentage}%
           </span>
         </div>
       </div>
 
-      {/* Report Data Table Preview */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl overflow-hidden">
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
-          <h3 className="font-extrabold text-slate-855 dark:text-white text-sm uppercase tracking-wider">
+      {/* Report Data 3D Table Preview */}
+      <div className="card-3d p-6 space-y-4">
+        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-4">
+          <h3 className="font-extrabold text-[var(--text-primary)] text-sm uppercase tracking-wider">
             {reportType.toUpperCase()} ATTENDANCE REPORT PREVIEW ({reportData.length} RECORDS)
           </h3>
-          <span className="text-[10px] text-slate-400 font-bold">
+          <span className="text-[10px] text-[var(--text-muted)] font-bold">
             Department: {department} • {semester} ({section})
           </span>
         </div>
 
         {loading ? (
-          <div className="py-20 text-center animate-pulse text-slate-400">Generating report dataset...</div>
+          <div className="py-20 text-center animate-pulse text-[var(--text-muted)] font-bold">Generating report dataset...</div>
         ) : reportData.length === 0 ? (
-          <div className="py-16 text-center text-slate-400">No attendance data matched the selected filter criteria.</div>
+          <div className="py-16 text-center text-[var(--text-muted)] font-medium">No attendance data matched the selected filter criteria.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+          <div className="table-3d-container">
+            <table className="table-3d">
               <thead>
-                <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
+                <tr>
                   {reportType === 'student' ? (
                     <>
-                      <th className="px-4 py-3">Roll Number</th>
-                      <th className="px-4 py-3">Student Name</th>
-                      <th className="px-4 py-3">Dept & Sem</th>
-                      <th className="px-4 py-3 text-center">Total Lecs</th>
-                      <th className="px-4 py-3 text-center">Present</th>
-                      <th className="px-4 py-3 text-center">Absent</th>
-                      <th className="px-4 py-3 text-center">Leave</th>
-                      <th className="px-4 py-3 text-center">Attendance %</th>
-                      <th className="px-4 py-3 text-center">Status</th>
+                      <th>Roll Number</th>
+                      <th>Student Name</th>
+                      <th>Dept & Sem</th>
+                      <th className="text-center">Total Lecs</th>
+                      <th className="text-center">Present</th>
+                      <th className="text-center">Absent</th>
+                      <th className="text-center">Leave</th>
+                      <th className="text-center">Attendance %</th>
+                      <th className="text-center">Status</th>
                     </>
                   ) : (
                     <>
-                      <th className="px-4 py-3">Date</th>
-                      <th className="px-4 py-3">Subject</th>
-                      <th className="px-4 py-3 text-center">Period</th>
-                      <th className="px-4 py-3">Faculty</th>
-                      <th className="px-4 py-3 text-center">Students</th>
-                      <th className="px-4 py-3 text-center">Present</th>
-                      <th className="px-4 py-3 text-center">Absent</th>
-                      <th className="px-4 py-3 text-center">Leave</th>
-                      <th className="px-4 py-3 text-center">Attendance %</th>
+                      <th>Date</th>
+                      <th>Subject</th>
+                      <th className="text-center">Period</th>
+                      <th>Faculty</th>
+                      <th className="text-center">Students</th>
+                      <th className="text-center">Present</th>
+                      <th className="text-center">Absent</th>
+                      <th className="text-center">Leave</th>
+                      <th className="text-center">Attendance %</th>
                     </>
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-bold text-slate-800 dark:text-slate-200">
+              <tbody>
                 {reportData.map((row, idx) => (
-                  <tr key={row.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
+                  <tr key={row.id || idx}>
                     {reportType === 'student' ? (
                       <>
-                        <td className="px-4 py-3 font-mono">{row.rollNumber}</td>
-                        <td className="px-4 py-3 font-extrabold">{row.studentName}</td>
-                        <td className="px-4 py-3 text-slate-400 font-normal">{row.department} • {row.semester}</td>
-                        <td className="px-4 py-3 text-center">{row.totalClasses}</td>
-                        <td className="px-4 py-3 text-center text-emerald-500">{row.presentCount}</td>
-                        <td className="px-4 py-3 text-center text-rose-500">{row.absentCount}</td>
-                        <td className="px-4 py-3 text-center text-amber-500">{row.leaveCount}</td>
-                        <td className="px-4 py-3 text-center font-extrabold">
-                          <span className={`px-2 py-0.5 rounded text-[10px] ${
-                            row.percentage >= 75 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
+                        <td className="font-mono">{row.rollNumber}</td>
+                        <td className="font-bold text-[var(--text-primary)]">{row.studentName}</td>
+                        <td className="text-[var(--text-muted)] font-normal">{row.department} • {row.semester}</td>
+                        <td className="text-center font-mono">{row.totalClasses}</td>
+                        <td className="text-center text-emerald-600 dark:text-emerald-400 font-mono">{row.presentCount}</td>
+                        <td className="text-center text-rose-600 dark:text-rose-400 font-mono">{row.absentCount}</td>
+                        <td className="text-center text-amber-600 dark:text-amber-400 font-mono">{row.leaveCount}</td>
+                        <td className="text-center font-bold">
+                          <span className={`badge-3d ${
+                            row.percentage >= 75 ? 'badge-3d-success' : 'badge-3d-danger'
                           }`}>
                             {row.percentage}%
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center">
-                          <span className={`px-2 py-0.5 text-[9px] uppercase rounded font-black ${
-                            row.status === 'Defaulter' ? 'bg-rose-500 text-white' : 'bg-emerald-500/15 text-emerald-500'
+                        <td className="text-center">
+                          <span className={`badge-3d ${
+                            row.status === 'Defaulter' ? 'badge-3d-danger' : 'badge-3d-success'
                           }`}>
                             {row.status}
                           </span>
@@ -422,17 +432,17 @@ export const ReportsModule = ({ userRole = 'admin', currentUser = null }) => {
                       </>
                     ) : (
                       <>
-                        <td className="px-4 py-3 font-mono">{row.date}</td>
-                        <td className="px-4 py-3 font-extrabold">{row.subject}</td>
-                        <td className="px-4 py-3 text-center font-mono">P{row.period}</td>
-                        <td className="px-4 py-3 text-slate-400">{row.facultyName}</td>
-                        <td className="px-4 py-3 text-center">{row.totalStudents}</td>
-                        <td className="px-4 py-3 text-center text-emerald-500">{row.presentCount}</td>
-                        <td className="px-4 py-3 text-center text-rose-500">{row.absentCount}</td>
-                        <td className="px-4 py-3 text-center text-amber-500">{row.leaveCount}</td>
-                        <td className="px-4 py-3 text-center font-extrabold">
-                          <span className={`px-2 py-0.5 rounded text-[10px] ${
-                            row.percentage >= 75 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
+                        <td className="font-mono">{row.date}</td>
+                        <td className="font-bold text-[var(--text-primary)]">{row.subject}</td>
+                        <td className="text-center font-mono">P{row.period}</td>
+                        <td className="text-[var(--text-muted)]">{row.facultyName}</td>
+                        <td className="text-center font-mono">{row.totalStudents}</td>
+                        <td className="text-center text-emerald-600 dark:text-emerald-400 font-mono">{row.presentCount}</td>
+                        <td className="text-center text-rose-600 dark:text-rose-400 font-mono">{row.absentCount}</td>
+                        <td className="text-center text-amber-600 dark:text-amber-400 font-mono">{row.leaveCount}</td>
+                        <td className="text-center font-bold">
+                          <span className={`badge-3d ${
+                            row.percentage >= 75 ? 'badge-3d-success' : 'badge-3d-danger'
                           }`}>
                             {row.percentage}%
                           </span>

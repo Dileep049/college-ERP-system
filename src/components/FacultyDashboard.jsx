@@ -164,7 +164,7 @@ export const FacultyDashboard = ({ onNavigate }) => {
     <div className="space-y-6 text-slate-800 dark:text-slate-100 font-sans">
       
       {/* 1. HERO HEADER WITH LOCKED FACULTY ACADEMIC SCOPE (NO DROPDOWNS) */}
-      <div className="relative overflow-hidden p-6 md:p-8 rounded-3xl bg-gradient-to-r from-emerald-700 via-teal-700 to-slate-900 text-white shadow-2xl">
+      <div className="relative overflow-hidden p-6 md:p-8 rounded-3xl bg-gradient-to-r from-emerald-700 via-teal-700 to-slate-900 text-white shadow-2xl border border-white/10" style={{ boxShadow: 'var(--shadow-3d-card), inset 0 1px 0 rgba(255, 255, 255, 0.2)' }}>
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -176,7 +176,7 @@ export const FacultyDashboard = ({ onNavigate }) => {
               </span>
             </div>
 
-            <h1 className="text-2xl md:text-4xl font-black tracking-tight">
+            <h1 className="text-2xl md:text-4xl font-black font-display tracking-tight text-white">
               Welcome, {profile.fullName}
             </h1>
             <p className="text-xs md:text-sm text-emerald-100 font-medium">
@@ -185,7 +185,7 @@ export const FacultyDashboard = ({ onNavigate }) => {
           </div>
 
           {/* LOCKED FACULTY ACADEMIC SCOPE CARD - STRICT NO DROPDOWNS */}
-          <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 space-y-2 shrink-0">
+          <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 space-y-2 shrink-0 shadow-lg">
             <div className="text-[10px] font-black uppercase text-emerald-200 tracking-wider flex items-center gap-1">
               <Lock size={12} /> Assigned Teaching Scope (Locked)
             </div>
@@ -209,77 +209,77 @@ export const FacultyDashboard = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* 2. STATS SUMMARY CARDS */}
+      {/* 2. 3D STATS SUMMARY CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
         {/* Total Class Students */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl flex items-center justify-between">
+        <div className="stat-card-3d flex items-center justify-between">
           <div>
-            <span className="text-[10.5px] font-extrabold uppercase text-slate-400 tracking-wider block mb-1">
+            <span className="text-[10.5px] font-bold uppercase text-[var(--text-muted)] tracking-wider block mb-1">
               Enrolled Students
             </span>
-            <span className="text-2xl font-black text-slate-900 dark:text-white">
+            <span className="text-2xl font-black text-[var(--text-primary)]">
               {studentsCount}
             </span>
-            <span className="text-[10px] text-emerald-600 font-bold block mt-1">
+            <span className="badge-3d badge-3d-success block mt-2 w-fit">
               {profile.section} ({profile.semester})
             </span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-black">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black border border-emerald-500/20 shadow-sm">
             <Users size={22} />
           </div>
         </div>
 
         {/* Assignments Published */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl flex items-center justify-between">
+        <div className="stat-card-3d flex items-center justify-between">
           <div>
-            <span className="text-[10.5px] font-extrabold uppercase text-slate-400 tracking-wider block mb-1">
+            <span className="text-[10.5px] font-bold uppercase text-[var(--text-muted)] tracking-wider block mb-1">
               Assignments Posted
             </span>
-            <span className="text-2xl font-black text-slate-900 dark:text-white">
+            <span className="text-2xl font-black text-[var(--text-primary)]">
               {publishedAssignments.length}
             </span>
-            <span className="text-[10px] text-blue-500 font-bold block mt-1">
+            <span className="badge-3d badge-3d-info block mt-2 w-fit">
               Active Tasks
             </span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center font-black">
+          <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-black border border-blue-500/20 shadow-sm">
             <FileText size={22} />
           </div>
         </div>
 
         {/* Study Notes Published */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl flex items-center justify-between">
+        <div className="stat-card-3d flex items-center justify-between">
           <div>
-            <span className="text-[10.5px] font-extrabold uppercase text-slate-400 tracking-wider block mb-1">
+            <span className="text-[10.5px] font-bold uppercase text-[var(--text-muted)] tracking-wider block mb-1">
               Notes Uploaded
             </span>
-            <span className="text-2xl font-black text-slate-900 dark:text-white">
+            <span className="text-2xl font-black text-[var(--text-primary)]">
               {publishedNotes.length}
             </span>
-            <span className="text-[10px] text-purple-500 font-bold block mt-1">
-              Cloudinary Hosted
+            <span className="badge-3d badge-3d-purple block mt-2 w-fit">
+              Cloud Hosted
             </span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-600 flex items-center justify-center font-black">
+          <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center font-black border border-purple-500/20 shadow-sm">
             <BookOpen size={22} />
           </div>
         </div>
 
         {/* Attendance Entries */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl flex items-center justify-between">
+        <div className="stat-card-3d flex items-center justify-between">
           <div>
-            <span className="text-[10.5px] font-extrabold uppercase text-slate-400 tracking-wider block mb-1">
+            <span className="text-[10.5px] font-bold uppercase text-[var(--text-muted)] tracking-wider block mb-1">
               Attendance Sessions
             </span>
-            <span className="text-2xl font-black text-slate-900 dark:text-white">
+            <span className="text-2xl font-black text-[var(--text-primary)]">
               {attendanceCount}
             </span>
-            <span className="text-[10px] text-teal-500 font-bold block mt-1">
+            <span className="badge-3d badge-3d-info block mt-2 w-fit">
               Sessions Marked
             </span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-teal-500/10 text-teal-600 flex items-center justify-center font-black">
+          <div className="w-12 h-12 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center font-black border border-teal-500/20 shadow-sm">
             <CheckSquare size={22} />
           </div>
         </div>
@@ -290,14 +290,14 @@ export const FacultyDashboard = ({ onNavigate }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Quick Academic Actions */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl space-y-4">
-          <h3 className="text-sm font-black text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div className="card-3d p-6 space-y-4">
+          <h3 className="text-sm font-black text-[var(--text-primary)] border-b border-[var(--border-subtle)] pb-3">
             Quick Faculty Actions
           </h3>
           <div className="space-y-3">
             <button
               onClick={() => onNavigate && onNavigate('attendance')}
-              className="w-full p-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold text-xs shadow-md shadow-emerald-500/10 flex items-center justify-between transition-all"
+              className="btn-3d btn-3d-success w-full py-3.5 text-xs flex items-center justify-between"
             >
               <span className="flex items-center gap-2">
                 <CheckSquare size={16} /> Mark Class Attendance
@@ -307,7 +307,7 @@ export const FacultyDashboard = ({ onNavigate }) => {
 
             <button
               onClick={() => onNavigate && onNavigate('assignments')}
-              className="w-full p-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-xs shadow-md shadow-blue-500/10 flex items-center justify-between transition-all"
+              className="btn-3d btn-3d-primary w-full py-3.5 text-xs flex items-center justify-between"
             >
               <span className="flex items-center gap-2">
                 <Plus size={16} /> Create New Assignment
@@ -317,7 +317,7 @@ export const FacultyDashboard = ({ onNavigate }) => {
 
             <button
               onClick={() => onNavigate && onNavigate('notes')}
-              className="w-full p-3.5 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-bold text-xs shadow-md shadow-purple-500/10 flex items-center justify-between transition-all"
+              className="btn-3d btn-3d-secondary w-full py-3.5 text-xs flex items-center justify-between text-purple-600 dark:text-purple-400 font-bold"
             >
               <span className="flex items-center gap-2">
                 <BookOpen size={16} /> Upload Study Notes
@@ -328,14 +328,14 @@ export const FacultyDashboard = ({ onNavigate }) => {
         </div>
 
         {/* Recent Published Assignments */}
-        <div className="lg:col-span-2 p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div className="lg:col-span-2 card-3d p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
             <div>
-              <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <FileText className="text-emerald-600" size={16} />
+              <h3 className="text-sm font-black text-[var(--text-primary)] flex items-center gap-2">
+                <FileText className="text-emerald-500" size={16} />
                 My Published Assignments ({publishedAssignments.length})
               </h3>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
                 Created for {profile.branch} ({profile.section})
               </p>
             </div>
@@ -350,23 +350,23 @@ export const FacultyDashboard = ({ onNavigate }) => {
           </div>
 
           {loadingData ? (
-            <div className="py-8 text-center text-xs text-slate-400 animate-pulse">Querying published assignments...</div>
+            <div className="py-8 text-center text-xs text-[var(--text-muted)] animate-pulse">Querying published assignments...</div>
           ) : publishedAssignments.length === 0 ? (
-            <div className="py-8 text-center text-xs text-slate-400 font-medium">
+            <div className="py-8 text-center text-xs text-[var(--text-muted)] font-medium">
               No assignments published yet. Click "Create New Assignment" above.
             </div>
           ) : (
             <div className="space-y-3">
               {publishedAssignments.slice(0, 3).map(a => (
-                <div key={a.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
+                <div key={a.id} className="p-4 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border)] flex items-center justify-between gap-4 shadow-sm">
                   <div>
-                    <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 rounded text-[9.5px] font-black uppercase">
+                    <span className="badge-3d badge-3d-success">
                       {a.subject || 'General'}
                     </span>
-                    <h4 className="font-black text-slate-900 dark:text-white text-xs mt-1">{a.title}</h4>
-                    <span className="text-[9.5px] text-slate-400 block mt-0.5">Due Date: {a.dueDate}</span>
+                    <h4 className="font-black text-[var(--text-primary)] text-xs mt-1.5">{a.title}</h4>
+                    <span className="text-[9.5px] text-[var(--text-muted)] block mt-0.5">Due Date: {a.dueDate}</span>
                   </div>
-                  <span className="px-3 py-1 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-[10px] font-bold">
+                  <span className="badge-3d badge-3d-neutral">
                     {profile.section}
                   </span>
                 </div>

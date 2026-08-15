@@ -33,7 +33,9 @@ import {
   Upload,
   TrendingUp,
   Activity,
-  ShieldCheck
+  ShieldCheck,
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
 
 export const DashboardLayout = ({ children }) => {
@@ -43,8 +45,14 @@ export const DashboardLayout = ({ children }) => {
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [currentDateString, setCurrentDateString] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const options = { month: 'short', day: 'numeric', year: 'numeric' };
+    setCurrentDateString(new Date().toLocaleDateString('en-US', options));
+  }, []);
 
   // Lock body scroll when mobile sidebar is open (Sidebar Scroll Bleed Fix)
   useEffect(() => {
@@ -268,85 +276,103 @@ export const DashboardLayout = ({ children }) => {
     navigate('/', { replace: true });
   };
 
-  // Get active role tag styling
-  const getRoleBadgeStyle = (role) => {
+  // Get active role tag styling with 3D depth
+  const getRoleBadgeClasses = (role) => {
     switch (role) {
-      case 'admin': return 'bg-rose-500/10 text-rose-500 border border-rose-500/20';
-      case 'parent': return 'bg-pink-500/10 text-pink-500 border border-pink-500/20';
-      case 'principal': return 'bg-amber-500/10 text-amber-500 border border-amber-500/20';
-      case 'hod': return 'bg-purple-500/10 text-purple-500 border border-purple-500/20';
-      case 'faculty': return 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20';
-      case 'placement': return 'bg-indigo-500/10 text-indigo-500 border border-indigo-500/20';
-      case 'counsellor': return 'bg-sky-500/10 text-sky-500 border border-sky-500/20';
-      case 'librarian': return 'bg-teal-500/10 text-teal-500 border border-teal-500/20';
-      default: return 'bg-blue-500/10 text-blue-500 border border-blue-500/20';
+      case 'admin':
+      case 'superadmin':
+        return 'badge-3d badge-3d-danger';
+      case 'parent':
+        return 'badge-3d badge-3d-purple';
+      case 'principal':
+      case 'vice_principal':
+        return 'badge-3d badge-3d-warning';
+      case 'hod':
+        return 'badge-3d badge-3d-purple';
+      case 'faculty':
+      case 'lab_faculty':
+        return 'badge-3d badge-3d-success';
+      case 'placement':
+        return 'badge-3d badge-3d-info';
+      case 'counsellor':
+      case 'ward_counsellor':
+        return 'badge-3d badge-3d-info';
+      case 'librarian':
+        return 'badge-3d badge-3d-success';
+      default:
+        return 'badge-3d badge-3d-neutral';
     }
   };
 
+  const userName = user.fullName || user.name || user.displayName || 'User';
+  const userInitials = userName.split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'U';
+  const userEmail = user.email || '';
+  const firstName = userName.split(' ')[0] || 'User';
+  const currentPathSegment = location.pathname.split('/').pop().replace('-', ' ');
+
   return (
-    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 transition-colors duration-250 font-sans">
+    <div className="min-h-screen flex bg-[var(--bg-primary)] transition-colors duration-200 font-sans">
       
       {/* Mobile Drawer Backdrop Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-30 lg:hidden transition-opacity duration-300"
+          className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-30 lg:hidden transition-opacity duration-300"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar for desktop & mobile */}
-      <aside className={`fixed inset-y-0 left-0 z-40 w-64 h-screen h-[100dvh] overflow-y-auto bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800/80 transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:static lg:h-screen lg:flex lg:flex-col`}>
+      {/* 3D Sidebar for desktop & mobile */}
+      <aside className={`fixed inset-y-0 left-0 z-40 w-64 h-screen h-[100dvh] overflow-y-auto bg-[var(--surface)] border-r border-[var(--border)] transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:static lg:h-screen lg:flex lg:flex-col shadow-xl`}>
         
         {/* Brand header */}
-        <div className="h-16 flex items-center px-6 border-b border-slate-200 dark:border-slate-800/80">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-gradient-to-tr from-blue-600 to-sky-400 rounded-xl text-white shadow-md shadow-blue-500/20">
-              <Building2 size={20} className="animate-pulse-slow" />
+        <div className="h-16 flex items-center px-5 border-b border-[var(--border)] bg-[var(--surface)] shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center shadow-lg shadow-blue-500/20 border border-blue-400/30">
+              <Building2 size={20} className="text-white" />
             </div>
             <div>
-              <span className="font-extrabold text-lg tracking-tight font-display bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-750 dark:from-white dark:to-slate-200">ACADEMIA</span>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider -mt-0.5">Portal Hub</p>
+              <span className="font-extrabold text-base tracking-tight font-display text-[var(--text-primary)]">ACADEMIA</span>
+              <p className="text-[10px] text-[var(--accent)] font-bold uppercase tracking-wider -mt-0.5 flex items-center gap-1">
+                <span>Portal Hub</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              </p>
             </div>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden ml-auto p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500">
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden ml-auto p-1.5 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+          >
             <X size={18} />
           </button>
         </div>
 
-        {/* Profile Card in Sidebar */}
-        {(() => {
-          const userName = user.fullName || user.name || user.displayName || 'User';
-          const userInitials = userName.split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'U';
-          const userEmail = user.email || '';
-          return (
-            <div className="p-4 mx-4 my-5 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-800/40 dark:to-slate-800/60 border border-slate-200/60 dark:border-slate-800">
-              <div className="flex items-center gap-3">
-                {user.profilePhotoUrl ? (
-                  <img src={user.profilePhotoUrl} alt={userName} className="w-10 h-10 rounded-xl object-cover border border-blue-500/30 shadow-md" />
-                ) : (
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-sky-400 text-white flex items-center justify-center font-bold text-sm shadow-md">
-                    {userInitials}
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{userName}</p>
-                  <p className="text-[10.5px] font-medium text-slate-500 dark:text-slate-400 truncate mt-0.5">{userEmail}</p>
-                </div>
+        {/* 3D Profile Card in Sidebar */}
+        <div className="p-3.5 mx-3.5 my-4 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border)] shadow-[var(--shadow-sm)]">
+          <div className="flex items-center gap-3">
+            {user.profilePhotoUrl ? (
+              <img src={user.profilePhotoUrl} alt={userName} className="w-10 h-10 rounded-xl object-cover border-2 border-blue-500/40 shadow-md shrink-0" />
+            ) : (
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-md shrink-0 border border-white/20">
+                {userInitials}
               </div>
-              <div className="mt-3 flex items-center justify-between">
-                <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase ${getRoleBadgeStyle(user.role)}`}>
-                  {user.role}
-                </span>
-                <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 truncate max-w-[90px]">
-                  {user.department && user.department !== 'N/A' ? user.department : ''}
-                </span>
-              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-[var(--text-primary)] truncate">{userName}</p>
+              <p className="text-[10.5px] font-medium text-[var(--text-muted)] truncate">{userEmail}</p>
             </div>
-          );
-        })()}
+          </div>
+          <div className="mt-3 pt-2.5 border-t border-[var(--border-subtle)] flex items-center justify-between">
+            <span className={getRoleBadgeClasses(user.role)}>
+              {user.role}
+            </span>
+            <span className="text-[10px] font-bold text-[var(--text-muted)] truncate max-w-[95px]">
+              {user.department && user.department !== 'N/A' ? user.department : 'KBN Campus'}
+            </span>
+          </div>
+        </div>
 
         {/* Navigation links */}
-        <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto py-1">
           {currentMenu.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
@@ -355,197 +381,200 @@ export const DashboardLayout = ({ children }) => {
                 key={item.path}
                 to={item.path}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  isActive
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/15'
-                    : 'text-slate-650 hover:bg-slate-100/70 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200'
-                }`}
+                className={`sidebar-3d-nav-item ${isActive ? 'active' : ''}`}
               >
-                <Icon size={18} className={isActive ? 'scale-110' : 'opacity-80'} />
-                <span>{item.label}</span>
+                <Icon size={17} className={isActive ? 'text-white' : 'text-[var(--text-muted)] opacity-90'} />
+                <span className="truncate">{item.label}</span>
+                {isActive && <ChevronRight size={14} className="ml-auto text-white/70" />}
               </Link>
             );
           })}
         </nav>
 
         {/* Logout at bottom */}
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800/80">
+        <div className="p-3 border-t border-[var(--border)] bg-[var(--surface)] shrink-0">
           <button
             onClick={handleLogout}
-            className="flex w-full items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all duration-200"
+            className="flex w-full items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-rose-500 hover:bg-rose-500/10 transition-colors"
           >
-            <LogOut size={18} />
+            <LogOut size={16} />
             <span>Sign Out</span>
           </button>
         </div>
       </aside>
 
-      {/* Main panel */}
+      {/* Main content panel */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden lg:h-screen">
         
-        {/* Top Navbar */}
-        <header className="h-16 flex items-center justify-between px-3 sm:px-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800/80 shrink-0">
-          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+        {/* Floating 3D Navbar */}
+        <header className="navbar-3d h-16 flex items-center justify-between px-4 sm:px-6 shrink-0 z-20">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-500 shrink-0"
+              className="lg:hidden p-2 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--border)] text-[var(--text-secondary)] transition-colors shrink-0"
               aria-label="Open Navigation Menu"
             >
               <Menu size={20} />
             </button>
-            <h1 className="text-sm sm:text-lg font-bold font-display text-slate-800 dark:text-white capitalize truncate max-w-[140px] xs:max-w-[200px] sm:max-w-none">
-              {location.pathname.split('/').pop().replace('-', ' ')}
-            </h1>
+            <div>
+              <h1 className="text-base sm:text-lg font-extrabold font-display text-[var(--text-primary)] capitalize truncate max-w-[160px] xs:max-w-[240px] sm:max-w-none">
+                {currentPathSegment || 'Dashboard'}
+              </h1>
+              <p className="text-[10.5px] font-semibold text-[var(--text-muted)] hidden sm:block">
+                KBN University Smart ERP
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             {/* Clock Widget */}
-            <div className="hidden sm:flex items-center bg-slate-100 dark:bg-slate-800/50 border border-slate-200/40 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping mr-2"></span>
-              <span>June 7, 2026</span>
+            <div className="hidden sm:flex items-center bg-[var(--surface-elevated)] border border-[var(--border)] rounded-xl px-3 py-1.5 text-xs text-[var(--text-muted)] font-semibold shadow-sm">
+              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping mr-2"></span>
+              <span>{currentDateString}</span>
             </div>
 
             {/* Dark/Light mode toggle */}
             <ThemeToggle />
 
-            {/* Notifications panel */}
+            {/* Notifications panel button */}
             <div className="relative">
-              <button className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/60 text-slate-500 dark:text-slate-400 transition-colors">
-                <Bell size={18} />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-600 rounded-full"></span>
+              <button className="p-2.5 rounded-xl bg-[var(--surface-elevated)] hover:bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-secondary)] transition-all shadow-sm">
+                <Bell size={17} />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-600 rounded-full pulse-glow"></span>
               </button>
             </div>
 
-            <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-800 hidden sm:block"></div>
+            <div className="h-6 w-[1px] bg-[var(--border)] hidden sm:block"></div>
 
             {/* Quick Profile Dropdown */}
-            {(() => {
-              const userName = user.fullName || user.name || user.displayName || 'User';
-              const userInitials = userName.split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'U';
-              const firstName = userName.split(' ')[0] || 'User';
-              return (
-                <div className="relative">
-                  <button
-                    onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="flex items-center gap-2 hover:bg-slate-500/10 dark:hover:bg-slate-800 p-1.5 rounded-xl transition-all"
-                  >
-                    {user.profilePhotoUrl ? (
-                      <img src={user.profilePhotoUrl} alt="User Avatar" className="w-8 h-8 rounded-lg object-cover border border-purple-500" />
-                    ) : (
-                      <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
-                        {userInitials}
-                      </div>
-                    )}
-                    <span className="text-xs font-semibold text-slate-800 dark:text-white hidden md:block select-none">{firstName}</span>
-                  </button>
-
-                  {showProfileMenu && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)}></div>
-                      <div className="absolute right-0 mt-2 w-60 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl z-50 p-2 animate-fade-in text-xs font-semibold">
-                        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800/80 flex items-center gap-3">
-                          {user.profilePhotoUrl ? (
-                            <img src={user.profilePhotoUrl} alt="Profile" className="w-10 h-10 rounded-xl object-cover border border-purple-500 shrink-0" />
-                          ) : (
-                            <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-black text-sm shrink-0">
-                              {userInitials}
-                            </div>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-black text-slate-900 dark:text-white truncate">{userName}</p>
-                            <p className="text-[10px] text-purple-600 dark:text-purple-400 font-bold uppercase truncate">{user.role === 'hod' ? `HOD • ${user.department || 'CSE'}` : user.role}</p>
-                            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
-                          </div>
-                        </div>
-
-                        <div className="py-1 border-b border-slate-100 dark:border-slate-800 space-y-0.5">
-                          <button
-                            onClick={() => {
-                              setShowProfileMenu(false);
-                              setShowPhotoModal(true);
-                            }}
-                            className="flex w-full items-center gap-2.5 px-3 py-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 rounded-xl transition-colors font-bold"
-                          >
-                            <Upload size={14} />
-                            <span>Change Photo</span>
-                          </button>
-
-                          {user.role === 'hod' && (
-                            <>
-                              <Link
-                                to="/hod/settings"
-                                onClick={() => setShowProfileMenu(false)}
-                                className="flex w-full items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-purple-950/20 hover:text-purple-600 rounded-xl transition-colors font-bold"
-                              >
-                                <UserCheck size={14} />
-                                <span>My Profile</span>
-                              </Link>
-                              <Link
-                                to="/hod/settings"
-                                onClick={() => setShowProfileMenu(false)}
-                                className="flex w-full items-center gap-2.5 px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-purple-950/20 hover:text-purple-600 rounded-xl transition-colors font-bold"
-                              >
-                                <Building2 size={14} />
-                                <span>Department Settings</span>
-                              </Link>
-                            </>
-                          )}
-                        </div>
-
-                        <div className="p-1 mt-1">
-                          <button
-                            onClick={handleLogout}
-                            className="flex w-full items-center gap-3 px-3 py-2 font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl transition-colors"
-                          >
-                            <LogOut size={14} />
-                            <span>Sign Out</span>
-                          </button>
-                        </div>
-                      </div>
-                    </>
-                  )}
+            <div className="relative">
+              <button
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className="flex items-center gap-2.5 bg-[var(--surface-elevated)] hover:bg-[var(--bg-secondary)] border border-[var(--border)] p-1.5 pr-3 rounded-xl transition-all shadow-sm"
+              >
+                {user.profilePhotoUrl ? (
+                  <img src={user.profilePhotoUrl} alt="User Avatar" className="w-8 h-8 rounded-lg object-cover border border-blue-500/40" />
+                ) : (
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                    {userInitials}
+                  </div>
+                )}
+                <div className="text-left hidden md:block select-none">
+                  <p className="text-xs font-bold text-[var(--text-primary)] leading-tight">{firstName}</p>
+                  <p className="text-[9.5px] font-semibold text-[var(--accent)] uppercase">{user.role}</p>
                 </div>
-              );
-            })()}
+              </button>
+
+              {showProfileMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)}></div>
+                  <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-highlight)] shadow-2xl z-50 p-2 animate-fade-in text-xs font-semibold">
+                    <div className="px-3.5 py-3 border-b border-[var(--border-subtle)] flex items-center gap-3">
+                      {user.profilePhotoUrl ? (
+                        <img src={user.profilePhotoUrl} alt="Profile" className="w-10 h-10 rounded-xl object-cover border-2 border-blue-500 shrink-0" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-sm shrink-0">
+                          {userInitials}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-black text-[var(--text-primary)] truncate">{userName}</p>
+                        <p className="text-[10px] text-[var(--accent)] font-bold uppercase truncate">{user.role === 'hod' ? `HOD • ${user.department || 'CSE'}` : user.role}</p>
+                        <p className="text-[10px] text-[var(--text-muted)] truncate">{user.email}</p>
+                      </div>
+                    </div>
+
+                    <div className="py-1.5 border-b border-[var(--border-subtle)] space-y-1">
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          setShowPhotoModal(true);
+                        }}
+                        className="flex w-full items-center gap-2.5 px-3 py-2 text-[var(--accent)] hover:bg-[var(--accent-subtle)] rounded-xl transition-colors font-bold"
+                      >
+                        <Upload size={14} />
+                        <span>Change Profile Photo</span>
+                      </button>
+
+                      {user.role === 'hod' && (
+                        <>
+                          <Link
+                            to="/hod/settings"
+                            onClick={() => setShowProfileMenu(false)}
+                            className="flex w-full items-center gap-2.5 px-3 py-2 text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] rounded-xl transition-colors font-bold"
+                          >
+                            <UserCheck size={14} />
+                            <span>My Profile</span>
+                          </Link>
+                          <Link
+                            to="/hod/settings"
+                            onClick={() => setShowProfileMenu(false)}
+                            className="flex w-full items-center gap-2.5 px-3 py-2 text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] rounded-xl transition-colors font-bold"
+                          >
+                            <Building2 size={14} />
+                            <span>Department Settings</span>
+                          </Link>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="p-1 mt-1">
+                      <button
+                        onClick={handleLogout}
+                        className="flex w-full items-center gap-3 px-3 py-2 font-bold text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors"
+                      >
+                        <LogOut size={14} />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </header>
 
         {/* Content Panel */}
-        <main className="flex-1 overflow-y-auto p-3 sm:p-6 bg-slate-50 dark:bg-slate-950/40 min-w-0 w-full">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 bg-[var(--bg-primary)] min-w-0 w-full">
           <div className="max-w-7xl mx-auto animate-fade-in min-w-0 w-full">
             {children || <Outlet />}
           </div>
         </main>
       </div>
 
-      {/* Change Profile Photo Self-Service Modal */}
+      {/* Change Profile Photo 3D Modal */}
       {showPhotoModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 max-w-sm w-full rounded-3xl p-6 space-y-4 border border-slate-200 dark:border-slate-800 shadow-2xl text-center">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="text-sm font-black text-slate-900 dark:text-white">Change Your Profile Photo</h3>
-              <button onClick={() => setShowPhotoModal(false)} className="text-slate-400 hover:text-slate-600"><X size={16} /></button>
+        <div className="modal-3d-backdrop">
+          <div className="modal-3d-content max-w-sm p-6 space-y-5 text-center">
+            <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+              <h3 className="text-sm font-black text-[var(--text-primary)]">Change Profile Photo</h3>
+              <button
+                onClick={() => setShowPhotoModal(false)}
+                className="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors"
+              >
+                <X size={16} />
+              </button>
             </div>
 
-            {/* Photo Display / Preview */}
-            <div className="relative w-28 h-28 mx-auto group">
+            {/* Photo Preview */}
+            <div className="relative w-28 h-28 mx-auto">
               {photoPreview ? (
-                <img src={photoPreview} alt="Preview" className="w-28 h-28 rounded-3xl object-cover border-4 border-purple-600 shadow-xl" />
+                <img src={photoPreview} alt="Preview" className="w-28 h-28 rounded-3xl object-cover border-4 border-blue-500 shadow-xl" />
               ) : user.profilePhotoUrl ? (
-                <img src={user.profilePhotoUrl} alt="Current Profile" className="w-28 h-28 rounded-3xl object-cover border-4 border-purple-600 shadow-xl" />
+                <img src={user.profilePhotoUrl} alt="Current Profile" className="w-28 h-28 rounded-3xl object-cover border-4 border-blue-500 shadow-xl" />
               ) : (
-                <div className="w-28 h-28 rounded-3xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white font-black text-3xl flex items-center justify-center border-4 border-purple-600 shadow-xl">
-                  {user.fullName ? user.fullName.split(' ').map(n => n[0]).slice(0, 2).join('') : 'U'}
+                <div className="w-28 h-28 rounded-3xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-3xl flex items-center justify-center border-4 border-blue-400 shadow-xl">
+                  {userInitials}
                 </div>
               )}
             </div>
 
-            <p className="text-[11px] text-slate-400 font-medium">
-              Supported formats: JPG, JPEG, PNG, WEBP (Max 5 MB)
+            <p className="text-[11px] text-[var(--text-muted)] font-medium">
+              Supported formats: JPG, PNG, WEBP (Max 5 MB)
             </p>
 
-            <div className="space-y-2 pt-1">
-              <label className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-purple-500/20 cursor-pointer flex items-center justify-center gap-2">
+            <div className="space-y-2.5 pt-1">
+              <label className="btn-3d btn-3d-primary w-full py-2.5 text-xs cursor-pointer">
                 <Upload size={14} />
                 <span>Select New Photo</span>
                 <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" onChange={handlePhotoSelect} className="hidden" />
@@ -555,9 +584,9 @@ export const DashboardLayout = ({ children }) => {
                 <button
                   onClick={handleSavePhoto}
                   disabled={isUploading}
-                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-500/20"
+                  className="btn-3d btn-3d-success w-full py-2.5 text-xs"
                 >
-                  {isUploading ? 'Uploading Photo...' : 'Confirm & Save Photo'}
+                  {isUploading ? 'Saving Photo...' : 'Confirm & Save Photo'}
                 </button>
               )}
 
@@ -565,7 +594,7 @@ export const DashboardLayout = ({ children }) => {
                 <button
                   onClick={handleRestoreDefaultAvatar}
                   disabled={isUploading}
-                  className="w-full py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold"
+                  className="btn-3d btn-3d-secondary w-full py-2 text-xs"
                 >
                   Restore Default Avatar
                 </button>

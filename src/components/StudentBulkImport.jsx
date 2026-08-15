@@ -330,14 +330,14 @@ export const StudentBulkImport = () => {
   };
 
   return (
-    <div className="space-y-8 text-xs font-semibold">
+    <div className="space-y-6 text-xs font-semibold font-sans">
       
       {/* Header Banner */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 text-white shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-6 rounded-3xl bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-white/10" style={{ boxShadow: 'var(--shadow-3d-card), inset 0 1px 0 rgba(255, 255, 255, 0.2)' }}>
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold text-blue-200 uppercase tracking-wider mb-1">
+          <div className="flex items-center gap-2 text-[10px] font-bold text-blue-200 uppercase tracking-wider mb-1">
             <ShieldCheck size={14} />
-            <span>Super Admin &bull; Student Management &bull; Bulk Student Import</span>
+            <span>Super Admin &bull; Student Management &bull; Bulk Student Ingestion</span>
           </div>
           <h2 className="text-2xl font-black font-display tracking-tight">Bulk Student Import Module</h2>
           <p className="text-xs text-blue-100 mt-1 max-w-2xl leading-relaxed">
@@ -349,14 +349,14 @@ export const StudentBulkImport = () => {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => handleDownloadTemplate('csv')}
-            className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold border border-white/20 backdrop-blur-md transition-all flex items-center gap-2"
+            className="btn-3d btn-3d-secondary py-2 px-3.5 text-xs text-white border-white/20 bg-white/10 hover:bg-white/20"
           >
             <Download size={14} />
             <span>CSV Template</span>
           </button>
           <button
             onClick={() => handleDownloadTemplate('json')}
-            className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold border border-white/20 backdrop-blur-md transition-all flex items-center gap-2"
+            className="btn-3d btn-3d-secondary py-2 px-3.5 text-xs text-white border-white/20 bg-white/10 hover:bg-white/20"
           >
             <Download size={14} />
             <span>JSON Template</span>
@@ -365,16 +365,16 @@ export const StudentBulkImport = () => {
       </div>
 
       {/* 3 Upload Options & Drag and Drop Zone */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-4">
+      <div className="card-3d p-6 space-y-6">
+        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-4">
           <div>
-            <h3 className="text-base font-extrabold text-slate-850 dark:text-white">Step 1: Upload Student Roster File</h3>
-            <p className="text-xs text-slate-450">Supported formats: Excel (.xlsx), CSV (.csv), JSON (.json) &bull; Maximum 10,000 records</p>
+            <h3 className="text-base font-extrabold text-[var(--text-primary)]">Step 1: Upload Student Roster File</h3>
+            <p className="text-xs text-[var(--text-muted)]">Supported formats: Excel (.xlsx), CSV (.csv), JSON (.json) &bull; Maximum 10,000 records</p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="px-3 py-1 rounded-xl bg-blue-500/10 text-blue-500 text-[10px] font-black border border-blue-500/20">.xlsx</span>
-            <span className="px-3 py-1 rounded-xl bg-emerald-500/10 text-emerald-500 text-[10px] font-black border border-emerald-500/20">.csv</span>
-            <span className="px-3 py-1 rounded-xl bg-purple-500/10 text-purple-500 text-[10px] font-black border border-purple-500/20">.json</span>
+            <span className="badge-3d badge-3d-info">.xlsx</span>
+            <span className="badge-3d badge-3d-success">.csv</span>
+            <span className="badge-3d badge-3d-neutral">.json</span>
           </div>
         </div>
 
@@ -385,8 +385,8 @@ export const StudentBulkImport = () => {
           onDrop={handleDrop}
           className={`p-10 rounded-2xl border-2 border-dashed text-center transition-all flex flex-col items-center justify-center gap-3 cursor-pointer ${
             isDragging 
-              ? 'border-blue-500 bg-blue-500/5 dark:bg-blue-950/20 scale-[0.99]' 
-              : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 hover:bg-slate-100/50 dark:hover:bg-slate-800/40'
+              ? 'border-[var(--accent)] bg-blue-500/5 dark:bg-blue-950/20 scale-[0.99]' 
+              : 'border-[var(--border)] bg-[var(--surface-elevated)] hover:bg-[var(--bg-secondary)]'
           }`}
           onClick={() => fileInputRef.current?.click()}
         >
@@ -403,10 +403,10 @@ export const StudentBulkImport = () => {
           </div>
 
           <div>
-            <h4 className="text-sm font-extrabold text-slate-800 dark:text-white">
+            <h4 className="text-sm font-extrabold text-[var(--text-primary)]">
               {selectedFile ? selectedFile.name : 'Drag & drop student roster file here, or click to browse'}
             </h4>
-            <p className="text-xs text-slate-450 mt-1">
+            <p className="text-xs text-[var(--text-muted)] mt-1">
               {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB &bull; File ready for validation` : 'Supports Excel, CSV or JSON up to 10,000 rows'}
             </p>
           </div>
@@ -414,22 +414,22 @@ export const StudentBulkImport = () => {
 
         {/* Upload Summary Cards */}
         {selectedFile && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
-            <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20">
-              <span className="text-[10px] font-black text-blue-500 uppercase tracking-wider block">Total Parsed</span>
-              <span className="text-xl font-black text-blue-600 dark:text-blue-400 block mt-1">{parsedRows.length + validationErrors.length} Rows</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-2">
+            <div className="stat-card-3d">
+              <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider block">Total Parsed</span>
+              <span className="text-2xl font-black text-[var(--text-primary)] block mt-1">{parsedRows.length + validationErrors.length} Rows</span>
             </div>
-            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-wider block">Valid Students</span>
-              <span className="text-xl font-black text-emerald-600 dark:text-emerald-400 block mt-1">{validRowsCount} Records</span>
+            <div className="stat-card-3d">
+              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">Valid Students</span>
+              <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 block mt-1">{validRowsCount} Records</span>
             </div>
-            <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20">
-              <span className="text-[10px] font-black text-rose-500 uppercase tracking-wider block">Validation Errors</span>
-              <span className="text-xl font-black text-rose-600 dark:text-rose-400 block mt-1">{validationErrors.length} Issues</span>
+            <div className="stat-card-3d">
+              <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider block">Validation Errors</span>
+              <span className="text-2xl font-black text-rose-600 dark:text-rose-400 block mt-1">{validationErrors.length} Issues</span>
             </div>
-            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
-              <span className="text-[10px] font-black text-amber-500 uppercase tracking-wider block">Duplicates Found</span>
-              <span className="text-xl font-black text-amber-600 dark:text-amber-400 block mt-1">{duplicateCount} Rows</span>
+            <div className="stat-card-3d">
+              <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">Duplicates Found</span>
+              <span className="text-2xl font-black text-amber-600 dark:text-amber-400 block mt-1">{duplicateCount} Rows</span>
             </div>
           </div>
         )}
@@ -437,27 +437,27 @@ export const StudentBulkImport = () => {
         {/* Validation Errors Preview Table */}
         {validationErrors.length > 0 && (
           <div className="space-y-3 pt-2">
-            <h4 className="font-extrabold text-rose-500 flex items-center gap-2">
+            <h4 className="font-extrabold text-rose-600 dark:text-rose-400 flex items-center gap-2">
               <AlertTriangle size={16} />
               <span>Validation Audit Issues ({validationErrors.length})</span>
             </h4>
-            <div className="border border-rose-200 dark:border-rose-900/50 rounded-2xl overflow-hidden overflow-x-auto max-h-48">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-rose-500/10 text-rose-600 dark:text-rose-400 uppercase text-[9px] font-black">
+            <div className="table-3d-container max-h-48">
+              <table className="table-3d">
+                <thead>
                   <tr>
-                    <th className="px-4 py-2">Row #</th>
-                    <th className="px-4 py-2">Roll Number</th>
-                    <th className="px-4 py-2">Student Name</th>
-                    <th className="px-4 py-2">Error Details</th>
+                    <th>Row #</th>
+                    <th>Roll Number</th>
+                    <th>Student Name</th>
+                    <th>Error Details</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-rose-100 dark:divide-rose-900/30 font-bold text-slate-700 dark:text-slate-300">
+                <tbody>
                   {validationErrors.map((err, idx) => (
                     <tr key={idx} className="bg-rose-500/5">
-                      <td className="px-4 py-2">Row {err.rowNum}</td>
-                      <td className="px-4 py-2">{err.roll || 'N/A'}</td>
-                      <td className="px-4 py-2">{err.name || 'N/A'}</td>
-                      <td className="px-4 py-2 text-rose-500">{err.errors.join(', ')}</td>
+                      <td className="font-mono">Row {err.rowNum}</td>
+                      <td className="font-mono text-rose-600 dark:text-rose-400">{err.roll || 'N/A'}</td>
+                      <td>{err.name || 'N/A'}</td>
+                      <td className="text-rose-600 dark:text-rose-400 font-medium">{err.errors.join(', ')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -468,11 +468,11 @@ export const StudentBulkImport = () => {
 
         {/* Execute Batch Ingestion Button */}
         {validRowsCount > 0 && (
-          <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex justify-end pt-2 border-t border-[var(--border-subtle)]">
             <button
               onClick={handleExecuteBatchUpload}
               disabled={importing}
-              className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+              className="btn-3d btn-3d-success py-2.5 px-6 text-xs font-bold"
             >
               <Database size={16} />
               <span>{importing ? 'Executing Firestore Batch Writes...' : `Commit ${validRowsCount} Valid Students to Firestore`}</span>
@@ -483,66 +483,66 @@ export const StudentBulkImport = () => {
 
       {/* Success Result Summary Card */}
       {importResult && (
-        <div className="p-6 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 shadow-xl space-y-4">
+        <div className="card-3d p-6 border border-emerald-500/30 space-y-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-emerald-500 text-white rounded-2xl">
+            <div className="p-3 bg-emerald-500 text-white rounded-2xl shadow-md">
               <CheckCircle2 size={24} />
             </div>
             <div>
               <h3 className="text-lg font-black text-emerald-600 dark:text-emerald-400">Batch Ingestion Successful!</h3>
-              <p className="text-xs text-emerald-700 dark:text-emerald-300 font-bold">
+              <p className="text-xs text-[var(--text-muted)] font-medium">
                 Student documents committed to Cloud Firestore collection `students` using rollNumber document IDs.
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-2">
-            <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-emerald-500/20">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Total Parsed</span>
-              <span className="text-lg font-black text-slate-800 dark:text-white block mt-0.5">{importResult.totalParsed}</span>
+            <div className="stat-card-3d">
+              <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider block">Total Parsed</span>
+              <span className="text-xl font-black text-[var(--text-primary)] block mt-0.5">{importResult.totalParsed}</span>
             </div>
-            <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-emerald-500/20">
-              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-wider block">Inserted</span>
-              <span className="text-lg font-black text-emerald-500 block mt-0.5">{importResult.inserted}</span>
+            <div className="stat-card-3d">
+              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">Inserted</span>
+              <span className="text-xl font-black text-emerald-600 dark:text-emerald-400 block mt-0.5">{importResult.inserted}</span>
             </div>
-            <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-emerald-500/20">
-              <span className="text-[10px] font-black text-blue-500 uppercase tracking-wider block">Updated</span>
-              <span className="text-lg font-black text-blue-500 block mt-0.5">{importResult.updated}</span>
+            <div className="stat-card-3d">
+              <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">Updated</span>
+              <span className="text-xl font-black text-blue-600 dark:text-blue-400 block mt-0.5">{importResult.updated}</span>
             </div>
-            <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-emerald-500/20">
-              <span className="text-[10px] font-black text-amber-500 uppercase tracking-wider block">Skipped</span>
-              <span className="text-lg font-black text-amber-500 block mt-0.5">{importResult.skipped}</span>
+            <div className="stat-card-3d">
+              <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">Skipped</span>
+              <span className="text-xl font-black text-amber-600 dark:text-amber-400 block mt-0.5">{importResult.skipped}</span>
             </div>
-            <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-emerald-500/20">
-              <span className="text-[10px] font-black text-purple-500 uppercase tracking-wider block">Processing Time</span>
-              <span className="text-lg font-black text-purple-500 block mt-0.5">{importResult.timeSeconds}s</span>
+            <div className="stat-card-3d">
+              <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider block">Processing Time</span>
+              <span className="text-xl font-black text-purple-600 dark:text-purple-400 block mt-0.5">{importResult.timeSeconds}s</span>
             </div>
           </div>
         </div>
       )}
 
       {/* Roster Table: Search, Filter, Sort, Pagination & Export */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-5">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-4">
+      <div className="card-3d p-6 space-y-5">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-[var(--border-subtle)] pb-4">
           <div>
-            <h3 className="text-base font-extrabold text-slate-850 dark:text-white flex items-center gap-2">
+            <h3 className="text-base font-extrabold text-[var(--text-primary)] flex items-center gap-2">
               <Users size={18} className="text-blue-500" />
               <span>Live Student Roster ({filteredRoster.length})</span>
             </h3>
-            <p className="text-xs text-slate-450 mt-0.5">Real-time Firestore roster synchronized with Faculty Attendance</p>
+            <p className="text-xs text-[var(--text-muted)] mt-0.5">Real-time Firestore roster synchronized with Faculty Attendance</p>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => handleExportRoster('excel')}
-              className="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+              className="btn-3d btn-3d-secondary py-2 px-3 text-xs"
             >
               <FileSpreadsheet size={14} />
               <span>Export Excel</span>
             </button>
             <button
               onClick={() => handleExportRoster('json')}
-              className="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+              className="btn-3d btn-3d-secondary py-2 px-3 text-xs"
             >
               <FileText size={14} />
               <span>Export JSON</span>
@@ -551,15 +551,15 @@ export const StudentBulkImport = () => {
         </div>
 
         {/* Filter Controls */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 bg-slate-50 dark:bg-slate-800/20 p-4 rounded-2xl border border-slate-150 dark:border-slate-850">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 p-4 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border)]">
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
+            <Search size={14} className="absolute left-3 top-3 text-[var(--text-muted)]" />
             <input
               type="text"
-              placeholder="Search roll number or name..."
+              placeholder="Search roll or name..."
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-              className="pl-9 pr-3 py-2 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+              className="input-3d pl-9"
             />
           </div>
 
@@ -567,7 +567,7 @@ export const StudentBulkImport = () => {
             <select
               value={deptFilter}
               onChange={(e) => { setDeptFilter(e.target.value); setCurrentPage(1); }}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+              className="select-3d"
             >
               <option value="all">All Departments</option>
               <option value="AI & ML">AI & ML</option>
@@ -581,7 +581,7 @@ export const StudentBulkImport = () => {
             <select
               value={semFilter}
               onChange={(e) => { setSemFilter(e.target.value); setCurrentPage(1); }}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+              className="select-3d"
             >
               <option value="all">All Semesters</option>
               <option value="Semester 1">Semester 1</option>
@@ -595,7 +595,7 @@ export const StudentBulkImport = () => {
             <select
               value={secFilter}
               onChange={(e) => { setSecFilter(e.target.value); setCurrentPage(1); }}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+              className="select-3d"
             >
               <option value="all">All Sections</option>
               <option value="EM">Section EM</option>
@@ -608,7 +608,7 @@ export const StudentBulkImport = () => {
             <select
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:outline-none dark:text-white font-bold"
+              className="select-3d"
             >
               <option value="all">All Status</option>
               <option value="Active">Active</option>
@@ -618,44 +618,44 @@ export const StudentBulkImport = () => {
         </div>
 
         {/* Student Table */}
-        <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        <div className="table-3d-container">
+          <table className="table-3d">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold uppercase text-[9px] tracking-wider border-b border-slate-100 dark:border-slate-800/80">
-                <th className="px-5 py-3">Roll Number</th>
-                <th className="px-5 py-3">Student Name</th>
-                <th className="px-5 py-3">Department</th>
-                <th className="px-5 py-3">Course</th>
-                <th className="px-5 py-3">Semester</th>
-                <th className="px-5 py-3">Section</th>
-                <th className="px-5 py-3">Branch</th>
-                <th className="px-5 py-3 text-center">Status</th>
+              <tr>
+                <th>Roll Number</th>
+                <th>Student Name</th>
+                <th>Department</th>
+                <th>Course</th>
+                <th>Semester</th>
+                <th>Section</th>
+                <th>Branch</th>
+                <th className="text-center">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200 font-bold">
+            <tbody>
               {loadingRoster ? (
                 <tr>
-                  <td colSpan="8" className="py-12 text-center text-slate-400 animate-pulse">Loading roster records...</td>
+                  <td colSpan="8" className="py-12 text-center text-[var(--text-muted)] animate-pulse font-bold">Loading roster records...</td>
                 </tr>
               ) : paginatedRoster.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="py-12 text-center text-slate-400">No matching student records found.</td>
+                  <td colSpan="8" className="py-12 text-center text-[var(--text-muted)] font-medium">No matching student records found.</td>
                 </tr>
               ) : (
                 paginatedRoster.map((s, idx) => (
-                  <tr key={s.rollNumber || idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
-                    <td className="px-5 py-3.5 font-mono text-blue-600 dark:text-blue-400">{s.rollNumber}</td>
-                    <td className="px-5 py-3.5">{s.studentName || s.fullName}</td>
-                    <td className="px-5 py-3.5">{s.department || 'AI & ML'}</td>
-                    <td className="px-5 py-3.5">{s.course || 'B.Sc'}</td>
-                    <td className="px-5 py-3.5">{s.semester || 'Semester 2'}</td>
-                    <td className="px-5 py-3.5">{s.section || 'EM'}</td>
-                    <td className="px-5 py-3.5">{s.branch || 'AI & ML'}</td>
-                    <td className="px-5 py-3.5 text-center">
-                      <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase ${
+                  <tr key={s.rollNumber || idx}>
+                    <td className="font-mono text-blue-600 dark:text-blue-400 font-bold">{s.rollNumber}</td>
+                    <td className="font-bold text-[var(--text-primary)]">{s.studentName || s.fullName}</td>
+                    <td className="text-[var(--text-muted)]">{s.department || 'AI & ML'}</td>
+                    <td className="text-[var(--text-muted)]">{s.course || 'B.Sc'}</td>
+                    <td className="text-[var(--text-muted)]">{s.semester || 'Semester 2'}</td>
+                    <td className="text-[var(--text-muted)]">{s.section || 'EM'}</td>
+                    <td className="text-[var(--text-muted)]">{s.branch || 'AI & ML'}</td>
+                    <td className="text-center">
+                      <span className={`badge-3d ${
                         (s.status || 'Active') === 'Active' 
-                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' 
-                          : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                          ? 'badge-3d-success' 
+                          : 'badge-3d-danger'
                       }`}>
                         {s.status || 'Active'}
                       </span>
@@ -669,7 +669,7 @@ export const StudentBulkImport = () => {
 
         {/* Pagination Footer */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-[var(--text-muted)] font-medium">
             Showing {filteredRoster.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0} to {Math.min(currentPage * rowsPerPage, filteredRoster.length)} of {filteredRoster.length} students
           </span>
 
@@ -677,17 +677,17 @@ export const StudentBulkImport = () => {
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 disabled:opacity-40"
+              className="btn-3d btn-3d-secondary p-2 disabled:opacity-40"
             >
               <ChevronLeft size={16} />
             </button>
-            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 px-2">
+            <span className="text-xs font-bold text-[var(--text-secondary)] px-2">
               Page {currentPage} of {totalPages}
             </span>
             <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 disabled:opacity-40"
+              className="btn-3d btn-3d-secondary p-2 disabled:opacity-40"
             >
               <ChevronRight size={16} />
             </button>
@@ -698,3 +698,4 @@ export const StudentBulkImport = () => {
     </div>
   );
 };
+

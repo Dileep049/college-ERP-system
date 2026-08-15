@@ -201,26 +201,26 @@ export const WardCounsellorLeaveDesk = ({ counsellor }) => {
   const totalCount = leaves.length;
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
+    <div className="space-y-6 text-xs font-semibold font-sans">
       
       {/* 1. LOCKED SCOPE HEADER SECTION */}
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+      <div className="card-3d p-6 space-y-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-[var(--border-subtle)] pb-4">
           <div>
-            <h2 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <h2 className="text-lg font-black font-display text-[var(--text-primary)] flex items-center gap-2">
               <span>Ward Counsellor Leave Management Desk</span>
-              <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 text-[10px] font-extrabold rounded-lg border border-blue-200 dark:border-blue-900/60">
+              <span className="badge-3d badge-3d-info">
                 RBAC Enforced
               </span>
             </h2>
-            <p className="text-xs text-slate-400 font-normal mt-0.5">
+            <p className="text-xs text-[var(--text-muted)] font-medium mt-0.5">
               Assigned Academic Scope (Locked by HOD Administration)
             </p>
           </div>
 
           <button
             onClick={loadCounsellorScopeAndLeaves}
-            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center gap-1.5 text-xs font-bold shadow-lg shadow-blue-500/20 transition-all"
+            className="btn-3d btn-3d-primary py-2 px-3.5 text-xs font-bold"
           >
             <RefreshCw size={14} />
             <span>Refresh List</span>
@@ -230,104 +230,112 @@ export const WardCounsellorLeaveDesk = ({ counsellor }) => {
         {/* LOCKED SCOPE BADGES (No Dropdowns Allowed) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           
-          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">
+          <div className="p-3.5 bg-[var(--surface-elevated)] rounded-2xl border border-[var(--border)] flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 bg-purple-500/10 text-purple-600 rounded-xl">
+              <div className="p-2 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-xl">
                 <Building2 size={16} />
               </div>
               <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Assigned Branch</span>
-                <span className="font-extrabold text-slate-900 dark:text-white text-xs">{scope.assignedDepartment}</span>
+                <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] block">Assigned Branch</span>
+                <span className="font-extrabold text-[var(--text-primary)] text-xs">{scope.assignedDepartment}</span>
               </div>
             </div>
-            <Lock size={14} className="text-slate-400 shrink-0" title="Scope Locked by Admin" />
+            <Lock size={14} className="text-[var(--text-muted)] shrink-0" title="Scope Locked by Admin" />
           </div>
 
-          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">
+          <div className="p-3.5 bg-[var(--surface-elevated)] rounded-2xl border border-[var(--border)] flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 bg-blue-500/10 text-blue-600 rounded-xl">
+              <div className="p-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl">
                 <BookOpen size={16} />
               </div>
               <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Assigned Semester</span>
-                <span className="font-extrabold text-slate-900 dark:text-white text-xs">{scope.assignedSemester}</span>
+                <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] block">Assigned Semester</span>
+                <span className="font-extrabold text-[var(--text-primary)] text-xs">{scope.assignedSemester}</span>
               </div>
             </div>
-            <Lock size={14} className="text-slate-400 shrink-0" title="Scope Locked by Admin" />
+            <Lock size={14} className="text-[var(--text-muted)] shrink-0" title="Scope Locked by Admin" />
           </div>
 
-          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">
+          <div className="p-3.5 bg-[var(--surface-elevated)] rounded-2xl border border-[var(--border)] flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 bg-emerald-500/10 text-emerald-600 rounded-xl">
+              <div className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl">
                 <Users size={16} />
               </div>
               <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Assigned Section</span>
-                <span className="font-extrabold text-slate-900 dark:text-white text-xs">{scope.assignedSection}</span>
+                <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] block">Assigned Section</span>
+                <span className="font-extrabold text-[var(--text-primary)] text-xs">{scope.assignedSection}</span>
               </div>
             </div>
-            <Lock size={14} className="text-slate-400 shrink-0" title="Scope Locked by Admin" />
+            <Lock size={14} className="text-[var(--text-muted)] shrink-0" title="Scope Locked by Admin" />
           </div>
 
         </div>
       </div>
 
-      {/* 2. SCOPED DASHBOARD COUNTS */}
+      {/* 2. 3D SCOPED DASHBOARD COUNTS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-4 rounded-3xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-between">
+        <div className="stat-card-3d flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-black uppercase block tracking-wider opacity-80">Pending Review</span>
-            <span className="text-2xl font-black">{pendingCount}</span>
+            <span className="text-[10px] font-bold uppercase block tracking-wider text-[var(--text-muted)]">Pending Review</span>
+            <span className="text-2xl font-black text-[var(--text-primary)]">{pendingCount}</span>
           </div>
-          <Clock size={24} className="opacity-40" />
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <Clock size={20} />
+          </div>
         </div>
 
-        <div className="p-4 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center justify-between">
+        <div className="stat-card-3d flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-black uppercase block tracking-wider opacity-80">Approved</span>
-            <span className="text-2xl font-black">{approvedCount}</span>
+            <span className="text-[10px] font-bold uppercase block tracking-wider text-[var(--text-muted)]">Approved</span>
+            <span className="text-2xl font-black text-[var(--text-primary)]">{approvedCount}</span>
           </div>
-          <CheckCircle size={24} className="opacity-40" />
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <CheckCircle size={20} />
+          </div>
         </div>
 
-        <div className="p-4 rounded-3xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 flex items-center justify-between">
+        <div className="stat-card-3d flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-black uppercase block tracking-wider opacity-80">Rejected</span>
-            <span className="text-2xl font-black">{rejectedCount}</span>
+            <span className="text-[10px] font-bold uppercase block tracking-wider text-[var(--text-muted)]">Rejected</span>
+            <span className="text-2xl font-black text-[var(--text-primary)]">{rejectedCount}</span>
           </div>
-          <XCircle size={24} className="opacity-40" />
+          <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+            <XCircle size={20} />
+          </div>
         </div>
 
-        <div className="p-4 rounded-3xl bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-300 flex items-center justify-between">
+        <div className="stat-card-3d flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-black uppercase block tracking-wider opacity-80">Total Wards Scope</span>
-            <span className="text-2xl font-black">{totalCount}</span>
+            <span className="text-[10px] font-bold uppercase block tracking-wider text-[var(--text-muted)]">Total Wards Scope</span>
+            <span className="text-2xl font-black text-[var(--text-primary)]">{totalCount}</span>
           </div>
-          <FileText size={24} className="opacity-40" />
+          <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+            <FileText size={20} />
+          </div>
         </div>
       </div>
 
       {/* 3. SEARCH & STATUS FILTER BAR */}
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
+      <div className="card-3d p-6 space-y-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           
           <div className="relative w-full sm:max-w-sm">
-            <Search className="absolute left-3.5 top-3 text-slate-400" size={15} />
+            <Search className="absolute left-3.5 top-3 text-[var(--text-muted)]" size={15} />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search Student Name, Roll Number, or Reason..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-bold dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="input-3d pl-10"
             />
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <span className="text-xs font-bold text-slate-400 shrink-0">Filter Status:</span>
+            <span className="text-xs font-bold text-[var(--text-muted)] shrink-0">Filter Status:</span>
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}
-              className="w-full sm:w-44 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-bold dark:text-white"
+              className="select-3d w-full sm:w-44"
             >
               <option value="ALL">All Statuses ({leaves.length})</option>
               <option value="Pending">Pending ({pendingCount})</option>
@@ -341,13 +349,13 @@ export const WardCounsellorLeaveDesk = ({ counsellor }) => {
 
         {/* LEAVE APPLICATIONS LIST */}
         {loading ? (
-          <div className="py-16 text-center text-slate-400 animate-pulse font-bold">
+          <div className="py-16 text-center text-[var(--text-muted)] animate-pulse font-bold">
             Querying Firestore for student leave applications matching assigned scope...
           </div>
         ) : filteredLeaves.length === 0 ? (
-          <div className="py-16 text-center text-slate-400 font-bold space-y-2">
+          <div className="py-16 text-center text-[var(--text-muted)] font-bold space-y-2">
             <p>No student leave applications match your search query or assigned scope.</p>
-            <p className="text-[11px] font-normal text-slate-400">
+            <p className="text-[11px] font-normal text-[var(--text-muted)]">
               Scope: {scope.assignedDepartment} • {scope.assignedSemester} • {scope.assignedSection}
             </p>
           </div>
@@ -362,7 +370,7 @@ export const WardCounsellorLeaveDesk = ({ counsellor }) => {
               return (
                 <div
                   key={l.leaveId || l.id}
-                  className="p-5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/60 dark:border-slate-800 space-y-3 hover:border-blue-500/30 transition-all"
+                  className="p-5 bg-[var(--surface-elevated)] rounded-2xl border border-[var(--border)] space-y-3 hover:border-[var(--accent)] transition-all shadow-sm"
                 >
                   
                   {/* Top Bar: Student Name (Clickable) & Status */}
@@ -371,7 +379,7 @@ export const WardCounsellorLeaveDesk = ({ counsellor }) => {
                       <button
                         type="button"
                         onClick={() => handleOpenStudentProfile(l)}
-                        className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-sky-400 text-white flex items-center justify-center font-black text-sm uppercase shadow hover:scale-105 transition-transform"
+                        className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-sm uppercase shadow hover:scale-105 transition-transform"
                         title="Click to view full student profile modal"
                       >
                         {l.studentName ? l.studentName.charAt(0) : 'S'}
@@ -382,78 +390,78 @@ export const WardCounsellorLeaveDesk = ({ counsellor }) => {
                           <button
                             type="button"
                             onClick={() => handleOpenStudentProfile(l)}
-                            className="text-sm font-black text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1.5 group text-left"
+                            className="text-sm font-black text-[var(--text-primary)] hover:text-[var(--accent)] flex items-center gap-1.5 group text-left"
                           >
                             <span>{l.studentName || l.applicantName || 'Student'}</span>
-                            <Eye size={13} className="text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <Eye size={13} className="text-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity" />
                           </button>
                         </div>
                         
-                        <div className="flex flex-wrap items-center gap-2 text-[10.5px] text-slate-500 font-semibold mt-0.5">
-                          <span>Roll: <strong className="text-slate-700 dark:text-slate-300">{l.rollNumber || 'N/A'}</strong></span>
+                        <div className="flex flex-wrap items-center gap-2 text-[10.5px] text-[var(--text-muted)] font-semibold mt-0.5">
+                          <span>Roll: <strong className="text-[var(--text-primary)]">{l.rollNumber || 'N/A'}</strong></span>
                           <span>•</span>
-                          <span>Dept: <strong className="text-slate-700 dark:text-slate-300">{l.department || l.branch || 'CSE'}</strong></span>
+                          <span>Dept: <strong className="text-[var(--text-primary)]">{l.department || l.branch || 'CSE'}</strong></span>
                           <span>•</span>
-                          <span>Sem: <strong className="text-slate-700 dark:text-slate-300">{l.semester || 'N/A'}</strong></span>
+                          <span>Sem: <strong className="text-[var(--text-primary)]">{l.semester || 'N/A'}</strong></span>
                           <span>•</span>
-                          <span>Sec: <strong className="text-slate-700 dark:text-slate-300">{l.section || 'A'}</strong></span>
+                          <span>Sec: <strong className="text-[var(--text-primary)]">{l.section || 'A'}</strong></span>
                         </div>
                       </div>
                     </div>
 
-                    <span className={`self-start sm:self-center px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                      isApproved ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' :
-                      isRejected ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20' :
-                      'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                    }`}>
+                    <span className={
+                      isApproved ? 'badge-3d badge-3d-success' :
+                      isRejected ? 'badge-3d badge-3d-danger' :
+                      'badge-3d badge-3d-warning'
+                    }>
                       {l.status || 'Pending'}
                     </span>
                   </div>
 
                   {/* Metadata Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 text-[11px]">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-[var(--surface)] p-3.5 rounded-xl border border-[var(--border-subtle)] text-[11px]">
                     <div>
-                      <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Leave Type</span>
-                      <span className="font-extrabold text-slate-800 dark:text-slate-200">{l.leaveType || 'Casual Leave'}</span>
+                      <span className="text-[9.5px] uppercase font-bold text-[var(--text-muted)] block">Leave Type</span>
+                      <span className="font-extrabold text-[var(--text-primary)]">{l.leaveType || 'Casual Leave'}</span>
                     </div>
                     <div>
-                      <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Duration</span>
-                      <span className="font-bold text-slate-700 dark:text-slate-300">{l.startDate || l.fromDate} to {l.endDate || l.toDate}</span>
+                      <span className="text-[9.5px] uppercase font-bold text-[var(--text-muted)] block">Duration</span>
+                      <span className="font-bold text-[var(--text-secondary)]">{l.startDate || l.fromDate} to {l.endDate || l.toDate}</span>
                     </div>
                     <div>
-                      <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Number of Days</span>
-                      <span className="font-black text-purple-600">{numDays} {numDays === 1 ? 'Day' : 'Days'}</span>
+                      <span className="text-[9.5px] uppercase font-bold text-[var(--text-muted)] block">Number of Days</span>
+                      <span className="font-black text-purple-600 dark:text-purple-400">{numDays} {numDays === 1 ? 'Day' : 'Days'}</span>
                     </div>
                     <div>
-                      <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Applied Date</span>
-                      <span className="font-semibold text-slate-500">{l.createdAt ? new Date(l.createdAt).toLocaleDateString() : 'Recent'}</span>
+                      <span className="text-[9.5px] uppercase font-bold text-[var(--text-muted)] block">Applied Date</span>
+                      <span className="font-semibold text-[var(--text-muted)]">{l.createdAt ? new Date(l.createdAt).toLocaleDateString() : 'Recent'}</span>
                     </div>
                   </div>
 
                   {/* Reason */}
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Reason for Leave</span>
-                    <p className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] block mb-0.5">Reason for Leave</span>
+                    <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed bg-[var(--surface)] p-3 rounded-xl border border-[var(--border-subtle)]">
                       {l.reason}
                     </p>
                   </div>
 
                   {/* Approved Banner */}
                   {isApproved && (
-                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/20 flex items-center justify-between">
+                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20 flex items-center justify-between">
                       <span>Approved by: <strong>{l.approvedByName || counsellor.fullName || 'Ward Counsellor'}</strong></span>
-                      <span className="text-[10px] text-slate-400 font-normal">{l.approvedAt ? new Date(l.approvedAt).toLocaleString() : ''}</span>
+                      <span className="text-[10px] text-[var(--text-muted)] font-normal">{l.approvedAt ? new Date(l.approvedAt).toLocaleString() : ''}</span>
                     </div>
                   )}
 
                   {/* Rejected Banner */}
                   {isRejected && (
-                    <div className="text-[11px] text-rose-600 dark:text-rose-400 font-bold bg-rose-500/5 p-3.5 rounded-xl border border-rose-500/20 space-y-1">
+                    <div className="text-[11px] text-rose-600 dark:text-rose-400 font-bold bg-rose-500/10 p-3.5 rounded-xl border border-rose-500/20 space-y-1">
                       <div className="flex items-center justify-between">
                         <span>Rejected by: <strong>{l.rejectedByName || counsellor.fullName || 'Ward Counsellor'}</strong></span>
-                        <span className="text-[10px] text-slate-400 font-normal">{l.rejectedAt ? new Date(l.rejectedAt).toLocaleString() : ''}</span>
+                        <span className="text-[10px] text-[var(--text-muted)] font-normal">{l.rejectedAt ? new Date(l.rejectedAt).toLocaleString() : ''}</span>
                       </div>
-                      <div className="text-slate-700 dark:text-slate-300 font-medium bg-white/60 dark:bg-slate-900/60 p-2 rounded-lg border border-rose-200/40 dark:border-rose-900/40">
+                      <div className="text-[var(--text-secondary)] font-medium bg-[var(--surface)] p-2 rounded-lg border border-rose-500/30">
                         <span className="text-rose-600 dark:text-rose-400 font-black mr-1">Rejection Reason:</span>
                         {l.rejectionReason || l.remarks || 'No reason provided.'}
                       </div>
@@ -465,7 +473,7 @@ export const WardCounsellorLeaveDesk = ({ counsellor }) => {
                     <div className="flex items-center justify-end gap-3 pt-2">
                       <button
                         onClick={() => handleOpenStudentProfile(l)}
-                        className="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs flex items-center gap-1"
+                        className="btn-3d btn-3d-secondary py-2 px-3.5 text-xs"
                       >
                         <Eye size={13} />
                         <span>View Profile</span>
@@ -476,14 +484,14 @@ export const WardCounsellorLeaveDesk = ({ counsellor }) => {
                           setRejectionModalLeave(l);
                           setRejectionReason('');
                         }}
-                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all"
+                        className="btn-3d btn-3d-danger py-2 px-4 text-xs font-bold"
                       >
                         Reject
                       </button>
                       
                       <button
                         onClick={() => handleApprove(l)}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all"
+                        className="btn-3d btn-3d-success py-2 px-4 text-xs font-bold"
                       >
                         Approve
                       </button>
@@ -497,22 +505,22 @@ export const WardCounsellorLeaveDesk = ({ counsellor }) => {
         )}
       </div>
 
-      {/* 4. REJECTION REASON MODAL */}
+      {/* 4. REJECTION REASON 3D MODAL */}
       {rejectionModalLeave && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase">Reject Student Leave Application</h3>
-              <button onClick={() => setRejectionModalLeave(null)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+        <div className="modal-3d-backdrop">
+          <div className="modal-3d-content max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
+              <h3 className="text-sm font-black text-[var(--text-primary)] uppercase">Reject Student Leave Application</h3>
+              <button onClick={() => setRejectionModalLeave(null)} className="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)]"><X size={18} /></button>
             </div>
             
-            <p className="text-xs text-slate-500 font-normal">
-              Rejecting application for: <strong className="text-slate-800 dark:text-slate-200">{rejectionModalLeave.studentName || rejectionModalLeave.applicantName}</strong> ({rejectionModalLeave.rollNumber})
+            <p className="text-xs text-[var(--text-muted)] font-normal">
+              Rejecting application for: <strong className="text-[var(--text-primary)]">{rejectionModalLeave.studentName || rejectionModalLeave.applicantName}</strong> ({rejectionModalLeave.rollNumber})
             </p>
 
             <form onSubmit={handleRejectSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-2 uppercase">
+                <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2 uppercase">
                   Rejection Reason *
                 </label>
                 <textarea
@@ -521,21 +529,21 @@ export const WardCounsellorLeaveDesk = ({ counsellor }) => {
                   onChange={(e) => setRejectionReason(e.target.value)}
                   placeholder="Explicit reason for rejection (required)..."
                   required
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none dark:text-white font-medium resize-none text-xs"
+                  className="textarea-3d"
                 ></textarea>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-[var(--border-subtle)]">
                 <button
                   type="button"
                   onClick={() => setRejectionModalLeave(null)}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs"
+                  className="btn-3d btn-3d-secondary py-2 px-4 text-xs font-bold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs shadow-md"
+                  className="btn-3d btn-3d-danger py-2 px-5 text-xs font-bold"
                 >
                   Confirm Rejection
                 </button>
@@ -545,66 +553,66 @@ export const WardCounsellorLeaveDesk = ({ counsellor }) => {
         </div>
       )}
 
-      {/* 5. NEW FEATURE: STUDENT PROFILE MODAL / DRAWER */}
+      {/* 5. STUDENT PROFILE 3D MODAL */}
       {selectedStudentModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-2xl w-full shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200">
+        <div className="modal-3d-backdrop">
+          <div className="modal-3d-content max-w-2xl p-6 space-y-5">
             
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+            <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-sky-400 text-white flex items-center justify-center font-black text-base uppercase shadow">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-base uppercase shadow">
                   {selectedStudentModal.studentName ? selectedStudentModal.studentName.charAt(0) : 'S'}
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                  <h3 className="text-base font-black text-[var(--text-primary)]">
                     {selectedStudentModal.studentName || selectedStudentModal.applicantName || 'Student Profile'}
                   </h3>
-                  <p className="text-xs text-slate-400">
-                    Roll Number: <strong className="text-blue-600 dark:text-blue-400">{selectedStudentModal.rollNumber || 'N/A'}</strong>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    Roll Number: <strong className="text-[var(--accent)]">{selectedStudentModal.rollNumber || 'N/A'}</strong>
                   </p>
                 </div>
               </div>
 
               <button
                 onClick={() => setSelectedStudentModal(null)}
-                className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500"
+                className="p-2 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
               >
                 <X size={18} />
               </button>
             </div>
 
             {studentDetailsLoading ? (
-              <div className="py-16 text-center text-slate-400 animate-pulse font-bold">
+              <div className="py-16 text-center text-[var(--text-muted)] animate-pulse font-bold">
                 Fetching student academic stats and leave history from Firestore...
               </div>
             ) : studentProfileData ? (
               <div className="space-y-5">
                 
                 {/* Personal & Parent Details Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[var(--surface)] p-4 rounded-2xl border border-[var(--border-subtle)]">
                   <div className="space-y-2">
-                    <span className="text-[10px] uppercase font-black text-slate-400 block">Personal Contact Info</span>
+                    <span className="text-[10px] uppercase font-black text-[var(--text-muted)] block">Personal Contact Info</span>
                     <div className="text-xs space-y-1">
-                      <p className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
-                        <Mail size={13} className="text-slate-400" />
+                      <p className="flex items-center gap-2 text-[var(--text-secondary)] font-medium">
+                        <Mail size={13} className="text-[var(--text-muted)]" />
                         <span>{studentProfileData.student?.email || `${selectedStudentModal.rollNumber}@kbn.edu`}</span>
                       </p>
-                      <p className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
-                        <Phone size={13} className="text-slate-400" />
+                      <p className="flex items-center gap-2 text-[var(--text-secondary)] font-medium">
+                        <Phone size={13} className="text-[var(--text-muted)]" />
                         <span>{studentProfileData.student?.phoneNumber || studentProfileData.student?.mobile || '9876543210'}</span>
                       </p>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <span className="text-[10px] uppercase font-black text-slate-400 block">Parent / Guardian Details</span>
+                    <span className="text-[10px] uppercase font-black text-[var(--text-muted)] block">Parent / Guardian Details</span>
                     <div className="text-xs space-y-1">
-                      <p className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-bold">
+                      <p className="flex items-center gap-2 text-[var(--text-primary)] font-bold">
                         <User size={13} className="text-purple-500" />
                         <span>{studentProfileData.student?.parentName || 'Richard Doe (Father)'}</span>
                       </p>
-                      <p className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
+                      <p className="flex items-center gap-2 text-[var(--text-secondary)] font-medium">
                         <Phone size={13} className="text-purple-500" />
                         <span>{studentProfileData.student?.parentPhone || '9876500000'}</span>
                       </p>
@@ -616,8 +624,8 @@ export const WardCounsellorLeaveDesk = ({ counsellor }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   
                   {/* Attendance Stat */}
-                  <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
-                    <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Current Attendance</span>
+                  <div className="p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border-subtle)] space-y-1 shadow-sm">
+                    <span className="text-[9.5px] uppercase font-bold text-[var(--text-muted)] block">Current Attendance</span>
                     <div className="flex items-center justify-between">
                       <span className={`text-xl font-black ${
                         (studentProfileData.student?.attendancePercentage || 84) >= 75 ? 'text-emerald-600 dark:text-emerald-400' :
@@ -626,25 +634,25 @@ export const WardCounsellorLeaveDesk = ({ counsellor }) => {
                       }`}>
                         {studentProfileData.student?.attendancePercentage || 84.5}%
                       </span>
-                      <Activity size={18} className="text-slate-400" />
+                      <Activity size={18} className="text-[var(--text-muted)]" />
                     </div>
                   </div>
 
                   {/* Internal Marks Summary */}
-                  <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
-                    <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Internal Test Marks</span>
+                  <div className="p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border-subtle)] space-y-1 shadow-sm">
+                    <span className="text-[9.5px] uppercase font-bold text-[var(--text-muted)] block">Internal Test Marks</span>
                     <div className="flex items-center justify-between">
-                      <span className="text-xl font-black text-blue-600 dark:text-blue-400">
+                      <span className="text-xl font-black text-[var(--accent)]">
                         {studentProfileData.student?.internalMarks || '42 / 50'}
                       </span>
-                      <Award size={18} className="text-slate-400" />
+                      <Award size={18} className="text-[var(--text-muted)]" />
                     </div>
                   </div>
 
                   {/* Class Scope */}
-                  <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
-                    <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Academic Class</span>
-                    <span className="font-extrabold text-slate-900 dark:text-white block text-xs truncate">
+                  <div className="p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border-subtle)] space-y-1 shadow-sm">
+                    <span className="text-[9.5px] uppercase font-bold text-[var(--text-muted)] block">Academic Class</span>
+                    <span className="font-extrabold text-[var(--text-primary)] block text-xs truncate">
                       {selectedStudentModal.semester || 'Sem 6'} • {selectedStudentModal.section || 'Sec A'}
                     </span>
                   </div>
@@ -653,40 +661,40 @@ export const WardCounsellorLeaveDesk = ({ counsellor }) => {
 
                 {/* Past Leave History Ledger */}
                 <div className="space-y-3 pt-2">
-                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                    <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase flex items-center gap-1.5">
+                  <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-2">
+                    <h4 className="text-xs font-black text-[var(--text-primary)] uppercase flex items-center gap-1.5">
                       <CheckSquare size={14} className="text-blue-500" />
                       <span>Student Past Leave History ({studentProfileData.leaves?.length || 0})</span>
                     </h4>
                   </div>
 
                   {studentProfileData.leaves?.length === 0 ? (
-                    <div className="py-6 text-center text-slate-400 font-normal">No prior leave applications logged for this student.</div>
+                    <div className="py-6 text-center text-[var(--text-muted)] font-normal">No prior leave applications logged for this student.</div>
                   ) : (
-                    <div className="overflow-x-auto border border-slate-200/60 dark:border-slate-800 rounded-2xl">
-                      <table className="w-full text-left border-collapse text-[11px]">
+                    <div className="table-3d-container">
+                      <table className="table-3d">
                         <thead>
-                          <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 text-[9.5px]">
-                            <th className="px-3 py-2">Leave Type</th>
-                            <th className="px-3 py-2 text-center">Dates</th>
-                            <th className="px-3 py-2 text-center">Status</th>
-                            <th className="px-3 py-2">Reason / Remarks</th>
+                          <tr>
+                            <th>Leave Type</th>
+                            <th className="text-center">Dates</th>
+                            <th className="text-center">Status</th>
+                            <th>Reason / Remarks</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-semibold">
+                        <tbody>
                           {studentProfileData.leaves.map((pl, idx) => (
-                            <tr key={pl.leaveId || pl.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
-                              <td className="px-3 py-2.5 font-bold text-slate-900 dark:text-white">{pl.leaveType || 'Casual'}</td>
-                              <td className="px-3 py-2.5 text-center text-slate-600 dark:text-slate-400">{pl.startDate || pl.fromDate} to {pl.endDate || pl.toDate}</td>
-                              <td className="px-3 py-2.5 text-center">
-                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
-                                  pl.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-600' :
-                                  pl.status === 'Rejected' ? 'bg-rose-500/10 text-rose-600' : 'bg-amber-500/10 text-amber-600'
+                            <tr key={pl.leaveId || pl.id || idx}>
+                              <td className="font-bold text-[var(--text-primary)]">{pl.leaveType || 'Casual'}</td>
+                              <td className="text-center text-[var(--text-muted)]">{pl.startDate || pl.fromDate} to {pl.endDate || pl.toDate}</td>
+                              <td className="text-center">
+                                <span className={`badge-3d ${
+                                  pl.status === 'Approved' ? 'badge-3d-success' :
+                                  pl.status === 'Rejected' ? 'badge-3d-danger' : 'badge-3d-warning'
                                 }`}>
                                   {pl.status}
                                 </span>
                               </td>
-                              <td className="px-3 py-2.5 text-slate-500 font-normal">
+                              <td className="text-[var(--text-muted)] font-normal">
                                 {pl.status === 'Rejected' ? `Reason: ${pl.rejectionReason || pl.remarks}` : pl.reason}
                               </td>
                             </tr>
@@ -708,3 +716,4 @@ export const WardCounsellorLeaveDesk = ({ counsellor }) => {
     </div>
   );
 };
+
