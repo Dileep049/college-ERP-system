@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { mockDB, KBN_BRANCHES, KBN_SEMESTERS } from '../services/firebase';
+import { mockDB, db, isFirebaseConfigured, isDepartmentMatch, normalizeSemester, KBN_BRANCHES, KBN_SEMESTERS } from '../services/firebase';
+import { collection, query, where, getDocs, doc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { COLLEGE_DEPARTMENTS } from '../utils/constants';
 import {
   ResponsiveContainer,
@@ -805,71 +806,111 @@ const PrincipalFacultyOverview = ({ principal }) => {
       const seenEmails = new Set();
       const seenUids = new Set();
 
-      // 1. PRIMARY QUERY: Fetch ALL users from Firestore `users` collection where role === 'faculty'
+      // 1. PRIMARY QUERY: Fetch ALL faculty and HOD users from Firestore `profiles` and `users`
       if (isFirebaseConfigured && db) {
         try {
-          const usersRef = collection(db, 'users');
-          const q = query(usersRef, where('role', '==', 'faculty'));
-          const snap = await getDocs(q);
-          snap.forEach(docSnap => {
+          const profilesSnap = await getDocs(collection(db, 'profiles'));
+          profilesSnap.forEach(docSnap => {
             const data = docSnap.data();
-            const uid = docSnap.id;
-            const email = (data.email || '').toLowerCase();
-            if (email) seenEmails.add(email);
-            seenUids.add(uid);
-            facultyList.push({
-              uid,
-              id: uid,
-              facultyId: data.employeeId || data.facultyId || uid,
-              facultyName: data.fullName || data.name || data.facultyName || 'Faculty Member',
-              facultyEmail: data.email || 'N/A',
-              facultyPhone: data.mobile || data.phone || data.contactNumber || 'N/A',
-              facultyDesignation: data.designation || data.facultyDesignation || 'Faculty Member',
-              facultyPhoto: data.photoURL || data.profileImage || data.facultyPhoto || null,
-              department: data.department || data.branch || data.assignedBranch || 'N/A',
-              branch: data.department || data.branch || data.assignedBranch || 'N/A',
-              status: data.status || 'Active',
-              ...data
-            });
+            const role = (data.role || '').toLowerCase();
+            if (['faculty', 'hod', 'lab_faculty', 'head_of_department'].includes(role) || role.includes('faculty') || role.includes('hod')) {
+              const uid = docSnap.id;
+              const email = (data.email || '').toLowerCase();
+              if (email) seenEmails.add(email);
+              seenUids.add(uid);
+              facultyList.push({
+                uid,
+                id: uid,
+                facultyId: data.employeeId || data.facultyId || data.rollNumber || uid,
+                facultyName: data.fullName || data.name || data.facultyName || (role === 'hod' ? 'Head of Department' : 'Faculty Member'),
+                facultyEmail: data.email || 'N/A',
+                facultyPhone: data.mobile || data.phone || data.contactNumber || 'N/A',
+                facultyDesignation: data.designation || (role === 'hod' ? 'Head of Department' : 'Assistant Professor'),
+                facultyPhoto: data.photoURL || data.profileImage || data.facultyPhoto || null,
+                department: data.department || data.branch || data.assignedBranch || 'B.Sc. Computer Science (CS)',
+                branch: data.department || data.branch || data.assignedBranch || 'B.Sc. Computer Science (CS)',
+                status: data.status || 'Active',
+                role: data.role || 'faculty',
+                ...data
+              });
+            }
+          });
+
+          // Also check users collection as fallback
+          const usersSnap = await getDocs(collection(db, 'users'));
+          usersSnap.forEach(docSnap => {
+            const data = docSnap.data();
+            const role = (data.role || '').toLowerCase();
+            if (['faculty', 'hod', 'lab_faculty', 'head_of_department'].includes(role) || role.includes('faculty') || role.includes('hod')) {
+              const uid = docSnap.id;
+              const email = (data.email || '').toLowerCase();
+              if (!seenUids.has(uid) && (!email || !seenEmails.has(email))) {
+                if (email) seenEmails.add(email);
+                seenUids.add(uid);
+                facultyList.push({
+                  uid,
+                  id: uid,
+                  facultyId: data.employeeId || data.facultyId || data.rollNumber || uid,
+                  facultyName: data.fullName || data.name || data.facultyName || (role === 'hod' ? 'Head of Department' : 'Faculty Member'),
+                  facultyEmail: data.email || 'N/A',
+                  facultyPhone: data.mobile || data.phone || data.contactNumber || 'N/A',
+                  facultyDesignation: data.designation || (role === 'hod' ? 'Head of Department' : 'Assistant Professor'),
+                  facultyPhoto: data.photoURL || data.profileImage || data.facultyPhoto || null,
+                  department: data.department || data.branch || data.assignedBranch || 'B.Sc. Computer Science (CS)',
+                  branch: data.department || data.branch || data.assignedBranch || 'B.Sc. Computer Science (CS)',
+                  status: data.status || 'Active',
+                  role: data.role || 'faculty',
+                  ...data
+                });
+              }
+            }
           });
         } catch (fsErr) {
           console.error('[Firestore] Error fetching faculty users:', fsErr);
         }
       }
 
-      // Fallback/Merge mockDB faculty users for offline/demo environments
+      // 2. Fallback/Merge mockDB and localStorage faculty users for complete directory
       try {
+        const localUsers = JSON.parse(localStorage.getItem('acad_users') || '[]');
+        const localFaculty = JSON.parse(localStorage.getItem('acad_faculty') || '[]');
+        let allMock = [];
         if (mockDB?.getAllUsers) {
-          const allMock = await mockDB.getAllUsers();
-          const mockFaculty = allMock.filter(u => u.role === 'faculty');
-          mockFaculty.forEach(f => {
-            const email = (f.email || '').toLowerCase();
-            const key = f.uid || f.id || email;
-            if ((!email || !seenEmails.has(email)) && (!seenUids.has(key))) {
+          try { allMock = await mockDB.getAllUsers(); } catch (_) {}
+        }
+        const combinedLocal = [...localUsers, ...localFaculty, ...allMock];
+
+        combinedLocal.forEach(f => {
+          const role = (f.role || '').toLowerCase();
+          if (['faculty', 'hod', 'lab_faculty', 'head_of_department'].includes(role) || role.includes('faculty') || role.includes('hod')) {
+            const email = (f.email || f.facultyEmail || '').toLowerCase();
+            const key = f.uid || f.id || `fac-${email}`;
+            if (!seenUids.has(key) && (!email || !seenEmails.has(email))) {
               if (email) seenEmails.add(email);
               seenUids.add(key);
               facultyList.push({
-                uid: f.uid || f.id,
-                id: f.uid || f.id,
-                facultyId: f.employeeId || f.facultyId || f.uid || f.id,
-                facultyName: f.fullName || f.name || f.facultyName || 'Faculty Member',
-                facultyEmail: f.email || 'N/A',
+                uid: f.uid || f.id || key,
+                id: f.uid || f.id || key,
+                facultyId: f.employeeId || f.facultyId || f.rollNumber || key,
+                facultyName: f.fullName || f.name || f.facultyName || (role === 'hod' ? 'Head of Department' : 'Faculty Member'),
+                facultyEmail: f.email || f.facultyEmail || 'N/A',
                 facultyPhone: f.mobile || f.phone || f.contactNumber || 'N/A',
-                facultyDesignation: f.designation || f.facultyDesignation || 'Faculty Member',
+                facultyDesignation: f.designation || (role === 'hod' ? 'Head of Department' : 'Assistant Professor'),
                 facultyPhoto: f.photoURL || f.profileImage || f.facultyPhoto || null,
-                department: f.department || f.branch || 'N/A',
-                branch: f.department || f.branch || 'N/A',
+                department: f.department || f.branch || f.assignedBranch || 'B.Sc. Computer Science (CS)',
+                branch: f.department || f.branch || f.assignedBranch || 'B.Sc. Computer Science (CS)',
                 status: f.status || 'Active',
+                role: f.role || 'faculty',
                 ...f
               });
             }
-          });
-        }
+          }
+        });
       } catch (mockErr) {
         console.warn('Mock faculty fetch warning:', mockErr);
       }
 
-      // 2. SECONDARY DATA: Fetch course allocations separately and map to faculty
+      // 3. SECONDARY DATA: Fetch course allocations separately and map to faculty
       let allocations = [];
       if (isFirebaseConfigured && db) {
         try {
@@ -897,7 +938,7 @@ const PrincipalFacultyOverview = ({ principal }) => {
         }
       } catch (_) {}
 
-      // 3. COMBINE FACULTY WITH ALLOCATIONS OR RENDER UNASSIGNED FALLBACK
+      // 4. COMBINE FACULTY WITH ALLOCATIONS OR RENDER UNASSIGNED FALLBACK
       const combinedRecords = [];
 
       facultyList.forEach(fac => {
@@ -923,23 +964,25 @@ const PrincipalFacultyOverview = ({ principal }) => {
               facultyDesignation: fac.facultyDesignation || alloc.facultyDesignation,
               facultyEmail: fac.facultyEmail || alloc.facultyEmail,
               facultyPhone: fac.facultyPhone || alloc.facultyPhone,
-              branch: alloc.branch || alloc.department || fac.department || fac.branch || 'N/A',
-              semester: alloc.semester || 'N/A',
-              section: alloc.section || 'N/A',
-              subjectName: alloc.subjectName || alloc.subject || 'Not Assigned',
+              department: alloc.department || alloc.branch || fac.department || fac.branch || 'B.Sc. Computer Science (CS)',
+              branch: alloc.branch || alloc.department || fac.department || fac.branch || 'B.Sc. Computer Science (CS)',
+              semester: alloc.semester || 'Semester 6',
+              section: alloc.section || 'A',
+              subjectName: alloc.subjectName || alloc.subject || 'All Subjects',
               status: alloc.status || fac.status || 'Active'
             });
           });
         } else {
-          // Rule 3: GRACEFUL FALLBACK - If no subject assignment yet, keep faculty visible with "Not Assigned"
+          // Keep faculty visible even if no specific course allocation has been assigned
           combinedRecords.push({
             ...fac,
             recordKey: `${fac.uid || fac.id}-unassigned`,
             isAllocated: false,
-            branch: fac.department || fac.branch || 'N/A',
-            semester: 'Not Assigned',
-            section: 'Not Assigned',
-            subjectName: 'Not Assigned',
+            department: fac.department || fac.branch || 'B.Sc. Computer Science (CS)',
+            branch: fac.department || fac.branch || 'B.Sc. Computer Science (CS)',
+            semester: 'All Semesters',
+            section: 'A',
+            subjectName: fac.designation === 'Head of Department' ? 'Department Supervision' : 'General Faculty',
             status: fac.status || 'Active'
           });
         }
@@ -959,21 +1002,29 @@ const PrincipalFacultyOverview = ({ principal }) => {
 
   const filteredAllocations = facultyAllocations.filter((a) => {
     const matchesSearch =
+      !searchTerm ||
       (a.facultyName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (a.facultyEmail || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (a.subjectName || a.subject || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (a.department || a.branch || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (a.facultyDesignation || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesBranch =
+      !branchFilter ||
       branchFilter === 'All Branches' ||
-      a.branch === branchFilter ||
-      a.department === branchFilter;
+      isDepartmentMatch(a.department || a.branch, branchFilter);
 
     const matchesSemester =
-      semesterFilter === 'All Semesters' || a.semester === semesterFilter;
+      !semesterFilter ||
+      semesterFilter === 'All Semesters' ||
+      a.semester === semesterFilter ||
+      a.semester === 'All Semesters' ||
+      normalizeSemester(a.semester) === normalizeSemester(semesterFilter);
 
     const matchesStatus =
-      statusFilter === 'All Statuses' || (a.status || 'Active') === statusFilter;
+      !statusFilter ||
+      statusFilter === 'All Statuses' ||
+      (a.status || 'Active').toLowerCase() === statusFilter.toLowerCase();
 
     return matchesSearch && matchesBranch && matchesSemester && matchesStatus;
   });
@@ -1549,44 +1600,210 @@ const PrincipalPlacementAnalytics = () => {
   );
 };
 
-// 8. LEAVES REVIEW
+// 8. LEAVES REVIEW (FACULTY & HOD LEAVES ONLY)
 const PrincipalLeaves = () => {
   const [leaves, setLeaves] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState('All');
+  const [filterDept, setFilterDept] = useState('All Branches');
+  const { showToast } = useAuth();
+
+  const fetchStaffLeaves = async () => {
+    try {
+      setLoading(true);
+      let staffLeaves = [];
+
+      // 1. Fetch from Firestore `leave_requests` collection
+      if (isFirebaseConfigured && db) {
+        try {
+          const snap = await getDocs(collection(db, 'leave_requests'));
+          snap.forEach(docSnap => {
+            staffLeaves.push({ id: docSnap.id, ...docSnap.data() });
+          });
+        } catch (e) {
+          console.warn('[Firestore] Error fetching leave_requests:', e);
+        }
+      }
+
+      // 2. Merge local storage leave requests
+      const localLeaves = JSON.parse(localStorage.getItem('acad_leave_requests') || '[]');
+      const seenIds = new Set(staffLeaves.map(l => l.id));
+      localLeaves.forEach(l => {
+        if (!seenIds.has(l.id)) {
+          staffLeaves.push(l);
+        }
+      });
+
+      // 3. STRICT FILTERING: Keep ONLY Faculty and HOD leaves (exclude ALL student leaves)
+      const filteredForStaff = staffLeaves.filter(l => {
+        const role = (l.role || l.applicantRole || l.userRole || '').toLowerCase();
+        const isStudent =
+          role === 'student' ||
+          l.studentId ||
+          l.rollNumber ||
+          l.childRollNumber ||
+          (l.applicantType && l.applicantType.toLowerCase() === 'student') ||
+          (l.leaveCategory && l.leaveCategory.toLowerCase() === 'student');
+
+        if (isStudent) return false;
+
+        const isStaff =
+          role === 'faculty' ||
+          role === 'hod' ||
+          role === 'lab_faculty' ||
+          role === 'head_of_department' ||
+          l.facultyId ||
+          l.employeeId ||
+          l.leaveCategory === 'faculty' ||
+          l.leaveCategory === 'staff' ||
+          l.applicantRole === 'faculty' ||
+          l.applicantRole === 'hod' ||
+          (l.applicantType && l.applicantType !== 'student');
+
+        return isStaff;
+      });
+
+      setLeaves(filteredForStaff);
+    } catch (err) {
+      console.error('Error fetching staff leaves:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchLeaves = async () => {
-      const res = JSON.parse(localStorage.getItem('acad_leave_requests') || '[]');
-      setLeaves(res);
-    };
-    fetchLeaves();
+    fetchStaffLeaves();
+
+    // Live sync via Firestore onSnapshot
+    if (isFirebaseConfigured && db) {
+      const unsubscribe = onSnapshot(collection(db, 'leave_requests'), () => {
+        fetchStaffLeaves();
+      }, (err) => console.warn('Principal leaves listener warning:', err));
+      return () => unsubscribe();
+    }
   }, []);
 
   const handleAction = async (id, status) => {
-    const updated = leaves.map(l => l.id === id ? { ...l, status } : l);
-    localStorage.setItem('acad_leave_requests', JSON.stringify(updated));
-    setLeaves(updated);
+    try {
+      // 1. Update in Firestore if configured
+      if (isFirebaseConfigured && db) {
+        try {
+          await updateDoc(doc(db, 'leave_requests', id), {
+            status,
+            reviewedAt: new Date().toISOString(),
+            reviewedBy: 'Principal'
+          });
+        } catch (fsErr) {
+          console.warn('[Firestore] updateDoc failed, fallback to local:', fsErr);
+        }
+      }
+
+      // 2. Update in LocalStorage
+      const localLeaves = JSON.parse(localStorage.getItem('acad_leave_requests') || '[]');
+      const updatedLocal = localLeaves.map(l => l.id === id ? { ...l, status, reviewedAt: new Date().toISOString(), reviewedBy: 'Principal' } : l);
+      localStorage.setItem('acad_leave_requests', JSON.stringify(updatedLocal));
+
+      // 3. Update component state
+      setLeaves(prev => prev.map(l => l.id === id ? { ...l, status, reviewedAt: new Date().toISOString(), reviewedBy: 'Principal' } : l));
+      showToast(`Leave application ${status} successfully!`, 'success');
+    } catch (err) {
+      console.error('Error updating leave status:', err);
+      showToast('Failed to update leave status.', 'error');
+    }
   };
+
+  const filteredLeaves = leaves.filter(l => {
+    const statusMatch =
+      filterStatus === 'All' ||
+      (l.status || 'pending').toLowerCase() === filterStatus.toLowerCase();
+
+    const deptMatch =
+      filterDept === 'All Branches' ||
+      isDepartmentMatch(l.department || l.branch || '', filterDept);
+
+    return statusMatch && deptMatch;
+  });
+
+  const pendingCount = leaves.filter(l => (l.status || 'pending').toLowerCase() === 'pending').length;
+  const approvedCount = leaves.filter(l => (l.status || '').toLowerCase() === 'approved').length;
+  const rejectedCount = leaves.filter(l => (l.status || '').toLowerCase() === 'rejected').length;
 
   return (
     <div className="space-y-6 text-xs font-semibold bg-transparent min-h-screen text-white font-sans">
       {/* Universal Glass Banner */}
       <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 md:p-8 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <span className="text-[10px] font-extrabold tracking-widest uppercase text-cyan-300 bg-cyan-500/20 px-3 py-0.5 rounded-full border border-cyan-400/30 drop-shadow-md">
-            Staff Administration
-          </span>
-          <h2 className="text-xl md:text-2xl font-black text-white drop-shadow-md mt-1.5 font-display">Faculty & Staff Leaves Review</h2>
-          <p className="text-xs text-gray-200 font-semibold drop-shadow-sm mt-0.5">Institutional leave applications and approval oversight</p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-extrabold tracking-widest uppercase text-cyan-300 bg-cyan-500/20 px-3 py-0.5 rounded-full border border-cyan-400/30 drop-shadow-md">
+              Staff Administration
+            </span>
+            <span className="px-3 py-0.5 bg-purple-500/20 text-purple-200 border border-purple-400/30 text-[10px] font-bold rounded-full">
+              Faculty & HOD Exclusive
+            </span>
+          </div>
+          <h2 className="text-xl md:text-2xl font-black text-white drop-shadow-md mt-1.5 font-display">Faculty & HOD Leaves Oversight</h2>
+          <p className="text-xs text-gray-200 font-semibold drop-shadow-sm mt-0.5">Direct administrative review for institutional faculty and department heads (student leaves routed to counsellors)</p>
         </div>
       </div>
 
+      {/* KPI Stats Bar */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="p-4 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
+          <span className="text-[10px] text-white/70 uppercase font-black tracking-wider block">Total Staff Requests</span>
+          <p className="text-2xl font-black text-white font-display mt-1">{leaves.length}</p>
+        </div>
+        <div className="p-4 bg-black/40 backdrop-blur-md rounded-2xl border border-amber-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
+          <span className="text-[10px] text-amber-300 uppercase font-black tracking-wider block">Pending Review</span>
+          <p className="text-2xl font-black text-amber-300 font-display mt-1">{pendingCount}</p>
+        </div>
+        <div className="p-4 bg-black/40 backdrop-blur-md rounded-2xl border border-emerald-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
+          <span className="text-[10px] text-emerald-300 uppercase font-black tracking-wider block">Approved Leaves</span>
+          <p className="text-2xl font-black text-emerald-400 font-display mt-1">{approvedCount}</p>
+        </div>
+        <div className="p-4 bg-black/40 backdrop-blur-md rounded-2xl border border-rose-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
+          <span className="text-[10px] text-rose-300 uppercase font-black tracking-wider block">Rejected Leaves</span>
+          <p className="text-2xl font-black text-rose-400 font-display mt-1">{rejectedCount}</p>
+        </div>
+      </div>
+
+      {/* Filter & Table Container */}
       <div className="p-6 md:p-8 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] space-y-4 text-white">
-        <h3 className="text-sm font-black text-white drop-shadow-sm">Leave Applications Log</h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+          <div>
+            <h3 className="text-sm font-black text-white drop-shadow-sm">Faculty & HOD Leave Applications Log</h3>
+            <p className="text-xs text-gray-300">Showing {filteredLeaves.length} staff leave records</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              value={filterDept}
+              onChange={e => setFilterDept(e.target.value)}
+              className="px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-white text-xs font-bold focus:bg-white/10 focus:border-cyan-400 outline-none"
+            >
+              <option value="All Branches" className="bg-slate-900 text-white">All Branches</option>
+              {KBN_BRANCHES.map((b, i) => (
+                <option key={i} value={b} className="bg-slate-900 text-white">{b}</option>
+              ))}
+            </select>
+
+            <select
+              value={filterStatus}
+              onChange={e => setFilterStatus(e.target.value)}
+              className="px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-white text-xs font-bold focus:bg-white/10 focus:border-cyan-400 outline-none"
+            >
+              <option value="All" className="bg-slate-900 text-white">All Statuses</option>
+              <option value="pending" className="bg-slate-900 text-white">Pending</option>
+              <option value="approved" className="bg-slate-900 text-white">Approved</option>
+              <option value="rejected" className="bg-slate-900 text-white">Rejected</option>
+            </select>
+          </div>
+        </div>
+
         <div className="overflow-hidden rounded-2xl border border-white/10 overflow-x-auto">
           <table className="w-full text-left text-xs font-semibold text-white">
             <thead className="bg-white/5 uppercase text-[10px] text-gray-300 tracking-wider border-b border-white/10">
               <tr>
-                <th className="p-4">Applicant</th>
+                <th className="p-4">Staff Member</th>
+                <th className="p-4">Role</th>
                 <th className="p-4">Department</th>
                 <th className="p-4">Leave Type</th>
                 <th className="p-4">Dates</th>
@@ -1596,30 +1813,56 @@ const PrincipalLeaves = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {leaves.length === 0 ? (
-                <tr><td colSpan="7" className="p-8 text-center text-gray-400">No pending leave applications recorded.</td></tr>
-              ) : leaves.map((l) => (
-                <tr key={l.id} className="hover:bg-white/5 transition-colors">
-                  <td className="p-4 font-bold text-white">{l.facultyName || l.applicantName || 'Faculty Member'}</td>
-                  <td className="p-4 font-bold text-cyan-300">{l.department}</td>
-                  <td className="p-4 text-gray-300">{l.leaveType || 'Casual Leave'}</td>
-                  <td className="p-4 text-gray-300">{l.startDate} to {l.endDate}</td>
-                  <td className="p-4 text-gray-300">{l.reason}</td>
-                  <td className="p-4">
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${l.status === 'approved' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30' : l.status === 'rejected' ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' : 'bg-amber-500/20 text-amber-300 border-amber-500/30'}`}>
-                      {l.status}
-                    </span>
-                  </td>
-                  <td className="p-4 text-right space-x-2">
-                    {l.status === 'pending' && (
-                      <>
-                        <button onClick={() => handleAction(l.id, 'approved')} className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[11px] font-bold shadow-md cursor-pointer transition-all">Approve</button>
-                        <button onClick={() => handleAction(l.id, 'rejected')} className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-[11px] font-bold shadow-md cursor-pointer transition-all">Reject</button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {loading ? (
+                <tr><td colSpan="8" className="p-8 text-center text-gray-400 animate-pulse">Loading staff leave requests...</td></tr>
+              ) : filteredLeaves.length === 0 ? (
+                <tr><td colSpan="8" className="p-8 text-center text-gray-400">No staff leave applications matching the filters.</td></tr>
+              ) : filteredLeaves.map((l) => {
+                const role = (l.role || l.applicantRole || 'faculty').toLowerCase();
+                const isHod = role === 'hod' || role === 'head_of_department';
+                const status = (l.status || 'pending').toLowerCase();
+
+                return (
+                  <tr key={l.id} className="hover:bg-white/5 transition-colors">
+                    <td className="p-4">
+                      <div>
+                        <strong className="text-white font-extrabold text-xs block">
+                          {l.facultyName || l.applicantName || l.userName || 'Staff Member'}
+                        </strong>
+                        <span className="text-[10px] text-gray-400 font-mono">
+                          {l.email || l.facultyEmail || l.employeeId || ''}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <span className={`px-2 py-0.5 rounded-md text-[9.5px] font-black uppercase border ${isHod ? 'bg-purple-500/20 text-purple-300 border-purple-400/30' : 'bg-cyan-500/20 text-cyan-300 border-cyan-400/30'}`}>
+                        {isHod ? 'HOD' : 'Faculty'}
+                      </span>
+                    </td>
+                    <td className="p-4 font-bold text-cyan-300">{l.department || l.branch || 'B.Sc. Computer Science (CS)'}</td>
+                    <td className="p-4 text-gray-200">{l.leaveType || 'Casual Leave'}</td>
+                    <td className="p-4 text-gray-200 font-mono text-[11px]">{l.startDate} to {l.endDate}</td>
+                    <td className="p-4 text-gray-300 max-w-xs truncate">{l.reason || 'Personal / Academic leave'}</td>
+                    <td className="p-4">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border ${status === 'approved' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30' : status === 'rejected' ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' : 'bg-amber-500/20 text-amber-300 border-amber-500/30'}`}>
+                        {status}
+                      </span>
+                    </td>
+                    <td className="p-4 text-right space-x-2">
+                      {status === 'pending' ? (
+                        <>
+                          <button onClick={() => handleAction(l.id, 'approved')} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[11px] font-bold shadow-md cursor-pointer transition-all">Approve</button>
+                          <button onClick={() => handleAction(l.id, 'rejected')} className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-[11px] font-bold shadow-md cursor-pointer transition-all">Reject</button>
+                        </>
+                      ) : (
+                        <span className="text-[10px] text-gray-400 font-bold uppercase">
+                          {status === 'approved' ? '✓ Approved' : '✗ Rejected'}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
