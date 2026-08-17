@@ -14,8 +14,7 @@ import {
   PlacementLogin,
   CounsellorLogin,
   LibrarianLogin,
-  AdminLogin,
-  ParentLogin
+  AdminLogin
 } from './pages/AuthPortals';
 
 import { StudentPortal } from './pages/StudentPortal';
@@ -27,7 +26,6 @@ import { WardCounsellorPortal } from './pages/WardCounsellorPortal';
 import { WardCounsellorProfile } from './pages/WardCounsellorProfile';
 import { LibrarianPortal } from './pages/LibrarianPortal';
 import { AdminPortal } from './pages/AdminPortal';
-import { ParentPortal } from './pages/ParentPortal';
 import { ReportsModule } from './components/ReportsModule';
 import { StudentBulkImport } from './components/StudentBulkImport';
 
@@ -112,15 +110,7 @@ const LandingPage = () => {
       badgeClass: 'badge-3d badge-3d-success',
       icon: Library
     },
-    {
-      title: 'Parent Portal',
-      description: 'Monitor child\'s attendance, view results, track leave requests, and see fee reports with complete transparency.',
-      link: '/parent/login',
-      gradient: 'from-pink-600 to-rose-600',
-      badge: 'Ward Tracking',
-      badgeClass: 'badge-3d badge-3d-purple',
-      icon: Users
-    },
+
     {
       title: 'System Admin',
       description: 'Manage users directory (create/edit/delete all 8 roles), reset credentials, academic year and fees structures.',
@@ -242,7 +232,6 @@ function AppContent() {
         {/* --- AUTHENTICATION LOGIN ROUTES (PUBLIC) --- */}
         <Route path="/student/login" element={<StudentLogin />} />
         <Route path="/faculty/login" element={<FacultyLogin />} />
-        <Route path="/parent/login" element={<ParentLogin />} />
         <Route path="/hod/login" element={<HODLogin />} />
         <Route path="/principal/login" element={<PrincipalLogin />} />
         <Route path="/placement/login" element={<PlacementLogin />} />
@@ -266,7 +255,7 @@ function AppContent() {
 
           {/* Student Portal Subpages */}
           <Route path="/student/apply-leave" element={<StudentPortal subPage="leaves" />} />
-          {['dashboard', 'profile', 'academic-overview', 'course-registration', 'attendance', 'marks', 'results', 'assignments', 'notes', 'leaves', 'counsellor', 'faculty', 'placements', 'counselling', 'notifications', 'document-requests', 'support-desk', 'performance'].map((subPage) => (
+          {['dashboard', 'profile', 'academic-overview', 'attendance', 'marks', 'results', 'assignments', 'notes', 'leaves', 'counsellor', 'faculty', 'placements', 'counselling', 'notifications', 'document-requests', 'support-desk', 'performance'].map((subPage) => (
             <Route key={subPage} path={`/student/${subPage}`} element={<StudentPortal subPage={subPage} />} />
           ))}
 
@@ -276,10 +265,7 @@ function AppContent() {
             <Route key={subPage} path={`/faculty/${subPage}`} element={<FacultyPortal subPage={subPage} />} />
           ))}
 
-          {/* Parent Portal Subpages */}
-          {['dashboard', 'my-ward', 'academic-overview', 'attendance', 'marks', 'results', 'assignments', 'notes', 'leaves', 'counsellor', 'faculty', 'counselling', 'meetings', 'placements', 'monthly-report', 'notifications', 'profile', 'fees', 'grievances'].map((subPage) => (
-            <Route key={subPage} path={`/parent/${subPage}`} element={<ParentPortal subPage={subPage} />} />
-          ))}
+
 
           {/* HOD Portal Subpages */}
           <Route path="/hod/dashboard" element={<HODPortal subPage="dashboard" />} />
@@ -293,7 +279,6 @@ function AppContent() {
           <Route path="/hod/faculty-leaves" element={<HODPortal subPage="faculty-leaves" />} />
           <Route path="/hod/leaves" element={<HODPortal subPage="faculty-leaves" />} />
           <Route path="/hod/academic-performance" element={<HODPortal subPage="academic-performance" />} />
-          <Route path="/hod/curriculum" element={<HODPortal subPage="curriculum" />} />
           <Route path="/hod/announcements" element={<HODPortal subPage="announcements" />} />
           <Route path="/hod/reports" element={<HODPortal subPage="reports" />} />
           <Route path="/hod/audit-logs" element={<HODPortal subPage="audit-logs" />} />
@@ -320,7 +305,6 @@ function AppContent() {
 
           {/* Ward Counsellor Subpages */}
           <Route path="/counsellor/dashboard" element={<WardCounsellorPortal subPage="dashboard" />} />
-          <Route path="/counsellor/parent-meetings" element={<WardCounsellorPortal subPage="parent-meetings" />} />
           <Route path="/counsellor/wards" element={<WardCounsellorPortal subPage="wards" />} />
           <Route path="/counsellor/leaves" element={<WardCounsellorPortal subPage="leaves" />} />
           <Route path="/counsellor/student-leaves" element={<WardCounsellorPortal subPage="student-leaves" />} />

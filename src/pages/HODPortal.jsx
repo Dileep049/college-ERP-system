@@ -103,8 +103,6 @@ export const HODPortal = ({ subPage }) => {
         return <FacultyLeaveReview hod={user} />;
       case 'academic-performance':
         return <AcademicPerformance hod={user} />;
-      case 'curriculum':
-        return <HODCurriculum hod={user} />;
       case 'announcements':
         return <DepartmentAnnouncements hod={user} />;
       case 'reports':
@@ -119,7 +117,7 @@ export const HODPortal = ({ subPage }) => {
   };
 
   return (
-    <div className="space-y-6 font-sans pb-12">
+    <div className="space-y-6 font-sans pb-12 bg-transparent min-h-screen text-white">
       {/* 1. ROYAL PURPLE GLASS HOD COMMAND BANNER */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-gradient-to-r from-purple-900/50 to-indigo-900/50 backdrop-blur-xl border border-purple-500/30 p-5 md:p-6 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] text-white">
         <div>
@@ -216,7 +214,7 @@ const HODDashboard = ({ hod, onNavigate }) => {
   useEffect(() => {
     const fetchStats = async () => {
       setLoading(true);
-      const data = await mockDB.getHODStats(hod?.department);
+      const data = await mockDB.getHODStats('All');
       setStats(data);
       setLoading(false);
     };
@@ -368,7 +366,7 @@ const DepartmentOverview = ({ hod }) => {
 
   useEffect(() => {
     const load = async () => {
-      const data = await mockDB.getHODStats(hod?.department);
+      const data = await mockDB.getHODStats('All');
       setStats(data);
     };
     load();
@@ -382,8 +380,8 @@ const DepartmentOverview = ({ hod }) => {
           <span className="px-3 py-1 bg-white/20 rounded-full text-[10px] font-black uppercase tracking-wider">
             {stats?.academicYear} • {stats?.currentSemester}
           </span>
-          <h2 className="text-2xl font-black mt-2">{hod?.department || 'B.Sc. Computer Science (CS)'}</h2>
-          <p className="text-xs text-purple-200 mt-1">Head of Department: {hod?.fullName || 'Dr. Alan Turing'}</p>
+          <h2 className="text-2xl font-black mt-2">All Departments</h2>
+          <p className="text-xs text-purple-200 mt-1">Head of Department: {hod?.fullName || 'Dr. Alan Turing'} • Global oversight</p>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
           <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md">
@@ -406,13 +404,13 @@ const DepartmentOverview = ({ hod }) => {
       </div>
 
       {/* Performance Indicators */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="p-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
-          <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">Attendance Performance</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="p-5 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white space-y-4">
+          <h3 className="text-xs font-black uppercase text-slate-300 tracking-wider">Attendance Performance</h3>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-3xl font-black text-emerald-500">87.4%</p>
-              <span className="text-[10px] text-slate-400">Department aggregate rate</span>
+              <p className="text-3xl font-black text-emerald-400">87.4%</p>
+              <span className="text-[10px] text-slate-300">Department aggregate rate</span>
             </div>
             <div className="w-16 h-16">
               <ResponsiveContainer width="100%" height="100%">
@@ -427,55 +425,44 @@ const DepartmentOverview = ({ hod }) => {
           </div>
         </div>
 
-        <div className="p-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
-          <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">Academic Performance</h3>
+        <div className="p-5 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white space-y-4">
+          <h3 className="text-xs font-black uppercase text-slate-300 tracking-wider">Academic Performance</h3>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-3xl font-black text-purple-600">78.5 Avg</p>
-              <span className="text-[10px] text-slate-400">Internal marks average</span>
+              <p className="text-3xl font-black text-purple-300">78.5 Avg</p>
+              <span className="text-[10px] text-slate-300">Internal marks average</span>
             </div>
-            <Award className="text-purple-500" size={32} />
-          </div>
-        </div>
-
-        <div className="p-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-4">
-          <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">Curriculum Progress</h3>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-3xl font-black text-indigo-500">76.5%</p>
-              <span className="text-[10px] text-slate-400">Syllabus units completed</span>
-            </div>
-            <ClipboardList className="text-indigo-500" size={32} />
+            <Award className="text-purple-300" size={32} />
           </div>
         </div>
       </div>
 
       {/* Analytics Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="p-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
-          <h3 className="text-xs font-black uppercase text-slate-400 mb-4">Monthly Attendance Trend</h3>
+        <div className="p-5 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white">
+          <h3 className="text-xs font-black uppercase text-slate-300 mb-4">Monthly Attendance Trend</h3>
           <div className="h-56 text-xs">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={stats?.graphs.monthly}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="name" stroke="#94A3B8" />
-                <YAxis domain={[50, 100]} stroke="#94A3B8" />
-                <Tooltip />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.12)" />
+                <XAxis dataKey="name" stroke="#cbd5e1" />
+                <YAxis domain={[50, 100]} stroke="#cbd5e1" />
+                <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }} />
                 <Line type="monotone" dataKey="Attendance" stroke="#8B5CF6" strokeWidth={3} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="p-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
-          <h3 className="text-xs font-black uppercase text-slate-400 mb-4">Faculty Workload Distribution</h3>
+        <div className="p-5 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white">
+          <h3 className="text-xs font-black uppercase text-slate-300 mb-4">Faculty Workload Distribution</h3>
           <div className="h-56 text-xs">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={stats?.graphs.workload}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="faculty" stroke="#94A3B8" />
-                <YAxis stroke="#94A3B8" />
-                <Tooltip />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.12)" />
+                <XAxis dataKey="faculty" stroke="#cbd5e1" />
+                <YAxis stroke="#cbd5e1" />
+                <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }} />
                 <Bar dataKey="hours" fill="#6366F1" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -502,7 +489,7 @@ const FacultyManagement = ({ hod }) => {
   const [rejectionLeaveId, setRejectionLeaveId] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
 
-  const deptName = hod?.department || hod?.assignedBranch || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)';
+  const deptName = 'All';
 
   const emptyFormData = {
     facultyId: '',
@@ -521,9 +508,9 @@ const FacultyManagement = ({ hod }) => {
 
   const loadData = async () => {
     setLoading(true);
-    const facs = await mockDB.getFacultyByDepartment(deptName);
-    const facAssigns = await mockDB.getFacultyAssignments(null, deptName);
-    const leaves = await mockDB.getFacultyLeavesForHOD(deptName);
+    const facs = await mockDB.getFacultyByDepartment('All');
+    const facAssigns = await mockDB.getFacultyAssignments(null, 'All');
+    const leaves = await mockDB.getFacultyLeavesForHOD('All');
     setFacultyMembers(facs);
     setAssignments(facAssigns);
     setFacultyLeaves(leaves);
@@ -1492,7 +1479,7 @@ const FacultyLeaveReview = ({ hod }) => {
   const [rejectionReason, setRejectionReason] = useState('');
 
   const loadLeaves = async () => {
-    const list = await mockDB.getLeaves('hod', hod?.uid, hod?.department || 'CSE');
+    const list = await mockDB.getLeaves('hod', hod?.uid, 'All');
     setLeaves(list);
   };
 
@@ -1715,7 +1702,7 @@ const HODReports = ({ hod }) => {
 
   useEffect(() => {
     const fetchReport = async () => {
-      const data = await mockDB.getMonthlyFacultyLeaveReport(hod?.department, month, year, facultyFilter);
+      const data = await mockDB.getMonthlyFacultyLeaveReport('All', month, year, facultyFilter);
       setReportData(data);
     };
     fetchReport();
@@ -1852,7 +1839,7 @@ const FacultyWorkloadManagement = ({ hod }) => {
 
   useEffect(() => {
     const load = async () => {
-      const data = await mockDB.getFacultyWorkload(hod?.department);
+      const data = await mockDB.getFacultyWorkload('All');
       setWorkload(data);
     };
     load();
@@ -1965,7 +1952,7 @@ const AcademicPerformance = ({ hod }) => {
 
   useEffect(() => {
     const load = async () => {
-      const res = await mockDB.getDepartmentAcademicPerformance(hod?.department);
+      const res = await mockDB.getDepartmentAcademicPerformance('All');
       setData(res);
     };
     load();
@@ -1995,46 +1982,6 @@ const AcademicPerformance = ({ hod }) => {
           <span className="text-[10px] text-slate-400 block font-bold">Assignments Avg</span>
           <span className="text-2xl font-black text-emerald-600">{data?.assignmentAverage}</span>
         </div>
-      </div>
-    </div>
-  );
-};
-
-const HODCurriculum = ({ hod }) => {
-  const [curr, setCurr] = useState([]);
-
-  useEffect(() => {
-    const load = async () => {
-      const data = await mockDB.getCurriculumProgress(hod?.department);
-      setCurr(data);
-    };
-    load();
-  }, [hod]);
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md">
-        <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">Curriculum Progress Tracker</h2>
-        <p className="text-xs text-slate-400">Track unit completion progress for all department subjects</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {curr.map((item) => (
-          <div key={item.id} className="p-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">{item.subject}</h3>
-              <span className="px-2.5 py-1 bg-purple-500/10 text-purple-600 text-[10px] font-bold rounded-lg">{item.progressPercentage}%</span>
-            </div>
-            <p className="text-xs text-slate-400">Faculty: {item.faculty}</p>
-            <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
-              <div className="bg-gradient-to-r from-purple-500 to-indigo-500 h-full rounded-full" style={{ width: `${item.progressPercentage}%` }}></div>
-            </div>
-            <div className="flex items-center justify-between text-[11px] text-slate-500 font-semibold">
-              <span>{item.completedUnits} / {item.totalUnits} Units Completed</span>
-              <span className="text-emerald-600 font-bold">{item.status}</span>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );

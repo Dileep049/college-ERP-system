@@ -750,36 +750,50 @@ export const mockDB = {
     return true;
   },
 
-  getWardsForCounsellor: async (counsellorId, department) => {
-    await mockDB.delay(100);
+  getWardsForCounsellor: async (counsellorId, department, semester) => {
+    await mockDB.delay(80);
     const activeAssign = await mockDB.getFacultyWardAssignment(counsellorId);
-    const users = JSON.parse(localStorage.getItem('acad_users') || '[]');
-    const students = users.filter(u => u.role === 'student');
+    let students = [];
 
-    if (activeAssign) {
-      const aDept = (activeAssign.department || '').toUpperCase().trim();
-      const aSem = (activeAssign.semester || '').trim().toLowerCase();
-      const aSec = (activeAssign.section || '').trim().toUpperCase().replace(/^SECTION\s+/i, '');
-      const aAY = (activeAssign.academicYear || '').trim();
+    if (isFirebaseConfigured && db) {
+      try {
+        const snap = await getDocs(collection(db, 'profiles'));
+        students = snap.docs.map(doc => ({ id: doc.id, uid: doc.id, ...doc.data() })).filter(u => u.role === 'student');
+      } catch (err) {
+        console.warn("Firestore getDocs for wards fallback:", err.message);
+      }
+    }
 
+    const localUsers = JSON.parse(localStorage.getItem('acad_users') || '[]');
+    const localStudents = JSON.parse(localStorage.getItem('acad_students') || '[]');
+    const localStudList = [...localUsers.filter(u => u.role === 'student'), ...localStudents];
+
+    const combinedMap = new Map();
+    [...students, ...localStudList].forEach(s => {
+      const key = s.uid || s.id || s.rollNumber;
+      if (key) {
+        const existing = combinedMap.get(key) || {};
+        combinedMap.set(key, { ...existing, ...s });
+      }
+    });
+    students = Array.from(combinedMap.values());
+
+    const targetDept = activeAssign?.department || department || '';
+    const targetSem = activeAssign?.semester || semester || '';
+
+    if (targetDept || targetSem) {
       return students.filter(s => {
-        const sDept = (s.department || s.branch || '').toUpperCase().trim();
-        const sSem = (s.semester || '').trim().toLowerCase();
-        const sSec = (s.section || '').trim().toUpperCase().replace(/^SECTION\s+/i, '');
-        const sAY = (s.academicYear || '').trim();
+        const sDept = s.department || s.branch || '';
+        const sSem = s.semester || '';
 
-        const matchDept = !sDept || aDept === sDept || isDepartmentMatch(aDept, sDept);
-        const matchSem = !sSem || !aSem || aSem === sSem;
-        const matchSec = !sSec || !aSec || aSec === sSec;
-        const matchAY = !sAY || !aAY || aAY === sAY;
+        const matchDept = !targetDept || isDepartmentMatch(sDept, targetDept);
+        const matchSem = !targetSem || !sSem || targetSem.toLowerCase() === 'all' || normalizeSemester(sSem) === normalizeSemester(targetSem);
 
-        return matchDept && matchSem && matchSec && matchAY;
+        // Allow cross-section access for same Branch + Semester across Sections A, B, C
+        return matchDept && matchSem;
       });
     }
 
-    if (department) {
-      return students.filter(u => u.department === department || isDepartmentMatch(u.department, department));
-    }
     return students;
   },
 
@@ -2119,35 +2133,6 @@ export const mockDB = {
   getStudentsByBranchAndSemester: async (branch, semester, section = null) => {
     await mockDB.delay(50);
     
-    const normBranch = (branch || '').toUpperCase().trim();
-    const normSem = (semester || '').toUpperCase().trim();
-    const normSec = (section || '').toUpperCase().trim();
-
-    const isBranchMatch = (d) => {
-      if (!d || !normBranch) return true;
-      const upperD = d.toUpperCase().trim();
-      return upperD === normBranch || normBranch.includes(upperD) || upperD.includes(normBranch) || 
-             (normBranch.includes('AI') && upperD.includes('AI'));
-    };
-
-    const isSemMatch = (s) => {
-      if (!s || !normSem) return true;
-      const upperS = s.toUpperCase().trim();
-      if (upperS === normSem) return true;
-      const semNum1 = upperS.replace(/[^0-9]/g, '');
-      const semNum2 = normSem.replace(/[^0-9]/g, '');
-      return semNum1 && semNum2 && semNum1 === semNum2;
-    };
-
-    const isSecMatch = (sec) => {
-      if (!sec || !normSec) return true;
-      const upperSec = sec.toUpperCase().trim();
-      if (upperSec === normSec) return true;
-      if (normSec.includes('A') || normSec === 'EM') return upperSec.includes('A') || upperSec === 'EM' || upperSec === 'SECTION A';
-      if (normSec.includes('B')) return upperSec.includes('B') || upperSec === 'SECTION B';
-      return true;
-    };
-
     const isDummyStudent = (u) => {
       if (!u) return true;
       const name = (u.fullName || u.studentName || u.name || '').toLowerCase().trim();
@@ -2193,14 +2178,23 @@ export const mockDB = {
       }
     });
 
-    let list = Array.from(map.values()).filter(s => {
-      const bMatch = isBranchMatch(s.department || s.branch);
-      const sMatch = isSemMatch(s.semester);
-      const secMatch = isSecMatch(s.section);
-      return bMatch && sMatch && secMatch;
+    // 1. Primary Filter: Branch & Semester (Cross-Section Baseline)
+    let branchSemStudents = Array.from(map.values()).filter(s => {
+      const bMatch = !branch || branch === 'All' || isDepartmentMatch(s.department || s.branch, branch);
+      const sMatch = !semester || semester === 'All' || normalizeSemester(s.semester) === normalizeSemester(semester);
+      return bMatch && sMatch;
     });
 
-    return list;
+    // 2. Secondary Filter: Section (if specifically requested, narrow down; otherwise retain all branch+semester students)
+    if (section && section !== 'All' && section !== 'N/A' && branchSemStudents.length > 0) {
+      const targetSec = normalizeSection(section);
+      const sectionFiltered = branchSemStudents.filter(s => !s.section || normalizeSection(s.section) === targetSec);
+      if (sectionFiltered.length > 0) {
+        return sectionFiltered;
+      }
+    }
+
+    return branchSemStudents;
   },
 
   getStudents: async (department = null) => {
@@ -2590,7 +2584,7 @@ export const mockDB = {
     } else if (role === 'faculty_self') {
       resultList = resultList.filter(l => (l.studentId === uid || l.applicantId === uid || l.facultyId === uid || l.uid === uid) && l.applicantRole === 'faculty');
     } else if (role === 'counsellor' || role === 'faculty') {
-      // Ward Counsellor sees student leave requests belonging ONLY to their assigned branch/department, semester, and section
+      // Ward Counsellor sees student leave requests belonging to their assigned branch/department
       resultList = resultList.filter(l => l.applicantRole === 'student' || !l.applicantRole);
       
       let scopeBranch = null;
@@ -2598,7 +2592,7 @@ export const mockDB = {
       let scopeSec = null;
 
       if (dept && typeof dept === 'object') {
-        scopeBranch = dept.assignedBranch || dept.branch || dept.department;
+        scopeBranch = dept.assignedBranch || dept.assignedDepartment || dept.branch || dept.department || dept.wardCounsellorDepartment;
         scopeSem = dept.assignedSemester || dept.semester;
         scopeSec = dept.assignedSection || dept.section;
       } else if (typeof dept === 'string') {
@@ -2608,20 +2602,28 @@ export const mockDB = {
       if (scopeBranch && scopeBranch !== 'All' && scopeBranch !== 'N/A') {
         resultList = resultList.filter(l => isDepartmentMatch(l.department || l.branch, scopeBranch));
       }
+      
+      // Graceful semester/section filtering: if specific matches exist, narrow down; otherwise retain department records
       if (scopeSem && scopeSem !== 'All' && scopeSem !== 'N/A') {
         const targetSem = normalizeSemester(scopeSem);
-        resultList = resultList.filter(l => !l.semester || normalizeSemester(l.semester) === targetSem);
+        const semFiltered = resultList.filter(l => !l.semester || normalizeSemester(l.semester) === targetSem);
+        if (semFiltered.length > 0) {
+          resultList = semFiltered;
+        }
       }
       if (scopeSec && scopeSec !== 'All' && scopeSec !== 'N/A') {
         const targetSec = normalizeSection(scopeSec);
-        resultList = resultList.filter(l => !l.section || normalizeSection(l.section) === targetSec);
+        const secFiltered = resultList.filter(l => !l.section || normalizeSection(l.section) === targetSec);
+        if (secFiltered.length > 0) {
+          resultList = secFiltered;
+        }
       }
     } else if (role === 'hod') {
-      // HOD sees faculty leave requests belonging ONLY to their department
+      // HOD sees faculty leave requests across all departments unless a narrower scope is explicitly requested
       resultList = resultList.filter(l => l.applicantRole === 'faculty');
-      if (dept && dept !== 'N/A') {
+      if (dept && dept !== 'N/A' && dept !== 'All' && dept !== 'All Departments' && dept !== 'All Branches') {
         const normDept = typeof dept === 'string' ? dept.toUpperCase().trim() : '';
-        resultList = resultList.filter(l => !l.department || l.department.toUpperCase().trim() === normDept);
+        resultList = resultList.filter(l => !l.department || isDepartmentMatch(l.department, normDept));
       }
     } else if (role === 'principal') {
       resultList = resultList.filter(l => l.applicantRole !== 'principal');
@@ -3097,19 +3099,6 @@ export const mockDB = {
     await mockDB.delay(100);
     const existing = JSON.parse(localStorage.getItem('acad_attendance') || '[]');
 
-    const isDuplicate = existing.some(a => 
-      a.date === date && 
-      a.subject === subject && 
-      a.lecturePeriod === lecturePeriod && 
-      (!a.department || a.department === department) && 
-      (!a.semester || a.semester === semester) && 
-      (!a.section || a.section === section)
-    );
-
-    if (isDuplicate) {
-      throw new Error("Attendance already submitted for this period.");
-    }
-
     const newRecords = [];
     for (const r of records) {
       const payload = {
@@ -3117,6 +3106,7 @@ export const mockDB = {
         rollNumber: r.rollNumber || '',
         studentName: r.studentName || 'Student',
         department: department || 'CSE',
+        branch: department || 'CSE',
         semester: semester || 'VI',
         section: section || 'A',
         subject: subject || 'Neural Networks & Deep Learning',
@@ -3138,7 +3128,16 @@ export const mockDB = {
       newRecords.push({ id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`, ...payload });
     }
 
-    const combined = [...newRecords, ...existing];
+    // Filter out previous attendance for the exact same slot/students so latest status is cleanly updated
+    const filteredExisting = existing.filter(a => {
+      const isSameSlot = a.date === date && 
+                         a.subject === subject && 
+                         a.lecturePeriod === lecturePeriod &&
+                         records.some(r => r.studentId === a.studentId || (r.rollNumber && r.rollNumber === a.rollNumber));
+      return !isSameSlot;
+    });
+
+    const combined = [...newRecords, ...filteredExisting];
     localStorage.setItem('acad_attendance', JSON.stringify(combined));
 
     records.forEach(r => {
@@ -3347,8 +3346,7 @@ export const mockDB = {
     }
 
     if (drive.eligibleBranches && drive.eligibleBranches.length > 0) {
-      const eligibleUpper = drive.eligibleBranches.map(b => b.toUpperCase().trim());
-      const branchMatch = eligibleUpper.some(b => b === studentBranch || studentBranch.includes(b) || b.includes(studentBranch));
+      const branchMatch = isDepartmentMatch(studentUser.department || studentUser.branch, drive.eligibleBranches);
       if (!branchMatch) {
         return {
           success: false,
@@ -5054,10 +5052,14 @@ export const mockDB = {
     return logs.filter(l => !l.department || l.department.toLowerCase().includes('cse') || l.department === dept || dept === 'All');
   },
 
-  getHODStats: async (dept = 'B.Sc. Computer Science (CS)') => {
+  getHODStats: async (dept = 'All') => {
     await mockDB.delay(80);
     const users = JSON.parse(localStorage.getItem('acad_users') || '[]');
-    const isDeptMatch = (d) => !d || d === dept || (dept.includes('CS') && d.includes('CS')) || (dept.includes('AI') && d.includes('AI'));
+    const deptScope = dept && dept !== 'All' && dept !== 'All Departments' && dept !== 'All Branches' ? dept : null;
+    const isDeptMatch = (d) => {
+      if (!deptScope) return true;
+      return !d || d === deptScope || (deptScope.includes('CS') && d && d.includes('CS')) || (deptScope.includes('AI') && d && d.includes('AI')) || isDepartmentMatch(d, deptScope);
+    };
     
     const deptStudents = users.filter(u => u.role === 'student' && isDeptMatch(u.department));
     const deptFaculty = users.filter(u => u.role === 'faculty' && isDeptMatch(u.department));
@@ -5445,25 +5447,39 @@ export const mockDB = {
     const assignments = await mockDB.getWardCounsellorAssignments();
 
     const sDept = (student.department || student.branch || '').toUpperCase().trim();
-    const sSem = (student.semester || '').trim().toLowerCase();
-    const sSec = (student.section || '').trim().toUpperCase().replace(/^SECTION\s+/i, '');
+    const sSem = (student.semester || '').trim();
+    const sSec = (student.section || '').trim();
     const sAY = (student.academicYear || '').trim();
 
-    const activeMatch = assignments.find(a => {
+    // Priority 1: Exact Match for Active Counsellor in SAME Department + SAME Semester + SAME Section
+    let activeMatch = assignments.find(a => {
       if (a.status !== 'active' && a.status !== 'Active') return false;
 
-      const aDept = (a.department || '').toUpperCase().trim();
-      const aSem = (a.semester || '').trim().toLowerCase();
-      const aSec = (a.section || '').trim().toUpperCase().replace(/^SECTION\s+/i, '');
-      const aAY = (a.academicYear || '').trim();
-
-      const matchDept = !sDept || aDept === sDept || isDepartmentMatch(aDept, sDept);
-      const matchSem = !sSem || !aSem || aSem === sSem;
-      const matchSec = !sSec || !aSec || aSec === sSec;
-      const matchAY = !sAY || !aAY || aAY === sAY;
+      const matchDept = !sDept || isDepartmentMatch(sDept, a.department);
+      const matchSem = !sSem || !a.semester || a.semester === 'All' || normalizeSemester(a.semester) === normalizeSemester(sSem);
+      const matchSec = !sSec || !a.section || a.section === 'All' || normalizeSection(a.section) === normalizeSection(sSec);
+      const matchAY = !sAY || !a.academicYear || a.academicYear === sAY;
 
       return matchDept && matchSem && matchSec && matchAY;
     });
+
+    // Priority 2: Match Active Counsellor in SAME Department + SAME Semester (Cross-section access within same branch + semester)
+    if (!activeMatch) {
+      activeMatch = assignments.find(a => {
+        if (a.status !== 'active' && a.status !== 'Active') return false;
+        const matchDept = !sDept || isDepartmentMatch(sDept, a.department);
+        const matchSem = !sSem || !a.semester || a.semester === 'All' || normalizeSemester(a.semester) === normalizeSemester(sSem);
+        return matchDept && matchSem;
+      });
+    }
+
+    // Priority 3: Fallback to Active Counsellor for the Department
+    if (!activeMatch) {
+      activeMatch = assignments.find(a => {
+        if (a.status !== 'active' && a.status !== 'Active') return false;
+        return !sDept || isDepartmentMatch(sDept, a.department);
+      });
+    }
 
     if (activeMatch) {
       const users = JSON.parse(localStorage.getItem('acad_users') || '[]');
@@ -5472,15 +5488,15 @@ export const mockDB = {
       return {
         id: activeMatch.id,
         facultyId: activeMatch.facultyId,
-        fullName: activeMatch.facultyName || fac.fullName || fac.name || 'Dr. Ravi Kumar',
-        facultyName: activeMatch.facultyName || fac.fullName || fac.name || 'Dr. Ravi Kumar',
+        fullName: activeMatch.facultyName || fac.fullName || fac.name || 'Faculty Ward Counsellor',
+        facultyName: activeMatch.facultyName || fac.fullName || fac.name || 'Faculty Ward Counsellor',
         designation: fac.designation || 'Associate Professor & Ward Counsellor',
         department: activeMatch.department || student.department,
         semester: activeMatch.semester || student.semester || 'Semester 6',
         section: activeMatch.section || student.section || 'A',
         academicYear: activeMatch.academicYear || student.academicYear || '2026-2027',
-        email: activeMatch.facultyEmail || fac.email || 'ravi.kumar@kbn.edu',
-        facultyEmail: activeMatch.facultyEmail || fac.email || 'ravi.kumar@kbn.edu',
+        email: activeMatch.facultyEmail || fac.email || 'counsellor@kbn.edu',
+        facultyEmail: activeMatch.facultyEmail || fac.email || 'counsellor@kbn.edu',
         mobile: activeMatch.facultyPhone || fac.mobile || fac.phoneNumber || '9876543211',
         phoneNumber: activeMatch.facultyPhone || fac.phoneNumber || fac.mobile || '9876543211',
         facultyPhone: activeMatch.facultyPhone || '9876543211',
@@ -6648,14 +6664,17 @@ export const mockDB = {
           students = profileSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() })).filter(u => u.role === 'student');
         }
 
-        if (branch) {
-          students = students.filter(s => s.department === branch || s.branch === branch);
+        if (branch && branch !== 'All') {
+          students = students.filter(s => isDepartmentMatch(s.department || s.branch, branch));
         }
-        if (semester) {
-          students = students.filter(s => !s.semester || s.semester === semester);
+        if (semester && semester !== 'All') {
+          students = students.filter(s => !s.semester || normalizeSemester(s.semester) === normalizeSemester(semester));
         }
-        if (section) {
-          students = students.filter(s => !s.section || s.section === section || s.section === `Section ${section}`);
+        if (section && section !== 'All' && section !== 'N/A') {
+          const secFiltered = students.filter(s => !s.section || normalizeSection(s.section) === normalizeSection(section));
+          if (secFiltered.length > 0) {
+            students = secFiltered;
+          }
         }
 
         if (students.length > 0) return students;
@@ -6665,14 +6684,17 @@ export const mockDB = {
     }
 
     let list = [...SEEDED_STUDENTS];
-    if (branch) {
-      list = list.filter(s => s.department === branch || s.branch === branch);
+    if (branch && branch !== 'All') {
+      list = list.filter(s => isDepartmentMatch(s.department || s.branch, branch));
     }
-    if (semester) {
-      list = list.filter(s => !s.semester || s.semester === semester);
+    if (semester && semester !== 'All') {
+      list = list.filter(s => !s.semester || normalizeSemester(s.semester) === normalizeSemester(semester));
     }
-    if (section) {
-      list = list.filter(s => !s.section || s.section === section || s.section === `Section ${section}`);
+    if (section && section !== 'All' && section !== 'N/A') {
+      const secFiltered = list.filter(s => !s.section || normalizeSection(s.section) === normalizeSection(section));
+      if (secFiltered.length > 0) {
+        list = secFiltered;
+      }
     }
     return list;
   },
@@ -6700,6 +6722,17 @@ export const mockDB = {
     const semVal = leaveData.semester || 'Semester 2';
     const secVal = leaveData.section || 'Section A';
 
+    let assignedCounsellor = null;
+    try {
+      assignedCounsellor = await mockDB.getStudentWardCounsellorDynamic({
+        department: deptVal,
+        branch: deptVal,
+        semester: semVal,
+        section: secVal,
+        ...leaveData
+      });
+    } catch (_) {}
+
     const newLeave = {
       id: `student-leave-${Date.now()}`,
       leaveId: `student-leave-${Date.now()}`,
@@ -6720,12 +6753,21 @@ export const mockDB = {
       endDate: leaveData.toDate || leaveData.endDate || new Date().toISOString().split('T')[0],
       reason: leaveData.reason || 'Personal Work',
       status: 'Pending',
+      counsellorStatus: 'Pending',
+      targetRole: 'counsellor',
       applicantRole: 'student',
+      assignedCounsellorId: assignedCounsellor?.facultyId || assignedCounsellor?.id || '',
+      assignedCounsellorName: assignedCounsellor?.fullName || assignedCounsellor?.facultyName || 'Ward Counsellor',
+      assignedCounsellorEmail: assignedCounsellor?.facultyEmail || assignedCounsellor?.email || '',
       appliedAt: new Date().toISOString(),
       submittedAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       approvedBy: '',
-      rejectionReason: ''
+      approvedByName: '',
+      rejectedBy: '',
+      rejectedByName: '',
+      rejectionReason: '',
+      remarks: ''
     };
 
     if (isFirebaseConfigured && db) {

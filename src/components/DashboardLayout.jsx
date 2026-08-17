@@ -121,17 +121,13 @@ export const DashboardLayout = ({ children }) => {
       { label: 'Dashboard', path: '/student/dashboard', icon: LayoutDashboard },
       { label: 'My Profile', path: '/student/profile', icon: UserCheck },
       { label: 'Academic Overview', path: '/student/academic-overview', icon: TrendingUp },
-      { label: 'Course Registration', path: '/student/course-registration', icon: BookOpen },
       { label: 'Attendance', path: '/student/attendance', icon: CheckSquare },
       { label: 'Internal Marks', path: '/student/marks', icon: FileText },
       { label: 'Semester Results', path: '/student/results', icon: Award },
       { label: 'Assignments', path: '/student/assignments', icon: Briefcase },
       { label: 'Study Notes', path: '/student/notes', icon: ClipboardList },
-      { label: 'Exam Hall Ticket', path: '/student/results', icon: Ticket },
       { label: 'Apply Leave', path: '/student/leaves', icon: Calendar },
-      { label: 'Online Fees', path: '/student/academic-overview', icon: CreditCard },
-      { label: 'Library', path: '/student/notes', icon: Library },
-      { label: 'Hostel & Transport', path: '/student/academic-overview', icon: Home },
+      { label: 'Placement Drives', path: '/student/placements', icon: Briefcase },
       { label: 'Document Requests', path: '/student/document-requests', icon: FileCheck }
     ],
     faculty: [
@@ -158,7 +154,6 @@ export const DashboardLayout = ({ children }) => {
       { label: 'Attendance Unlocks', path: '/hod/attendance-unlocks', icon: Lock },
       { label: 'Faculty Leaves', path: '/hod/faculty-leaves', icon: Calendar },
       { label: 'Academic Performance', path: '/hod/academic-performance', icon: Award },
-      { label: 'Curriculum Progress', path: '/hod/curriculum', icon: ClipboardList },
       { label: 'Department Announcements', path: '/hod/announcements', icon: Bell },
       { label: 'Reports', path: '/hod/reports', icon: FileText },
       { label: 'Audit Logs', path: '/hod/audit-logs', icon: Clock },
@@ -196,7 +191,6 @@ export const DashboardLayout = ({ children }) => {
     ],
     counsellor: [
       { label: 'Counsellor Panel', path: '/counsellor/dashboard', icon: LayoutDashboard },
-      { label: 'Parent Meetings', path: '/counsellor/parent-meetings', icon: Users },
       { label: 'Counselling Wards', path: '/counsellor/wards', icon: UserCheck },
       { label: 'Student Leaves', path: '/counsellor/student-leaves', icon: Calendar },
       { label: 'Analytics Reports', path: '/counsellor/reports', icon: FileText },
@@ -204,7 +198,6 @@ export const DashboardLayout = ({ children }) => {
     ],
     ward_counsellor: [
       { label: 'Counsellor Panel', path: '/counsellor/dashboard', icon: LayoutDashboard },
-      { label: 'Parent Meetings', path: '/counsellor/parent-meetings', icon: Users },
       { label: 'Counselling Wards', path: '/counsellor/wards', icon: UserCheck },
       { label: 'Student Leaves', path: '/counsellor/student-leaves', icon: Calendar },
       { label: 'Analytics Reports', path: '/counsellor/reports', icon: FileText },
@@ -246,25 +239,6 @@ export const DashboardLayout = ({ children }) => {
     ],
     transport: [
       { label: 'Transport & Fleet', path: '/admin/dashboard', icon: Home }
-    ],
-    parent: [
-      { label: 'Dashboard', path: '/parent/dashboard', icon: LayoutDashboard },
-      { label: 'My Ward', path: '/parent/my-ward', icon: UserCheck },
-      { label: 'Academic Overview', path: '/parent/academic-overview', icon: TrendingUp },
-      { label: 'Attendance', path: '/parent/attendance', icon: CheckSquare },
-      { label: 'Internal Marks', path: '/parent/marks', icon: FileText },
-      { label: 'Semester Results', path: '/parent/results', icon: Award },
-      { label: 'Assignments', path: '/parent/assignments', icon: Briefcase },
-      { label: 'Study Notes', path: '/parent/notes', icon: ClipboardList },
-      { label: 'Leave', path: '/parent/leaves', icon: Calendar },
-      { label: 'Ward Counsellor', path: '/parent/counsellor', icon: UserCheck },
-      { label: 'Faculty', path: '/parent/faculty', icon: Users },
-      { label: 'Counselling', path: '/parent/counselling', icon: Activity },
-      { label: 'Parent Meetings', path: '/parent/meetings', icon: MessageSquare },
-      { label: 'Placements', path: '/parent/placements', icon: Briefcase },
-      { label: 'Monthly Report', path: '/parent/monthly-report', icon: FileText },
-      { label: 'Notifications', path: '/parent/notifications', icon: Bell },
-      { label: 'Profile', path: '/parent/profile', icon: UserCheck }
     ]
   };
 

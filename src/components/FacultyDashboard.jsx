@@ -98,13 +98,12 @@ export const FacultyDashboard = ({ onNavigate }) => {
       try {
         const facultyUid = profile.uid;
 
-        // Query Enrolled Students for this Faculty's assigned Branch, Semester, and Section
+        // Query Enrolled Students for this Faculty's assigned Branch and Semester (Cross-Section)
         const studentsQuery = query(
           collection(db, 'users'),
           where('role', '==', 'student'),
           where('branch', '==', profile.branch),
-          where('semester', '==', profile.semester),
-          where('section', '==', profile.section)
+          where('semester', '==', profile.semester)
         );
 
         // Query Assignments Published by this Faculty

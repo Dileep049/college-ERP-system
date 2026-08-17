@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { db, isFirebaseConfigured, mockDB } from '../services/firebase';
-import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { db, isFirebaseConfigured, mockDB, isDepartmentMatch, normalizeSemester, normalizeSection } from '../services/firebase';
+import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import {
   Calendar,
   CheckCircle,
@@ -16,62 +16,15 @@ import {
   FileText,
   Building2,
   BookOpen,
-  Award
+  Award,
+  Layers
 } from 'lucide-react';
 
-// Normalization Helpers
-const normBranch = (str) => {
-  if (!str) return '';
-  const s = String(str).toUpperCase().trim();
-  if (s.includes('AI') || s.includes('ARTIFICIAL') || s.includes('MACHINE LEARNING')) return 'AI & ML';
-  if (s.includes('COMPUTER') || s.includes('CSE') || s.includes('CS')) return 'CSE';
-  if (s.includes('ECE') || s.includes('ELECTRONIC')) return 'ECE';
-  if (s.includes('EEE') || s.includes('ELECTRICAL')) return 'EEE';
-  if (s.includes('CIVIL')) return 'CIVIL';
-  if (s.includes('MECH')) return 'MECHANICAL';
-  return s;
-};
-
-const normSem = (str) => {
-  if (!str) return '';
-  const s = String(str).toUpperCase().trim();
-  const digitMatch = s.match(/\d+/);
-  if (digitMatch) return digitMatch[0];
-  if (s.includes('VIII') || s === '8') return '8';
-  if (s.includes('VII') || s === '7') return '7';
-  if (s.includes('VI') || s === '6') return '6';
-  if (s.includes('V') || s === '5') return '5';
-  if (s.includes('IV') || s === '4') return '4';
-  if (s.includes('III') || s === '3') return '3';
-  if (s.includes('II') || s === '2') return '2';
-  if (s.includes('I') || s === '1') return '1';
-  return s;
-};
-
-const normSec = (str) => {
-  if (!str) return '';
-  const s = String(str).toUpperCase().trim();
-  const clean = s.replace(/SECTION/g, '').replace(/SEC/g, '').trim();
-  return clean || s;
-};
-
-const isScopeMatch = (itemBranch, itemSem, itemSec, scopeBranch, scopeSem, scopeSec) => {
-  if (scopeBranch && scopeBranch !== 'All' && scopeBranch !== 'N/A') {
-    const b1 = normBranch(itemBranch);
-    const b2 = normBranch(scopeBranch);
-    if (b1 && b2 && b1 !== b2 && !b1.includes(b2) && !b2.includes(b1)) return false;
-  }
-  if (scopeSem && scopeSem !== 'All' && scopeSem !== 'N/A' && itemSem) {
-    const s1 = normSem(itemSem);
-    const s2 = normSem(scopeSem);
-    if (s1 && s2 && s1 !== s2) return false;
-  }
-  if (scopeSec && scopeSec !== 'All' && scopeSec !== 'N/A' && itemSec) {
-    const sec1 = normSec(itemSec);
-    const sec2 = normSec(scopeSec);
-    if (sec1 && sec2 && sec1 !== sec2) return false;
-  }
-  return true;
+// Helper for Robust Branch Matching
+const isBranchMatch = (itemBranch, scopeBranch) => {
+  if (!scopeBranch || scopeBranch === 'All' || scopeBranch === 'N/A') return true;
+  if (!itemBranch) return true;
+  return isDepartmentMatch(itemBranch, scopeBranch);
 };
 
 export const WardCounsellorLeaves = ({ counsellor }) => {
@@ -79,14 +32,17 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
 
   // State
   const [loading, setLoading] = useState(true);
+  const [allRawLeaves, setAllRawLeaves] = useState([]);
   const [pendingLeaves, setPendingLeaves] = useState([]);
   const [processedLeaves, setProcessedLeaves] = useState([]);
   const [studentMonthlyStats, setStudentMonthlyStats] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSemesterFilter, setSelectedSemesterFilter] = useState('All');
+  const [selectedSectionFilter, setSelectedSectionFilter] = useState('All');
 
   // Resolved Scope
   const [scope, setScope] = useState({
-    assignedBranch: counsellor?.assignedBranch || counsellor?.department || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)',
+    assignedBranch: counsellor?.assignedBranch || counsellor?.assignedDepartment || counsellor?.wardCounsellorDepartment || counsellor?.department || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)',
     assignedSemester: counsellor?.assignedSemester || counsellor?.semester || 'Semester 2',
     assignedSection: counsellor?.assignedSection || counsellor?.section || 'Section A'
   });
@@ -96,58 +52,84 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [submittingAction, setSubmittingAction] = useState(false);
 
-  // 1. REAL-TIME DATA FETCHING (onSnapshot) & SCOPE RESOLUTION
+  // 1. REAL-TIME DATA FETCHING (onSnapshot) & DYNAMIC SCOPE RESOLUTION
   useEffect(() => {
     if (!counsellor) return;
 
-    let currentBranch = counsellor?.assignedBranch || counsellor?.department || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)';
-    let currentSem = counsellor?.assignedSemester || counsellor?.semester || 'Semester 2';
-    let currentSec = counsellor?.assignedSection || counsellor?.section || 'Section A';
-
-    setScope({
-      assignedBranch: currentBranch,
-      assignedSemester: currentSem,
-      assignedSection: currentSec
-    });
-
     let unsubscribes = [];
 
-    if (isFirebaseConfigured && db) {
-      setLoading(true);
-      const collectionsToQuery = ['leaves', 'leave_requests', 'student_leaves'];
-      const realTimeMap = {};
+    const initScopeAndSubscription = async () => {
+      let currentBranch = counsellor?.assignedBranch || counsellor?.assignedDepartment || counsellor?.wardCounsellorDepartment || counsellor?.department || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)';
+      let currentSem = counsellor?.assignedSemester || counsellor?.semester || 'All';
+      let currentSec = counsellor?.assignedSection || counsellor?.section || 'All';
 
-      collectionsToQuery.forEach(colName => {
-        try {
-          const colRef = collection(db, colName);
-          const unsub = onSnapshot(colRef, (snapshot) => {
-            snapshot.forEach(docSnap => {
-              const d = docSnap.data();
-              const id = docSnap.id;
-              realTimeMap[id] = { id, leaveId: id, _col: colName, ...d };
-            });
-            processAllLeaves(Object.values(realTimeMap), currentBranch, currentSem, currentSec);
-            setLoading(false);
-          }, (err) => {
-            console.error(`[onSnapshot Error] ${colName}:`, err);
-            setLoading(false);
-          });
-          unsubscribes.push(unsub);
-        } catch (e) {
-          console.error(`Error setting up onSnapshot for ${colName}:`, e);
+      try {
+        const activeAssign = await mockDB.getFacultyWardAssignment(counsellor?.uid || counsellor?.id || counsellor?.email);
+        if (activeAssign) {
+          if (activeAssign.department) currentBranch = activeAssign.department;
+          if (activeAssign.semester) currentSem = activeAssign.semester;
+          if (activeAssign.section) currentSec = activeAssign.section;
         }
+      } catch (e) {
+        console.warn("Could not load dynamic ward assignment, using counsellor profile scope:", e);
+      }
+
+      setScope({
+        assignedBranch: currentBranch,
+        assignedSemester: currentSem,
+        assignedSection: currentSec
       });
-    } else {
-      fetchOfflineScopeAndLeaves(currentBranch, currentSem, currentSec);
-    }
+
+      if (isFirebaseConfigured && db) {
+        setLoading(true);
+        const collectionsToQuery = ['leave_requests', 'leaves', 'student_leaves'];
+        const realTimeMap = {};
+
+        collectionsToQuery.forEach(colName => {
+          try {
+            const colRef = collection(db, colName);
+            const unsub = onSnapshot(colRef, (snapshot) => {
+              snapshot.forEach(docSnap => {
+                const d = docSnap.data();
+                const id = docSnap.id;
+                realTimeMap[id] = { id, leaveId: id, _col: colName, ...d };
+              });
+              const merged = Object.values(realTimeMap);
+              setAllRawLeaves(merged);
+              processAllLeaves(merged, currentBranch, selectedSemesterFilter, selectedSectionFilter);
+              setLoading(false);
+            }, (err) => {
+              console.error(`[onSnapshot Error] ${colName}:`, err);
+              setLoading(false);
+            });
+            unsubscribes.push(unsub);
+          } catch (e) {
+            console.error(`Error setting up onSnapshot for ${colName}:`, e);
+          }
+        });
+      }
+
+      fetchOfflineScopeAndLeaves(currentBranch);
+    };
+
+    initScopeAndSubscription();
 
     return () => {
-      unsubscribes.forEach(unsub => unsub());
+      unsubscribes.forEach(unsub => {
+        try { unsub(); } catch (_) {}
+      });
     };
   }, [counsellor]);
 
-  // Offline / Manual Refresh Fetch
-  const fetchOfflineScopeAndLeaves = async (currentBranch, currentSem, currentSec) => {
+  // Re-filter when semester / section filter changes
+  useEffect(() => {
+    if (allRawLeaves.length > 0) {
+      processAllLeaves(allRawLeaves, scope.assignedBranch, selectedSemesterFilter, selectedSectionFilter);
+    }
+  }, [selectedSemesterFilter, selectedSectionFilter, scope.assignedBranch]);
+
+  // Offline / Fallback Fetch
+  const fetchOfflineScopeAndLeaves = async (currentBranch) => {
     try {
       setLoading(true);
       let rawList = [];
@@ -155,11 +137,9 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
 
       try {
         const mockRes = await mockDB.getLeaves('counsellor', counsellor?.uid || 'counsellor', {
-          assignedDepartment: currentBranch,
-          assignedSemester: currentSem,
-          assignedSection: currentSec
+          assignedDepartment: currentBranch
         });
-        mockRes.forEach(l => {
+        (mockRes || []).forEach(l => {
           const id = l.id || l.leaveId;
           if (id && !seenIds.has(id)) {
             seenIds.add(id);
@@ -168,7 +148,22 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
         });
       } catch (_) {}
 
-      processAllLeaves(rawList, currentBranch, currentSem, currentSec);
+      // Merge Local Storage items
+      ['acad_student_leaves', 'acad_leave_requests'].forEach(key => {
+        try {
+          const localItems = JSON.parse(localStorage.getItem(key) || '[]');
+          localItems.forEach(item => {
+            const id = item.id || item.leaveId;
+            if (id && !seenIds.has(id)) {
+              seenIds.add(id);
+              rawList.push(item);
+            }
+          });
+        } catch (_) {}
+      });
+
+      setAllRawLeaves(rawList);
+      processAllLeaves(rawList, currentBranch, selectedSemesterFilter, selectedSectionFilter);
     } catch (err) {
       console.error("Error fetching offline leaves:", err);
     } finally {
@@ -177,35 +172,46 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
   };
 
   const fetchScopeAndLeaves = () => {
-    fetchOfflineScopeAndLeaves(scope.assignedBranch, scope.assignedSemester, scope.assignedSection);
+    fetchOfflineScopeAndLeaves(scope.assignedBranch);
   };
 
   // Helper to process, scope-filter, and separate Pending vs Processed Leaves
-  const processAllLeaves = (rawList, currentBranch, currentSem, currentSec) => {
+  const processAllLeaves = (rawList, currentBranch, semFilter, secFilter) => {
     const listCopy = [...rawList];
-    const seenIds = new Set(listCopy.map(l => l.id || l.leaveId));
+    const seenIds = new Set();
+    const uniqueLeaves = [];
 
-    // Merge Local Storage fallback items
-    ['acad_student_leaves', 'acad_leave_requests'].forEach(key => {
-      try {
-        const localItems = JSON.parse(localStorage.getItem(key) || '[]');
-        localItems.forEach(item => {
-          const id = item.id || item.leaveId;
-          if (id && !seenIds.has(id)) {
-            seenIds.add(id);
-            listCopy.push(item);
-          }
-        });
-      } catch (_) {}
+    listCopy.forEach(item => {
+      const key = item.id || item.leaveId;
+      if (key && !seenIds.has(key)) {
+        seenIds.add(key);
+        uniqueLeaves.push(item);
+      }
     });
 
-    // Filter by Counsellor Academic Scope
-    const scopedLeaves = listCopy.filter(item => {
+    // 1. Primary Filter: Counsellor Department / Branch Scope
+    let scopedLeaves = uniqueLeaves.filter(item => {
       const itemBranch = item.branch || item.department || '';
-      const itemSem = item.semester || '';
-      const itemSec = item.section || '';
-      return isScopeMatch(itemBranch, itemSem, itemSec, currentBranch, currentSem, currentSec);
+      return isBranchMatch(itemBranch, currentBranch);
     });
+
+    // 2. Secondary Filter: Selected Semester Filter (if not 'All')
+    if (semFilter && semFilter !== 'All') {
+      const normTargetSem = normalizeSemester(semFilter);
+      const filteredBySem = scopedLeaves.filter(l => !l.semester || normalizeSemester(l.semester) === normTargetSem);
+      if (filteredBySem.length > 0) {
+        scopedLeaves = filteredBySem;
+      }
+    }
+
+    // 3. Tertiary Filter: Selected Section Filter (if not 'All')
+    if (secFilter && secFilter !== 'All') {
+      const normTargetSec = normalizeSection(secFilter);
+      const filteredBySec = scopedLeaves.filter(l => !l.section || normalizeSection(l.section) === normTargetSec);
+      if (filteredBySec.length > 0) {
+        scopedLeaves = filteredBySec;
+      }
+    }
 
     // Calculate monthly stats per student
     const currentMonth = new Date().getMonth();
@@ -230,13 +236,11 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
     });
     setStudentMonthlyStats(statsMap);
 
-    // Rule 2: Separate into two distinct state arrays:
-    // a) pendingLeaves: status === "Pending"
-    // b) processedLeaves: status === "Approved" || status === "Rejected"
+    // Separate into pendingLeaves and processedLeaves
     const pending = scopedLeaves.filter(l => (l.status || 'Pending').toLowerCase() === 'pending');
     const processed = scopedLeaves.filter(l => (l.status || '').toLowerCase() === 'approved' || (l.status || '').toLowerCase() === 'rejected');
 
-    const sortByDate = (a, b) => new Date(b.submittedAt || b.startDate || 0) - new Date(a.submittedAt || a.startDate || 0);
+    const sortByDate = (a, b) => new Date(b.submittedAt || b.startDate || b.appliedAt || 0) - new Date(a.submittedAt || a.startDate || a.appliedAt || 0);
     pending.sort(sortByDate);
     processed.sort(sortByDate);
 
@@ -244,7 +248,7 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
     setProcessedLeaves(processed);
   };
 
-  // 2. FIRESTORE APPROVE LEAVE LOGIC (Rule 1 & 3)
+  // 2. APPROVE LEAVE LOGIC
   const handleApprove = async (leave) => {
     const leaveId = leave.id || leave.leaveId;
     const counsellorName = counsellor?.fullName || counsellor?.name || 'Ward Counsellor';
@@ -254,23 +258,15 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
 
       // Update Firestore using updateDoc
       if (isFirebaseConfigured && db && leaveId) {
-        try {
-          const colName = leave._col || 'leaves';
-          const leaveRef = doc(db, colName, leaveId);
-          await updateDoc(leaveRef, {
-            status: 'Approved',
-            actionBy: counsellorName,
-            approvedBy: counsellorName,
-            actionAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
-          });
-        } catch (fsErr) {
-          console.warn("[Firestore] Col fallback updateDoc attempt:", fsErr);
+        const collectionsToTry = [leave._col, 'leave_requests', 'leaves', 'student_leaves'].filter(Boolean);
+        for (const col of collectionsToTry) {
           try {
-            await updateDoc(doc(db, 'leaves', leaveId), {
+            const leaveRef = doc(db, col, leaveId);
+            await updateDoc(leaveRef, {
               status: 'Approved',
               actionBy: counsellorName,
               approvedBy: counsellorName,
+              approvedByName: counsellorName,
               actionAt: serverTimestamp(),
               updatedAt: serverTimestamp()
             });
@@ -286,6 +282,8 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
           if (idx !== -1) {
             localItems[idx].status = 'Approved';
             localItems[idx].actionBy = counsellorName;
+            localItems[idx].approvedBy = counsellorName;
+            localItems[idx].approvedByName = counsellorName;
             localStorage.setItem(key, JSON.stringify(localItems));
           }
         } catch (_) {}
@@ -299,7 +297,7 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
       // Instant optimistic UI update
       setPendingLeaves(prev => prev.filter(l => (l.id || l.leaveId) !== leaveId));
       setProcessedLeaves(prev => [
-        { ...leave, status: 'Approved', actionBy: counsellorName, approvedBy: counsellorName, actionAt: new Date().toISOString() },
+        { ...leave, status: 'Approved', actionBy: counsellorName, approvedBy: counsellorName, approvedByName: counsellorName, actionAt: new Date().toISOString() },
         ...prev
       ]);
 
@@ -312,7 +310,7 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
     }
   };
 
-  // 3. FIRESTORE REJECT LEAVE SUBMIT HANDLER (Rule 1 & 3)
+  // 3. REJECT LEAVE LOGIC
   const handleRejectSubmit = async (e) => {
     e.preventDefault();
     if (!rejectionReason.trim()) {
@@ -329,25 +327,16 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
 
       // Update Firestore using updateDoc
       if (isFirebaseConfigured && db && leaveId) {
-        try {
-          const colName = leave._col || 'leaves';
-          const leaveRef = doc(db, colName, leaveId);
-          await updateDoc(leaveRef, {
-            status: 'Rejected',
-            rejectionReason: rejectionReason.trim(),
-            actionBy: counsellorName,
-            rejectedBy: counsellorName,
-            actionAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
-          });
-        } catch (fsErr) {
-          console.warn("[Firestore] Col fallback updateDoc attempt:", fsErr);
+        const collectionsToTry = [leave._col, 'leave_requests', 'leaves', 'student_leaves'].filter(Boolean);
+        for (const col of collectionsToTry) {
           try {
-            await updateDoc(doc(db, 'leaves', leaveId), {
+            const leaveRef = doc(db, col, leaveId);
+            await updateDoc(leaveRef, {
               status: 'Rejected',
               rejectionReason: rejectionReason.trim(),
               actionBy: counsellorName,
               rejectedBy: counsellorName,
+              rejectedByName: counsellorName,
               actionAt: serverTimestamp(),
               updatedAt: serverTimestamp()
             });
@@ -364,6 +353,8 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
             localItems[idx].status = 'Rejected';
             localItems[idx].rejectionReason = rejectionReason.trim();
             localItems[idx].actionBy = counsellorName;
+            localItems[idx].rejectedBy = counsellorName;
+            localItems[idx].rejectedByName = counsellorName;
             localStorage.setItem(key, JSON.stringify(localItems));
           }
         } catch (_) {}
@@ -377,7 +368,7 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
       // Instant optimistic UI update
       setPendingLeaves(prev => prev.filter(l => (l.id || l.leaveId) !== leaveId));
       setProcessedLeaves(prev => [
-        { ...leave, status: 'Rejected', rejectionReason: rejectionReason.trim(), actionBy: counsellorName, rejectedBy: counsellorName, actionAt: new Date().toISOString() },
+        { ...leave, status: 'Rejected', rejectionReason: rejectionReason.trim(), actionBy: counsellorName, rejectedBy: counsellorName, rejectedByName: counsellorName, actionAt: new Date().toISOString() },
         ...prev
       ]);
 
@@ -392,14 +383,15 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
     }
   };
 
-  // Filter Helper
+  // Search Filter
   const filterBySearch = (list) => {
     if (!searchQuery.trim()) return list;
     const q = searchQuery.toLowerCase().trim();
     return list.filter(l =>
       (l.studentName || l.applicantName || '').toLowerCase().includes(q) ||
       (l.rollNumber || l.usn || '').toLowerCase().includes(q) ||
-      (l.reason || '').toLowerCase().includes(q)
+      (l.reason || '').toLowerCase().includes(q) ||
+      (l.leaveType || '').toLowerCase().includes(q)
     );
   };
 
@@ -407,47 +399,80 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
   const filteredProcessed = filterBySearch(processedLeaves);
 
   return (
-    <div className="space-y-6 text-xs font-semibold p-2 md:p-6">
+    <div className="space-y-6 text-xs font-semibold p-2 md:p-6 font-sans">
       
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-indigo-900/50 to-purple-900/50 backdrop-blur-xl border border-white/10 rounded-3xl shadow-lg text-white p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-black uppercase mb-2 border border-purple-500/30">
             <Building2 size={13} />
-            Scope: {scope.assignedBranch} • {scope.assignedSemester} • {scope.assignedSection}
+            Scope: {scope.assignedBranch}
           </div>
           <h1 className="text-xl sm:text-2xl font-black flex items-center gap-2 text-white">
             <Calendar className="text-purple-300" size={24} />
             Student Leave Management Desk
           </h1>
           <p className="text-xs text-purple-200/80 mt-1 font-medium">
-            Review, approve, or reject student leaves for your assigned branch section.
+            Review, approve, or reject student leaves for {scope.assignedBranch}.
           </p>
         </div>
 
         <button
           onClick={fetchScopeAndLeaves}
-          className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-bold flex items-center gap-2 transition-all border border-white/20 shadow-md"
+          className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-bold flex items-center gap-2 transition-all border border-white/20 shadow-md cursor-pointer"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           Refresh Requests
         </button>
       </div>
 
-      {/* Search Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-black/40 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-lg">
-        <div className="relative w-full sm:w-80">
+      {/* Scope Filtering & Search Bar */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-black/40 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-lg">
+        <div className="relative flex-1 max-w-md">
           <Search size={16} className="absolute left-3 top-2.5 text-gray-400" />
           <input
             type="text"
             placeholder="Search student name, roll number, or reason..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 text-white rounded-xl font-bold placeholder-gray-400 focus:bg-white/10 focus:ring-1 focus:ring-blue-400 outline-none transition-all"
+            className="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 text-white rounded-xl font-bold placeholder-gray-400 focus:bg-white/10 focus:ring-1 focus:ring-purple-400 outline-none transition-all text-xs"
           />
         </div>
-        <div className="text-gray-400 font-bold text-[11px] self-end sm:self-center">
-          Pending: <strong className="text-amber-400">{pendingLeaves.length}</strong> | Processed: <strong className="text-emerald-400">{processedLeaves.length}</strong>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Semester Filter */}
+          <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5">
+            <span className="text-[10px] text-gray-400 font-bold uppercase">Semester:</span>
+            <select
+              value={selectedSemesterFilter}
+              onChange={(e) => setSelectedSemesterFilter(e.target.value)}
+              className="bg-transparent text-white text-xs font-bold outline-none cursor-pointer"
+            >
+              <option value="All" className="bg-slate-900 text-white">All Semesters</option>
+              {['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Semester 5', 'Semester 6', 'Semester 7', 'Semester 8'].map(sem => (
+                <option key={sem} value={sem} className="bg-slate-900 text-white">{sem}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Section Filter */}
+          <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5">
+            <span className="text-[10px] text-gray-400 font-bold uppercase">Section:</span>
+            <select
+              value={selectedSectionFilter}
+              onChange={(e) => setSelectedSectionFilter(e.target.value)}
+              className="bg-transparent text-white text-xs font-bold outline-none cursor-pointer"
+            >
+              <option value="All" className="bg-slate-900 text-white">All Sections</option>
+              <option value="Section A" className="bg-slate-900 text-white">Section A</option>
+              <option value="Section B" className="bg-slate-900 text-white">Section B</option>
+              <option value="Section C" className="bg-slate-900 text-white">Section C</option>
+            </select>
+          </div>
+
+          <div className="text-gray-400 font-bold text-[11px] px-2">
+            Pending: <strong className="text-amber-400">{pendingLeaves.length}</strong> | Processed: <strong className="text-emerald-400">{processedLeaves.length}</strong>
+          </div>
         </div>
       </div>
 
@@ -458,6 +483,9 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
             <Clock className="text-amber-400" size={18} />
             Pending Student Leave Requests ({filteredPending.length})
           </h2>
+          <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold uppercase">
+            Awaiting Counsellor Review
+          </span>
         </div>
 
         {loading ? (
@@ -466,7 +494,7 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
           </div>
         ) : filteredPending.length === 0 ? (
           <div className="py-12 text-center text-gray-400 font-bold">
-            No pending leave requests found for {scope.assignedBranch} ({scope.assignedSemester}, {scope.assignedSection}).
+            No pending leave requests found for {scope.assignedBranch}.
           </div>
         ) : (
           <div className="w-full max-w-full overflow-x-hidden border border-white/10 rounded-2xl">
@@ -475,7 +503,7 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
                 <tr>
                   <th className="w-[26%] px-4 py-3">Student Details</th>
                   <th className="w-[20%] px-3 py-3">Leave Interval</th>
-                  <th className="w-[10%] px-2 py-3 text-center">Days</th>
+                  <th className="w-[10%] px-2 py-3 text-center">Type</th>
                   <th className="w-[18%] px-3 py-3">Reason</th>
                   <th className="w-[14%] px-2 py-3 text-center">Monthly Leaves</th>
                   <th className="w-[12%] px-3 py-3 text-right">Actions</th>
@@ -493,15 +521,15 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
                           {leave.studentName || leave.applicantName || 'Student'}
                         </div>
                         <div className="text-[10px] text-gray-400 font-mono mt-0.5">
-                          USN: <span className="text-cyan-300">{leave.rollNumber || leave.usn || 'N/A'}</span> • {leave.section || scope.assignedSection}
+                          Roll: <span className="text-cyan-300 font-bold">{leave.rollNumber || leave.usn || 'N/A'}</span> • {leave.semester || 'Sem 6'} ({leave.section || 'Sec A'})
                         </div>
                       </td>
                       <td className="px-3 py-3.5 font-mono text-gray-300 text-xs whitespace-normal break-words align-middle">
                         {leave.startDate || leave.fromDate || 'N/A'} to {leave.endDate || leave.toDate || 'N/A'}
                       </td>
                       <td className="px-2 py-3.5 text-center align-middle">
-                        <span className="px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 font-black text-[11px] border border-purple-500/30">
-                          {leave.totalDays || 1} d
+                        <span className="px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 font-black text-[10px] border border-purple-500/30">
+                          {leave.leaveType || 'Casual'}
                         </span>
                       </td>
                       <td className="px-3 py-3.5 text-gray-300 font-normal whitespace-normal break-words align-middle">
@@ -516,7 +544,7 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
                             : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                         }`}>
                           <Award size={11} />
-                          {monthlyCount} Taken
+                          {monthlyCount} Approved
                         </span>
                       </td>
                       <td className="px-3 py-3.5 text-right align-middle">
@@ -524,9 +552,9 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
                           <button
                             onClick={() => handleApprove(leave)}
                             disabled={submittingAction}
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black flex items-center gap-1 shadow-sm transition-all text-xs"
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black flex items-center gap-1 shadow-sm transition-all text-xs cursor-pointer"
                           >
-                            <CheckCircle size={13} /> Approve
+                            <CheckCircle size={13} /> Accept
                           </button>
                           <button
                             onClick={() => {
@@ -534,7 +562,7 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
                               setRejectionReason('');
                             }}
                             disabled={submittingAction}
-                            className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black flex items-center gap-1 shadow-sm transition-all text-xs"
+                            className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black flex items-center gap-1 shadow-sm transition-all text-xs cursor-pointer"
                           >
                             <XCircle size={13} /> Reject
                           </button>
@@ -586,7 +614,7 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
                         {l.studentName || l.applicantName || 'Student'}
                       </div>
                       <div className="text-[10px] text-cyan-300 font-mono mt-0.5">
-                        USN: {l.rollNumber || l.usn || 'N/A'}
+                        Roll: {l.rollNumber || l.usn || 'N/A'} • {l.semester || 'Sem 6'}
                       </div>
                     </td>
                     <td className="px-3 py-3.5 font-mono text-gray-300 text-xs whitespace-normal break-words align-middle">
@@ -606,8 +634,8 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
                     </td>
                     <td className="px-3 py-3.5 text-right text-[11px] text-gray-400 font-normal italic whitespace-normal break-words align-middle">
                       {l.status === 'Approved'
-                        ? `Approved by: ${l.actionBy || l.approvedBy || counsellor?.fullName || 'Ward Counsellor'}`
-                        : `Reason: ${l.rejectionReason || 'Not stated'} (${l.actionBy || l.rejectedBy || counsellor?.fullName || 'Ward Counsellor'})`}
+                        ? `Approved by: ${l.approvedByName || l.actionBy || l.approvedBy || counsellor?.fullName || 'Ward Counsellor'}`
+                        : `Reason: ${l.rejectionReason || 'Not stated'} (${l.rejectedByName || l.actionBy || l.rejectedBy || counsellor?.fullName || 'Ward Counsellor'})`}
                     </td>
                   </tr>
                 ))}
@@ -631,7 +659,7 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
                   Student: {rejectionModalLeave.studentName || rejectionModalLeave.applicantName}
                 </p>
               </div>
-              <button type="button" onClick={() => setRejectionModalLeave(null)} className="text-gray-400 hover:text-white transition-colors">
+              <button type="button" onClick={() => setRejectionModalLeave(null)} className="text-gray-400 hover:text-white transition-colors cursor-pointer">
                 <X size={18} />
               </button>
             </div>
@@ -646,7 +674,7 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
                 placeholder="State specific reason for rejecting leave (e.g., Low attendance percentage, Invalid supporting documents)..."
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
-                className="w-full p-3 rounded-xl border border-white/10 bg-white/5 text-white placeholder-gray-400 font-medium focus:ring-1 focus:ring-blue-400 focus:bg-white/10 focus:outline-none transition-all resize-none"
+                className="w-full p-3 rounded-xl border border-white/10 bg-white/5 text-white placeholder-gray-400 font-medium focus:ring-1 focus:ring-purple-400 focus:bg-white/10 focus:outline-none transition-all resize-none text-xs"
               />
             </div>
 
@@ -654,14 +682,14 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
               <button
                 type="button"
                 onClick={() => setRejectionModalLeave(null)}
-                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-colors"
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submittingAction}
-                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-lg border border-rose-500/30"
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-lg border border-rose-500/30 cursor-pointer"
               >
                 {submittingAction ? 'Submitting...' : 'Confirm Rejection'}
               </button>

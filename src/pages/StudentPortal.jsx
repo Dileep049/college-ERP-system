@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db, isFirebaseConfigured, mockDB, KBN_BRANCHES, KBN_SEMESTERS, BRANCH_SUBJECT_MAP, isDepartmentMatch, normalizeSemester, normalizeSection } from '../services/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { StudentDashboard } from '../components/StudentDashboard';
 import { StudentMarks } from '../components/StudentMarks';
 import { 
@@ -33,7 +33,12 @@ import {
   MessageSquare,
   ShieldCheck,
   X,
-  ExternalLink
+  ExternalLink,
+  FileCheck,
+  Camera,
+  Trash2,
+  RefreshCw,
+  Sparkles
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -44,7 +49,6 @@ export const StudentPortal = ({ subPage }) => {
   if (subPage === 'dashboard') return <StudentDashboard student={user} isParent={isParent} />;
   if (subPage === 'profile') return <StudentProfile student={user} isParent={isParent} />;
   if (subPage === 'academic-overview') return <StudentAcademicOverview student={user} isParent={isParent} />;
-  if (subPage === 'course-registration') return <StudentCourseRegistration student={user} isParent={isParent} />;
   if (subPage === 'attendance') return <StudentAttendance student={user} isParent={isParent} />;
   if (subPage === 'marks') return <StudentMarks student={user} isParent={isParent} />;
   if (subPage === 'results') return <StudentResults student={user} isParent={isParent} />;
@@ -59,25 +63,41 @@ export const StudentPortal = ({ subPage }) => {
   if (subPage === 'performance') return <StudentPerformance student={user} isParent={isParent} />;
   if (subPage === 'document-requests') return <StudentDocumentRequests student={user} isParent={isParent} />;
   if (subPage === 'support-desk') return <StudentSupportDesk student={user} isParent={isParent} />;
+  
   return <StudentDashboard student={user} isParent={isParent} />;
 };
 
 // Helper for Initials Avatar
 const getInitialsAvatar = (name) => {
   if (!name) return 'ST';
-  const parts = name.trim().split(' ');
-  return parts[0].substring(0, 2).toUpperCase();
+  const parts = name.trim().split(' ').filter(Boolean);
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
-// 2. MY PROFILE & PHOTO UPLOAD
+// ==========================================
+// 1. MY PROFILE & PHOTO UPLOAD
+// ==========================================
 const StudentProfile = ({ student, isParent }) => {
-  const [photo, setPhoto] = useState(student?.photo || '');
+  const { user, updateProfilePhoto, showToast } = useAuth();
+  const activeStudent = student || user || {};
+  const [photo, setPhoto] = useState(activeStudent?.profilePhotoUrl || activeStudent?.photo || '');
+  const [preview, setPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const { showToast } = useAuth();
+
+  useEffect(() => {
+    setPhoto(activeStudent?.profilePhotoUrl || activeStudent?.photo || '');
+  }, [activeStudent?.profilePhotoUrl, activeStudent?.photo]);
 
   const handlePhotoSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      showToast('Please select a valid image file (JPG, PNG, or WebP).', 'error');
+      return;
+    }
 
     if (file.size > 5 * 1024 * 1024) {
       showToast('Image file size must be less than 5 MB.', 'error');
@@ -86,15 +106,21 @@ const StudentProfile = ({ student, isParent }) => {
 
     const reader = new FileReader();
     reader.onloadend = () => {
-      setPhoto(reader.result);
+      setPreview(reader.result);
     };
     reader.readAsDataURL(file);
   };
 
   const handleSaveProfilePhoto = async () => {
+    if (!preview) return;
     try {
       setUploading(true);
-      await mockDB.updateUserProfile(student?.uid, { photo });
+      await updateProfilePhoto(preview);
+      setPhoto(preview);
+      setPreview(null);
+      if (mockDB?.updateUserProfile) {
+        await mockDB.updateUserProfile(activeStudent?.uid || activeStudent?.id, { photo: preview, profilePhotoUrl: preview });
+      }
       showToast('Profile photo updated successfully across all portals.', 'success');
     } catch (_) {
       showToast('Could not update profile photo.', 'error');
@@ -103,68 +129,267 @@ const StudentProfile = ({ student, isParent }) => {
     }
   };
 
+  const handleRemovePhoto = async () => {
+    try {
+      setUploading(true);
+      await updateProfilePhoto(null);
+      setPhoto('');
+      setPreview(null);
+      if (mockDB?.updateUserProfile) {
+        await mockDB.updateUserProfile(activeStudent?.uid || activeStudent?.id, { photo: null, profilePhotoUrl: null });
+      }
+      showToast('Profile photo removed. Initial avatar restored.', 'info');
+    } catch (_) {
+      showToast('Could not remove photo.', 'error');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const displayPhoto = preview || photo;
+
   return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold max-w-2xl">
-      <h3 className="text-base font-black text-slate-900 dark:text-white border-b pb-4">My Official Student Profile & Photo Manager</h3>
-
-      <div className="flex flex-col sm:flex-row items-center gap-6">
-        {photo ? (
-          <img src={photo} alt="" className="w-24 h-24 rounded-3xl object-cover border-2 border-blue-500 shadow-lg" />
-        ) : (
-          <div className="w-24 h-24 rounded-3xl bg-indigo-600 text-white font-black text-2xl flex items-center justify-center border-2 border-indigo-400 shadow-lg">
-            {getInitialsAvatar(student?.fullName || student?.studentName)}
+    <div className="bg-transparent min-h-screen text-white space-y-6 font-sans">
+      {/* Standardized Header Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 mb-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg border border-white/20">
+            <UserCheck size={24} />
           </div>
-        )}
-
-        <div className="space-y-2">
-          {!isParent && (
-            <>
-              <input type="file" accept="image/png, image/jpeg, image/webp" onChange={handlePhotoSelect} className="text-xs" />
-              <p className="text-[10px] text-slate-400">Max file size: 5MB (JPG, PNG, WEBP). Unified profile photo across all portals.</p>
-              <button onClick={handleSaveProfilePhoto} disabled={uploading} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow transition-all">
-                {uploading ? 'Uploading...' : 'Save Profile Photo'}
-              </button>
-            </>
-          )}
+          <div>
+            <h2 className="text-xl font-black font-display text-white drop-shadow">My Student Profile & Credentials</h2>
+            <p className="text-xs text-blue-200 mt-0.5">Manage your institutional identity, verified credentials & profile photo</p>
+          </div>
         </div>
+        <span className="px-3.5 py-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-2xl font-black text-xs shadow-md self-start sm:self-auto flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          Active Enrolled Student
+        </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 border-t pt-4 text-slate-700 dark:text-slate-300">
-        <div><span className="text-slate-400 block text-[9.5px] uppercase font-bold">Full Name</span> <span className="font-black text-xs text-slate-900 dark:text-white">{student?.fullName || student?.studentName}</span></div>
-        <div><span className="text-slate-400 block text-[9.5px] uppercase font-bold">Roll Number</span> <span className="font-mono text-xs text-blue-600">{student?.rollNumber || '23KBN-CS104'}</span></div>
-        <div><span className="text-slate-400 block text-[9.5px] uppercase font-bold">Department</span> <span className="font-black text-xs text-blue-600">{student?.department || 'CSE'}</span></div>
-        <div><span className="text-slate-400 block text-[9.5px] uppercase font-bold">Semester / Section</span> <span className="font-bold text-xs">{student?.semester || 'VI'} - Section {student?.section || 'A'}</span></div>
-        <div><span className="text-slate-400 block text-[9.5px] uppercase font-bold">Email Address</span> <span className="font-bold text-xs">{student?.email || 'student@kbn.edu'}</span></div>
-        <div><span className="text-slate-400 block text-[9.5px] uppercase font-bold">Mobile Number</span> <span className="font-bold text-xs">{student?.mobile || '+91 9876543210'}</span></div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Photo Manager Card */}
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-6 space-y-5 flex flex-col items-center text-center">
+          <h3 className="text-sm font-black text-white self-start border-b border-white/10 pb-2.5 w-full flex items-center gap-2">
+            <Camera size={16} className="text-cyan-400" />
+            Profile Picture Manager
+          </h3>
+
+          <div className="relative group my-2">
+            {displayPhoto ? (
+              <img
+                src={displayPhoto}
+                alt="Profile"
+                className="w-32 h-32 rounded-3xl object-cover border-2 border-cyan-400/60 shadow-[0_0_25px_rgba(6,182,212,0.35)]"
+              />
+            ) : (
+              <div className="w-32 h-32 rounded-3xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 text-white font-black text-4xl flex items-center justify-center border-2 border-white/20 shadow-xl">
+                {getInitialsAvatar(activeStudent?.fullName || activeStudent?.studentName || activeStudent?.name)}
+              </div>
+            )}
+            
+            {!isParent && (
+              <label className="absolute bottom-1 right-1 p-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl cursor-pointer shadow-lg border border-white/20 transition-transform group-hover:scale-110">
+                <Camera size={16} />
+                <input
+                  type="file"
+                  accept="image/png, image/jpeg, image/jpg, image/webp"
+                  onChange={handlePhotoSelect}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <h4 className="text-base font-extrabold text-white">{activeStudent?.fullName || activeStudent?.studentName || 'Student'}</h4>
+            <p className="text-xs text-cyan-300 font-mono font-bold">{activeStudent?.rollNumber || activeStudent?.studentId || '23KBN-CS104'}</p>
+            <p className="text-[11px] text-white/60">{activeStudent?.email || 'student@kbn.edu'}</p>
+          </div>
+
+          {!isParent && (
+            <div className="w-full space-y-2.5 pt-2">
+              {preview ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleSaveProfilePhoto}
+                    disabled={uploading}
+                    className="flex-1 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-emerald-500/20 border border-white/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    {uploading ? <RefreshCw className="animate-spin" size={14} /> : <CheckCircle2 size={14} />}
+                    {uploading ? 'Saving...' : 'Confirm Photo'}
+                  </button>
+                  <button
+                    onClick={() => setPreview(null)}
+                    className="p-2.5 bg-white/10 hover:bg-white/20 text-white/80 rounded-xl text-xs border border-white/10 cursor-pointer"
+                    title="Cancel Preview"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <label className="block w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-500/20 border border-white/20 transition-all cursor-pointer">
+                  <span>Upload New Photo</span>
+                  <input
+                    type="file"
+                    accept="image/png, image/jpeg, image/jpg, image/webp"
+                    onChange={handlePhotoSelect}
+                    className="hidden"
+                  />
+                </label>
+              )}
+
+              {photo && !preview && (
+                <button
+                  onClick={handleRemovePhoto}
+                  disabled={uploading}
+                  className="w-full py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 hover:text-rose-200 border border-rose-500/30 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Trash2 size={13} /> Remove Photo
+                </button>
+              )}
+
+              <p className="text-[10px] text-white/50 leading-tight">
+                Supports JPG, PNG, WebP (Max 5MB). Photo syncs across Student Portal, Sidebar & Academic Records.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Locked Profile Credentials Card */}
+        <div className="lg:col-span-2 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-6 space-y-6">
+          <div className="flex items-center justify-between border-b border-white/10 pb-3">
+            <h3 className="text-sm font-black text-white flex items-center gap-2">
+              <ShieldCheck size={16} className="text-emerald-400" />
+              Verified Academic Ledger Details
+            </h3>
+            <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 font-bold uppercase">
+              ERP Verified
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-1">
+              <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider block">Full Legal Name</span>
+              <span className="font-extrabold text-sm text-white block">{activeStudent?.fullName || activeStudent?.studentName || 'Student'}</span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-1">
+              <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider block">Roll Number / Student ID</span>
+              <span className="font-mono font-extrabold text-sm text-cyan-300 block">{activeStudent?.rollNumber || activeStudent?.studentId || '23KBN-CS104'}</span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-1">
+              <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider block">Department / Branch</span>
+              <span className="font-bold text-xs text-white block">{activeStudent?.department || activeStudent?.branch || 'Computer Science & Engineering'}</span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-1">
+              <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider block">Semester & Section</span>
+              <span className="font-bold text-xs text-emerald-300 block">{activeStudent?.semester || 'Semester 6'} • Section {activeStudent?.section || 'A'}</span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-1">
+              <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider block">Institutional Email</span>
+              <span className="font-mono text-xs text-white/90 block truncate">{activeStudent?.email || 'student@kbn.edu'}</span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-1">
+              <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider block">Registered Mobile Number</span>
+              <span className="font-mono text-xs text-white/90 block">{activeStudent?.mobile || activeStudent?.phone || '+91 9876543210'}</span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-1">
+              <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider block">Academic Session</span>
+              <span className="font-bold text-xs text-purple-300 block">2026 – 2027 (Regular)</span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-1">
+              <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider block">Cumulative CGPA</span>
+              <span className="font-extrabold text-sm text-amber-300 block">{activeStudent?.cgpa || activeStudent?.gpa || '8.5'} / 10.0</span>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-xs text-white/80 leading-relaxed">
+            <span className="font-bold text-cyan-300 block mb-1">ℹ️ Academic Registry Notice:</span>
+            Your primary academic records (Roll Number, Department, Semester, and Course allocations) are locked and authenticated by the Dean of Academics office. To request changes to your registered email or contact number, submit a ticket via the Support Desk.
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
-// 3. ACADEMIC OVERVIEW
+// ==========================================
+// 2. ACADEMIC OVERVIEW
+// ==========================================
 const StudentAcademicOverview = ({ student, isParent }) => {
-  const dept = student?.department || 'CSE';
-  const subjects = BRANCH_SUBJECT_MAP[dept] || ['Neural Networks & Deep Learning', 'Cloud Computing', 'AI Lab'];
+  const dept = student?.department || student?.branch || 'Computer Science & Engineering';
+  const subjects = BRANCH_SUBJECT_MAP[dept] || ['Neural Networks & Deep Learning', 'Cloud Computing & DevOps', 'AI & Robotics Lab', 'Web Frameworks & Microservices'];
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-blue-700 to-indigo-800 text-white shadow-xl flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-black font-display">Academic Overview & Performance Summary</h2>
-          <p className="text-xs text-blue-100 mt-1">{student?.fullName} • {dept} (Semester {student?.semester || 'VI'})</p>
+    <div className="bg-transparent min-h-screen text-white space-y-6 font-sans">
+      {/* Standardized Header Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 mb-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg border border-white/20">
+            <TrendingUp size={24} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black font-display text-white drop-shadow">Academic Overview & Curriculum Matrix</h2>
+            <p className="text-xs text-blue-200 mt-0.5">{student?.fullName || 'Student'} • {dept} ({student?.semester || 'Semester 6'})</p>
+          </div>
         </div>
-        <span className="px-4 py-2 bg-white/15 backdrop-blur-md rounded-2xl font-black text-xs border border-white/20">Performance: Stable 🟢</span>
+        <span className="px-3.5 py-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-2xl font-black text-xs shadow-md self-start sm:self-auto">
+          Performance Status: Outstanding 🟢
+        </span>
       </div>
 
-      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-4">
-        <h3 className="text-sm font-black text-slate-900 dark:text-white border-b pb-3">Currently Enrolled Subjects ({subjects.length})</h3>
+      {/* KPI Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-5 flex items-center justify-between">
+          <div>
+            <span className="text-[10px] uppercase font-bold text-white/50 tracking-wider block">Total Credits Enrolled</span>
+            <span className="text-2xl font-black text-cyan-300 mt-1 block">24 Credits</span>
+          </div>
+          <BookOpen className="text-cyan-400 opacity-80" size={28} />
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-5 flex items-center justify-between">
+          <div>
+            <span className="text-[10px] uppercase font-bold text-white/50 tracking-wider block">Cumulative CGPA</span>
+            <span className="text-2xl font-black text-emerald-300 mt-1 block">{student?.cgpa || '8.5'} / 10.0</span>
+          </div>
+          <Award className="text-emerald-400 opacity-80" size={28} />
+        </div>
+
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-5 flex items-center justify-between">
+          <div>
+            <span className="text-[10px] uppercase font-bold text-white/50 tracking-wider block">Active Backlogs</span>
+            <span className="text-2xl font-black text-emerald-300 mt-1 block">0 (All Clear)</span>
+          </div>
+          <CheckCircle2 className="text-emerald-400 opacity-80" size={28} />
+        </div>
+      </div>
+
+      {/* Enrolled Subjects Grid */}
+      <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-6 space-y-4">
+        <h3 className="text-sm font-black text-white border-b border-white/10 pb-3 flex items-center justify-between">
+          <span>Currently Enrolled Subjects ({subjects.length})</span>
+          <span className="text-xs text-cyan-300 font-bold">Academic Session 2026-2027</span>
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
           {subjects.map((sub, idx) => (
-            <div key={idx} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 space-y-2">
-              <span className="px-2.5 py-0.5 bg-blue-500/10 text-blue-600 rounded text-[9.5px] font-black uppercase">CS-60{idx + 1}</span>
-              <h4 className="font-black text-slate-900 dark:text-white text-xs">{sub}</h4>
-              <p className="text-[10.5px] text-slate-400">4 Credits • Theory + Lab</p>
+            <div key={idx} className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
+              <div className="flex items-center justify-between">
+                <span className="px-2.5 py-0.5 bg-blue-500/20 text-cyan-300 border border-blue-400/30 rounded text-[10px] font-black uppercase">
+                  CS-60{idx + 1}
+                </span>
+                <span className="text-[10px] font-bold text-emerald-400">4 Credits</span>
+              </div>
+              <h4 className="font-extrabold text-white text-xs leading-snug">{sub}</h4>
+              <p className="text-[10.5px] text-white/60">Theory + Practical Lab • 4 Contact Hours/Week</p>
             </div>
           ))}
         </div>
@@ -173,74 +398,85 @@ const StudentAcademicOverview = ({ student, isParent }) => {
   );
 };
 
-// 4. COURSE REGISTRATION
-const StudentCourseRegistration = ({ student, isParent }) => {
-  const { showToast } = useAuth();
-  const [registered, setRegistered] = useState(false);
-
-  const handleSubmitRegistration = (e) => {
-    e.preventDefault();
-    setRegistered(true);
-    showToast('Elective course registration submitted successfully.', 'success');
-  };
-
-  return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
-      <div className="border-b pb-4">
-        <h3 className="text-base font-black text-slate-900 dark:text-white">Semester Elective Course Registration</h3>
-        <p className="text-xs text-slate-400">Select professional & open electives for upcoming term</p>
-      </div>
-
-      {registered ? (
-        <div className="p-6 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-300 space-y-2">
-          <h4 className="text-sm font-black">🎉 Course Registration Confirmed</h4>
-          <p>Your elective selections have been logged and sent to Dean Academics.</p>
-        </div>
-      ) : (
-        <form onSubmit={handleSubmitRegistration} className="space-y-4">
-          <div className="space-y-3">
-            <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">Professional Elective I</h4>
-            <select required className="w-full max-w-md px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold">
-              <option value="cs601a">CS-601A: Natural Language Processing (4 Credits)</option>
-              <option value="cs601b">CS-601B: Computer Vision & Pattern Recognition (4 Credits)</option>
-            </select>
-          </div>
-
-          {!isParent && (
-            <button type="submit" className="px-6 py-2.5 bg-blue-600 text-white font-black rounded-2xl shadow">
-              Submit Course Selection
-            </button>
-          )}
-        </form>
-      )}
-    </div>
-  );
-};
-
-// 5. MY ATTENDANCE
+// ==========================================
+// 3. ATTENDANCE RECORD (REAL-TIME SYNC)
+// ==========================================
 const StudentAttendance = ({ student, isParent }) => {
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState([]);
 
   useEffect(() => {
-    const loadAtt = async () => {
+    let unsubscribe = null;
+    const stUid = student?.uid || student?.id;
+    const stRoll = student?.rollNumber || student?.studentId;
+
+    const processAttendance = (rawList) => {
+      const myRecords = rawList.filter(a => 
+        (stUid && (a.studentId === stUid || a.uid === stUid || a.applicantId === stUid)) ||
+        (stRoll && (a.rollNumber === stRoll || a.studentId === stRoll))
+      );
+
+      // Merge localStorage fallback
       try {
-        setLoading(true);
-        const data = await mockDB.getAttendance(student?.department, student?.semester, student?.uid);
-        setRecords(data);
+        const local = JSON.parse(localStorage.getItem('acad_attendance') || '[]');
+        local.forEach(item => {
+          const key = item.id || `${item.studentId}-${item.date}-${item.subject}-${item.lecturePeriod}`;
+          const match = (stUid && (item.studentId === stUid || item.uid === stUid || item.applicantId === stUid)) || 
+                        (stRoll && (item.rollNumber === stRoll || item.studentId === stRoll));
+          if (match && !myRecords.some(r => (r.id && r.id === item.id) || `${r.studentId}-${r.date}-${r.subject}-${r.lecturePeriod}` === key)) {
+            myRecords.push(item);
+          }
+        });
+      } catch (_) {}
+
+      // Sort by date descending
+      myRecords.sort((a, b) => new Date(b.date || b.createdAt || 0) - new Date(a.date || a.createdAt || 0));
+      setRecords(myRecords);
+      setLoading(false);
+    };
+
+    if (isFirebaseConfigured && db) {
+      setLoading(true);
+      try {
+        const colRef = collection(db, 'attendance');
+        unsubscribe = onSnapshot(colRef, (snapshot) => {
+          const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          processAttendance(list);
+        }, (err) => {
+          console.warn("[Student Attendance onSnapshot Error]:", err);
+          loadOfflineAttendance();
+        });
       } catch (e) {
-        console.error("Error loading student attendance:", e);
-      } finally {
-        setLoading(false);
+        console.warn("Could not attach attendance listener:", e);
+        loadOfflineAttendance();
+      }
+    } else {
+      loadOfflineAttendance();
+    }
+
+    return () => {
+      if (unsubscribe) {
+        try { unsubscribe(); } catch (_) {}
       }
     };
-    loadAtt();
   }, [student]);
+
+  const loadOfflineAttendance = async () => {
+    try {
+      setLoading(true);
+      const data = await mockDB.getAttendance(student?.department, student?.semester, student?.uid);
+      setRecords(data || []);
+    } catch (e) {
+      console.error("Error loading offline student attendance:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const subjectMap = {};
   const defaultSubjects = ['Neural Networks & Deep Learning', 'Cloud Computing & DevOps', 'AI Lab', 'Web Frameworks'];
   defaultSubjects.forEach(sub => {
-    subjectMap[sub] = { subject: sub, total: 20, present: 17, absent: 2, leave: 1 };
+    subjectMap[sub] = { subject: sub, total: 24, present: 21, absent: 2, leave: 1 };
   });
 
   records.forEach(r => {
@@ -249,107 +485,166 @@ const StudentAttendance = ({ student, isParent }) => {
       subjectMap[sub] = { subject: sub, total: 0, present: 0, absent: 0, leave: 0 };
     }
     subjectMap[sub].total += 1;
-    if (r.status === 'Present') subjectMap[sub].present += 1;
-    else if (r.status === 'Absent') subjectMap[sub].absent += 1;
-    else if (r.status === 'Leave') subjectMap[sub].leave += 1;
+    if (r.status === 'Present' || r.status === 'present') subjectMap[sub].present += 1;
+    else if (r.status === 'Absent' || r.status === 'absent') subjectMap[sub].absent += 1;
+    else if (r.status === 'Leave' || r.status === 'leave') subjectMap[sub].leave += 1;
   });
 
   const subjectList = Object.values(subjectMap);
   const totalClasses = subjectList.reduce((acc, s) => acc + s.total, 0);
   const totalPresent = subjectList.reduce((acc, s) => acc + s.present, 0);
-  const overallPercentage = totalClasses > 0 ? ((totalPresent / totalClasses) * 100).toFixed(1) : 85.0;
+  const overallPercentage = totalClasses > 0 ? ((totalPresent / totalClasses) * 100).toFixed(1) : '87.5';
 
   return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
-      <div className="flex items-center justify-between border-b pb-4">
-        <div>
-          <h3 className="text-base font-black text-slate-900 dark:text-white">My Attendance Record (Read-Only)</h3>
-          <p className="text-xs text-slate-400">Class participation ledger compiled from daily faculty logs</p>
+    <div className="bg-transparent min-h-screen text-white space-y-6 font-sans">
+      {/* Standardized Header Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 mb-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg border border-white/20">
+            <CheckSquare size={24} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black font-display text-white drop-shadow">My Attendance Record & Lecture Ledger</h2>
+            <p className="text-xs text-blue-200 mt-0.5">Biometric & faculty classroom logs verified daily by HOD</p>
+          </div>
         </div>
-        <div className="text-right">
-          <span className="text-2xl font-black text-emerald-600">{overallPercentage}%</span>
-          <span className="block text-[10px] text-slate-400 font-bold uppercase">Overall Average</span>
+        <div className="text-right self-start sm:self-auto">
+          <span className="text-3xl font-black text-emerald-400 drop-shadow">{overallPercentage}%</span>
+          <span className="block text-[10px] text-blue-200 font-bold uppercase tracking-wider">Overall Average</span>
         </div>
       </div>
 
-      {loading ? (
-        <div className="py-12 text-center animate-pulse text-slate-400">Loading attendance data...</div>
-      ) : (
-        <div className="w-full max-w-full overflow-x-hidden">
-          <table className="w-full table-fixed text-left border-collapse">
+      {/* Attendance Data Table */}
+      <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-6 space-y-4">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <h3 className="text-sm font-black text-white">Course-Wise Attendance Percentage</h3>
+          <span className="text-[11px] text-emerald-300 font-bold">Minimum 75% Required for Exam Eligibility</span>
+        </div>
+
+        {loading ? (
+          <div className="py-12 text-center animate-pulse text-white/50">Loading attendance data...</div>
+        ) : (
+          <div className="w-full max-w-full overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-white/10 text-white/60 font-bold uppercase tracking-wider text-[10px]">
+                  <th className="px-4 py-3">Subject Name</th>
+                  <th className="px-3 py-3 text-center">Total Lectures</th>
+                  <th className="px-3 py-3 text-center">Present</th>
+                  <th className="px-3 py-3 text-center">Absent</th>
+                  <th className="px-3 py-3 text-center">Leave</th>
+                  <th className="px-4 py-3 text-right">Attendance %</th>
+                  <th className="px-4 py-3 text-right">Eligibility</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5 font-semibold">
+                {subjectList.map((s, idx) => {
+                  const pct = s.total > 0 ? ((s.present / s.total) * 100).toFixed(1) : '0.0';
+                  const isEligible = parseFloat(pct) >= 75;
+                  return (
+                    <tr key={idx} className="hover:bg-white/5 transition-colors">
+                      <td className="px-4 py-3.5 font-bold text-white">{s.subject}</td>
+                      <td className="px-3 py-3.5 text-center text-white/80">{s.total}</td>
+                      <td className="px-3 py-3.5 text-center text-emerald-400 font-bold">{s.present}</td>
+                      <td className="px-3 py-3.5 text-center text-rose-400 font-bold">{s.absent}</td>
+                      <td className="px-3 py-3.5 text-center text-amber-400 font-bold">{s.leave}</td>
+                      <td className={`px-4 py-3.5 text-right font-black ${isEligible ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {pct}%
+                      </td>
+                      <td className="px-4 py-3.5 text-right">
+                        <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold uppercase inline-block ${
+                          isEligible ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                        }`}>
+                          {isEligible ? 'Eligible 🟢' : 'Shortage 🔴'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// 4. SEMESTER RESULTS
+// ==========================================
+const StudentResults = ({ student, isParent }) => {
+  const results = [
+    { code: 'CS601', name: 'Design & Analysis of Algorithms', credits: 4, grade: 'A+', points: 9.0, status: 'PASS' },
+    { code: 'CS602', name: 'Artificial Intelligence & Neural Networks', credits: 4, grade: 'O', points: 10.0, status: 'PASS' },
+    { code: 'CS603', name: 'Cloud Computing & DevOps', credits: 4, grade: 'A', points: 8.0, status: 'PASS' },
+    { code: 'CS604', name: 'Web Frameworks & Full-Stack Development', credits: 4, grade: 'A+', points: 9.0, status: 'PASS' },
+    { code: 'CS605', name: 'AI & Data Engineering Laboratory', credits: 2, grade: 'O', points: 10.0, status: 'PASS' }
+  ];
+
+  return (
+    <div className="bg-transparent min-h-screen text-white space-y-6 font-sans">
+      {/* Standardized Header Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 mb-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg border border-white/20">
+            <Award size={24} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black font-display text-white drop-shadow">Official Semester Academic Results</h2>
+            <p className="text-xs text-blue-200 mt-0.5">Cumulative GPA: <span className="font-bold text-cyan-300">{student?.cgpa || '8.65'} CGPA</span> • SGPA: <span className="font-bold text-emerald-300">9.10</span> • Backlogs: 0</p>
+          </div>
+        </div>
+        <button onClick={() => window.print()} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-2xl text-xs shadow-lg border border-white/20 flex items-center gap-2 self-start sm:self-auto cursor-pointer">
+          <Printer size={15} /> Print Grade Card
+        </button>
+      </div>
+
+      {/* Results Table Card */}
+      <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-6 space-y-4">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <h3 className="text-sm font-black text-white">Semester VI Examination Performance Ledger</h3>
+          <span className="text-[11px] text-cyan-300 font-bold font-mono">Roll: {student?.rollNumber || '23KBN-CS104'}</span>
+        </div>
+
+        <div className="w-full max-w-full overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 text-[10px]">
-                <th className="w-[35%] px-3 py-3">Subject</th>
-                <th className="w-[13%] px-2 py-3 text-center">Total</th>
-                <th className="w-[13%] px-2 py-3 text-center">Present</th>
-                <th className="w-[13%] px-2 py-3 text-center">Absent</th>
-                <th className="w-[11%] px-2 py-3 text-center">Leave</th>
-                <th className="w-[15%] px-3 py-3 text-right">Att %</th>
+              <tr className="border-b border-white/10 text-white/60 font-bold uppercase tracking-wider text-[10px]">
+                <th className="px-4 py-3">Course Code</th>
+                <th className="px-4 py-3">Course Title</th>
+                <th className="px-3 py-3 text-center">Credits</th>
+                <th className="px-3 py-3 text-center">Grade</th>
+                <th className="px-3 py-3 text-center">Grade Points</th>
+                <th className="px-4 py-3 text-right">Result Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-bold">
-              {subjectList.map((s, idx) => {
-                const pct = s.total > 0 ? ((s.present / s.total) * 100).toFixed(1) : 0;
-                return (
-                  <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
-                    <td className="px-3 py-3 font-black text-slate-900 dark:text-white break-words align-middle">{s.subject}</td>
-                    <td className="px-2 py-3 text-center break-words align-middle">{s.total}</td>
-                    <td className="px-2 py-3 text-center text-emerald-600 break-words align-middle">{s.present}</td>
-                    <td className="px-2 py-3 text-center text-rose-500 break-words align-middle">{s.absent}</td>
-                    <td className="px-2 py-3 text-center text-amber-500 break-words align-middle">{s.leave}</td>
-                    <td className={`px-3 py-3 text-right font-black break-words align-middle ${parseFloat(pct) >= 75 ? 'text-emerald-600' : 'text-rose-500'}`}>{pct}%</td>
-                  </tr>
-                );
-              })}
+            <tbody className="divide-y divide-white/5 font-semibold">
+              {results.map((r, idx) => (
+                <tr key={idx} className="hover:bg-white/5 transition-colors">
+                  <td className="px-4 py-3.5 font-mono text-cyan-300 font-bold">{r.code}</td>
+                  <td className="px-4 py-3.5 font-bold text-white">{r.name}</td>
+                  <td className="px-3 py-3.5 text-center text-white/80">{r.credits}</td>
+                  <td className="px-3 py-3.5 text-center text-cyan-300 font-black text-sm">{r.grade}</td>
+                  <td className="px-3 py-3.5 text-center text-white/80 font-mono">{r.points.toFixed(1)}</td>
+                  <td className="px-4 py-3.5 text-right">
+                    <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-xl text-[10px] font-bold uppercase">
+                      {r.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
-      )}
-    </div>
-  );
-};
-
-// 6. MY INTERNAL MARKS (Imported from ../components/StudentMarks)
-
-// 7. SEMESTER RESULTS
-const StudentResults = ({ student, isParent }) => {
-  return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
-      <div className="flex items-center justify-between border-b pb-4">
-        <div>
-          <h3 className="text-base font-black text-slate-900 dark:text-white">Official Semester Academic Results</h3>
-          <p className="text-xs text-slate-400">Cumulative GPA: <span className="font-bold text-blue-600">{student?.cgpa || 8.4} CGPA</span> • Active Backlogs: 0</p>
-        </div>
-        <Award size={24} className="text-amber-500" />
-      </div>
-
-      <div className="w-full max-w-full overflow-x-hidden">
-        <table className="w-full table-fixed text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 text-[10px]">
-              <th className="w-[45%] px-3 py-3">Subject</th>
-              <th className="w-[12%] px-2 py-3 text-center">Credits</th>
-              <th className="w-[13%] px-2 py-3 text-center">Grade</th>
-              <th className="w-[15%] px-2 py-3 text-center">Grade Point</th>
-              <th className="w-[15%] px-3 py-3 text-right">Result</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-bold">
-            <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
-              <td className="px-5 py-4 font-black text-slate-900 dark:text-white">Design & Analysis of Algorithms</td>
-              <td className="px-5 py-4 text-center">4</td>
-              <td className="px-5 py-4 text-center text-blue-600 font-black">A+</td>
-              <td className="px-5 py-4 text-center">9.0</td>
-              <td className="px-5 py-4 text-right"><span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-xl text-[9.5px]">PASS</span></td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </div>
   );
 };
 
-// 8. MY ASSIGNMENTS
+// ==========================================
+// 5. ASSIGNMENTS
+// ==========================================
 const StudentAssignments = ({ student, isParent }) => {
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -358,8 +653,8 @@ const StudentAssignments = ({ student, isParent }) => {
     const loadAssignments = async () => {
       try {
         setLoading(true);
-        const rawDept = student?.department || student?.branch || 'B.Sc. Computer Science (CS)';
-        const rawSem = student?.semester || student?.courseSemester || 'Semester 1';
+        const rawDept = student?.department || student?.branch || 'CSE';
+        const rawSem = student?.semester || 'Semester 1';
         const rawSec = student?.section || 'Section A';
 
         const dept = String(rawDept).trim();
@@ -367,7 +662,6 @@ const StudentAssignments = ({ student, isParent }) => {
         const sec = String(rawSec).trim();
 
         let firestoreList = [];
-
         if (isFirebaseConfigured && db) {
           try {
             const assRef = collection(db, 'assignments');
@@ -379,19 +673,15 @@ const StudentAssignments = ({ student, isParent }) => {
             );
             const snap = await getDocs(q);
             firestoreList = snap.docs.map(doc => ({ id: doc.id, assignmentId: doc.id, ...doc.data() }));
-          } catch (error) {
-            console.error("FIREBASE FETCH ERROR:", error.message);
+          } catch (_) {
             try {
               const snapAll = await getDocs(collection(db, 'assignments'));
               firestoreList = snapAll.docs.map(doc => ({ id: doc.id, assignmentId: doc.id, ...doc.data() }));
-            } catch (e2) {
-              console.error("FIREBASE FETCH ERROR:", e2.message);
-            }
+            } catch (_) {}
           }
         }
 
         const mockData = await mockDB.getAssignments(dept, sem, sec);
-
         const combinedMap = new Map();
         [...firestoreList, ...mockData].forEach(item => {
           const key = item.id || item.assignmentId;
@@ -401,13 +691,11 @@ const StudentAssignments = ({ student, isParent }) => {
         const filtered = Array.from(combinedMap.values()).filter(a => {
           const aBranch = (a.targetBranch || a.department || a.branch || '').trim();
           const aSem = (a.targetSemester || a.semester || '').trim();
-          const aSec = (a.targetSection || a.section || '').trim();
 
           const branchOk = !aBranch || isDepartmentMatch(dept, aBranch) || isDepartmentMatch(aBranch, dept);
           const semOk = !aSem || aSem === 'All' || normalizeSemester(aSem) === normalizeSemester(sem);
-          const secOk = !aSec || aSec === 'All' || aSec === 'All Sections' || normalizeSection(aSec) === normalizeSection(sec);
 
-          return branchOk && semOk && secOk;
+          return branchOk && semOk;
         });
 
         setAssignments(filtered);
@@ -421,46 +709,65 @@ const StudentAssignments = ({ student, isParent }) => {
   }, [student]);
 
   return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
-      <div className="border-b pb-4 font-bold flex items-center justify-between">
-        <div>
-          <h3 className="text-base font-black text-slate-900 dark:text-white">Class Assignments Ledger</h3>
-          <p className="text-xs text-slate-400">Homework & lab task submissions allocated for your class</p>
+    <div className="bg-transparent min-h-screen text-white space-y-6 font-sans">
+      {/* Standardized Header Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 mb-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg border border-white/20">
+            <Briefcase size={24} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black font-display text-white drop-shadow">Class Assignments Ledger</h2>
+            <p className="text-xs text-blue-200 mt-0.5">Coursework, homework & laboratory tasks allocated for your class</p>
+          </div>
         </div>
-        <div className="px-3 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl text-[11px]">
-          {student?.department || 'CS'} • {student?.semester || 'Sem 1'} • {student?.section || 'Sec A'}
-        </div>
+        <span className="px-3.5 py-1.5 bg-blue-500/20 text-cyan-300 border border-blue-400/30 rounded-2xl font-black text-xs shadow-md self-start sm:self-auto">
+          {student?.department || 'CSE'} • {student?.semester || 'Sem 6'} • {student?.section || 'Sec A'}
+        </span>
       </div>
 
-      {loading ? (
-        <div className="py-16 text-center animate-pulse text-slate-400">Loading assignments...</div>
-      ) : assignments.length === 0 ? (
-        <div className="py-16 text-center text-slate-400">No active assignments allocated for your class.</div>
-      ) : (
-        <div className="space-y-4">
-          {assignments.map(a => (
-            <div key={a.id || a.assignmentId} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <span className="px-2.5 py-0.5 bg-blue-500/10 text-blue-600 rounded text-[9.5px] font-black uppercase">{a.subject}</span>
-                <h4 className="font-black text-slate-900 dark:text-white text-xs mt-1.5">{a.title}</h4>
-                <p className="text-[10.5px] text-slate-500 mt-1">{a.description}</p>
-                <span className="text-[9.5px] text-rose-500 font-bold block mt-1">Due Date: {a.dueDate}</span>
-              </div>
+      {/* Content */}
+      <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-6 space-y-4">
+        <h3 className="text-sm font-black text-white border-b border-white/10 pb-3">Active Deliverables ({assignments.length})</h3>
 
-              {a.fileUrl && (
-                <a href={a.fileUrl} target="_blank" rel="noreferrer" className="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold flex items-center gap-1 shrink-0">
-                  <Download size={13} /> Reference Doc
-                </a>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+        {loading ? (
+          <div className="py-12 text-center animate-pulse text-white/50">Loading assignments...</div>
+        ) : assignments.length === 0 ? (
+          <div className="py-12 text-center text-white/50">No active assignments allocated for your class.</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {assignments.map(a => (
+              <div key={a.id || a.assignmentId} className="p-4 rounded-xl bg-white/5 border border-white/10 flex flex-col justify-between space-y-3 hover:bg-white/10 transition-colors">
+                <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="px-2.5 py-0.5 bg-blue-500/20 text-cyan-300 border border-blue-400/30 rounded text-[10px] font-black uppercase">
+                      {a.subject}
+                    </span>
+                    <span className="text-[10px] text-rose-300 font-bold">Due: {a.dueDate || 'This Week'}</span>
+                  </div>
+                  <h4 className="font-extrabold text-white text-xs mt-2">{a.title}</h4>
+                  <p className="text-[11px] text-white/60 mt-1 leading-relaxed">{a.description}</p>
+                </div>
+
+                {a.fileUrl && (
+                  <div className="pt-2 border-t border-white/10 flex justify-end">
+                    <a href={a.fileUrl} target="_blank" rel="noreferrer" className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow transition-all">
+                      <Download size={13} /> Reference Doc
+                    </a>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-// 9. STUDY NOTES
+// ==========================================
+// 6. STUDY NOTES
+// ==========================================
 const StudentNotes = ({ student, isParent }) => {
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -469,8 +776,8 @@ const StudentNotes = ({ student, isParent }) => {
     const loadNotes = async () => {
       try {
         setLoading(true);
-        const rawDept = student?.department || student?.branch || 'B.Sc. Computer Science (CS)';
-        const rawSem = student?.semester || student?.courseSemester || 'Semester 1';
+        const rawDept = student?.department || student?.branch || 'CSE';
+        const rawSem = student?.semester || 'Semester 1';
         const rawSec = student?.section || 'Section A';
 
         const dept = String(rawDept).trim();
@@ -478,7 +785,6 @@ const StudentNotes = ({ student, isParent }) => {
         const sec = String(rawSec).trim();
 
         let firestoreList = [];
-
         if (isFirebaseConfigured && db) {
           try {
             const notesRef = collection(db, 'notes');
@@ -490,19 +796,15 @@ const StudentNotes = ({ student, isParent }) => {
             );
             const snap = await getDocs(q);
             firestoreList = snap.docs.map(doc => ({ noteId: doc.id, id: doc.id, ...doc.data() }));
-          } catch (error) {
-            console.error("FIREBASE FETCH ERROR:", error.message);
+          } catch (_) {
             try {
               const snapAll = await getDocs(collection(db, 'notes'));
               firestoreList = snapAll.docs.map(doc => ({ noteId: doc.id, id: doc.id, ...doc.data() }));
-            } catch (e2) {
-              console.error("FIREBASE FETCH ERROR:", e2.message);
-            }
+            } catch (_) {}
           }
         }
 
         const mockData = await mockDB.getNotes(dept, sem, sec);
-
         const combinedMap = new Map();
         [...firestoreList, ...mockData].forEach(item => {
           const key = item.noteId || item.id;
@@ -512,13 +814,11 @@ const StudentNotes = ({ student, isParent }) => {
         const filtered = Array.from(combinedMap.values()).filter(n => {
           const nBranch = (n.targetBranch || n.department || n.branch || '').trim();
           const nSem = (n.targetSemester || n.semester || '').trim();
-          const nSec = (n.targetSection || n.section || '').trim();
 
           const branchOk = !nBranch || isDepartmentMatch(dept, nBranch) || isDepartmentMatch(nBranch, dept);
           const semOk = !nSem || nSem === 'All' || normalizeSemester(nSem) === normalizeSemester(sem);
-          const secOk = !nSec || nSec === 'All' || nSec === 'All Sections' || normalizeSection(nSec) === normalizeSection(sec);
 
-          return branchOk && semOk && secOk;
+          return branchOk && semOk;
         });
 
         setNotes(filtered);
@@ -532,123 +832,176 @@ const StudentNotes = ({ student, isParent }) => {
   }, [student]);
 
   return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
-      <div className="border-b pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div>
-          <h3 className="text-base font-black text-slate-900 dark:text-white">Academic Study Notes & Lecture Materials</h3>
-          <p className="text-xs text-slate-400">Course materials published by subject faculty</p>
+    <div className="bg-transparent min-h-screen text-white space-y-6 font-sans">
+      {/* Standardized Header Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 mb-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg border border-white/20">
+            <ClipboardList size={24} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black font-display text-white drop-shadow">Academic Study Notes & Lecture Materials</h2>
+            <p className="text-xs text-blue-200 mt-0.5">Faculty course materials, lecture slides, question banks and notes</p>
+          </div>
         </div>
-        <div className="px-3 py-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl font-bold text-[11px] border border-indigo-500/20 self-start sm:self-auto">
-          {student?.department || 'CSE'} • {student?.semester || 'Semester 1'} • {student?.section || 'Section A'}
-        </div>
+        <span className="px-3.5 py-1.5 bg-blue-500/20 text-cyan-300 border border-blue-400/30 rounded-2xl font-black text-xs shadow-md self-start sm:self-auto">
+          {student?.department || 'CSE'} • {student?.semester || 'Sem 6'}
+        </span>
       </div>
 
-      {loading ? (
-        <div className="py-16 text-center animate-pulse text-slate-400">Loading study notes...</div>
-      ) : notes.length === 0 ? (
-        <div className="py-16 text-center text-slate-400 space-y-2">
-          <p className="text-sm font-bold text-slate-500">No study notes uploaded for your department/semester yet.</p>
-          <p className="text-xs text-slate-400 font-normal">Notes uploaded by faculty for {student?.department || 'your department'} will appear here automatically.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {notes.map(n => (
-            <div key={n.noteId || n.id} className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md transition-all">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="px-2.5 py-0.5 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded text-[10px] font-black uppercase tracking-wider">
-                    {n.subject || 'General'}
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-400">
-                    Uploaded: {n.uploadedAt ? new Date(n.uploadedAt).toLocaleDateString() : (n.createdAt ? new Date(n.createdAt).toLocaleDateString() : 'Recent')}
-                  </span>
-                </div>
+      {/* Content */}
+      <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-6 space-y-4">
+        <h3 className="text-sm font-black text-white border-b border-white/10 pb-3">Available Documents ({notes.length})</h3>
 
-                <h4 className="font-black text-slate-900 dark:text-white text-xs leading-snug">
-                  Title: {n.topic || n.title || 'Lecture Notes'}
-                </h4>
-                
-                {n.description && (
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                    Description: {n.description}
-                  </p>
-                )}
-              </div>
-
-              <div className="pt-3 border-t border-slate-200/60 dark:border-slate-700/60 space-y-2">
-                <div className="flex items-center justify-between text-[10.5px]">
-                  <span className="text-slate-400 font-medium">Faculty: <strong className="text-slate-700 dark:text-slate-200 font-bold">{n.facultyName || n.uploadedBy || 'Prof. Faculty'}</strong></span>
-                  <span className="px-2 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-[9px] font-mono text-slate-600 dark:text-slate-300 font-bold uppercase">
-                    {n.fileType || (n.fileName ? n.fileName.split('.').pop() : 'PDF')}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-[10px] text-slate-400 font-mono truncate max-w-[150px]">
-                    {n.fileName || 'notes.pdf'}
-                  </span>
-
-                  <div className="flex items-center gap-2">
-                    {n.fileUrl && (
-                      <>
-                        <a
-                          href={n.fileUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white rounded-xl text-xs font-black transition-all flex items-center gap-1"
-                        >
-                          <Eye size={13} /> View
-                        </a>
-                        <a
-                          href={n.fileUrl}
-                          download={n.fileName || 'study_notes'}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1 shadow"
-                        >
-                          <Download size={13} /> Download
-                        </a>
-                      </>
-                    )}
+        {loading ? (
+          <div className="py-12 text-center animate-pulse text-white/50">Loading study notes...</div>
+        ) : notes.length === 0 ? (
+          <div className="py-12 text-center text-white/50">No study notes uploaded for your department/semester yet.</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {notes.map(n => (
+              <div key={n.noteId || n.id} className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3 flex flex-col justify-between hover:bg-white/10 transition-colors">
+                <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="px-2.5 py-0.5 bg-indigo-500/20 text-cyan-300 border border-indigo-400/30 rounded text-[10px] font-black uppercase">
+                      {n.subject || 'General'}
+                    </span>
+                    <span className="text-[10px] text-white/50">
+                      {n.uploadedAt ? new Date(n.uploadedAt).toLocaleDateString() : 'Recent'}
+                    </span>
                   </div>
+                  <h4 className="font-extrabold text-white text-xs mt-2">{n.topic || n.title || 'Lecture Notes'}</h4>
+                  {n.description && <p className="text-[11px] text-white/60 mt-1 leading-relaxed">{n.description}</p>}
+                </div>
+
+                <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs">
+                  <span className="text-white/60 text-[11px]">Faculty: <strong className="text-white font-bold">{n.facultyName || n.uploadedBy || 'Course Faculty'}</strong></span>
+                  {n.fileUrl && (
+                    <div className="flex items-center gap-2">
+                      <a href={n.fileUrl} target="_blank" rel="noreferrer" className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition flex items-center gap-1">
+                        <Eye size={13} /> View
+                      </a>
+                      <a href={n.fileUrl} download={n.fileName || 'study_notes'} target="_blank" rel="noreferrer" className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow">
+                        <Download size={13} /> Download
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-// 10. STUDENT LEAVE
+// ==========================================
+// 7. LEAVE APPLICATIONS
+// ==========================================
 const StudentLeaves = ({ student, isParent }) => {
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
-
   const [leaveType, setLeaveType] = useState('Casual Leave');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [reason, setReason] = useState('');
-
   const { showToast } = useAuth();
 
-  const loadLeaves = async () => {
-    try {
+  const studentUid = student?.uid || student?.id;
+  const studentRoll = student?.rollNumber || student?.studentId;
+
+  // Real-time synchronization for student's leave status updates
+  useEffect(() => {
+    if (!studentUid && !studentRoll) return;
+
+    let unsubscribes = [];
+
+    const processLeavesList = (rawList) => {
+      const seenIds = new Set();
+      const unique = [];
+
+      rawList.forEach(item => {
+        const id = item.id || item.leaveId;
+        const matchesStudent = 
+          (studentUid && (item.studentId === studentUid || item.applicantId === studentUid || item.uid === studentUid)) ||
+          (studentRoll && item.rollNumber === studentRoll);
+
+        if (matchesStudent && id && !seenIds.has(id)) {
+          seenIds.add(id);
+          unique.push(item);
+        }
+      });
+
+      // Merge local storage items as fallback
+      ['acad_student_leaves', 'acad_leave_requests'].forEach(key => {
+        try {
+          const localItems = JSON.parse(localStorage.getItem(key) || '[]');
+          localItems.forEach(item => {
+            const id = item.id || item.leaveId;
+            const matchesStudent = 
+              (studentUid && (item.studentId === studentUid || item.applicantId === studentUid || item.uid === studentUid)) ||
+              (studentRoll && item.rollNumber === studentRoll);
+
+            if (matchesStudent && id && !seenIds.has(id)) {
+              seenIds.add(id);
+              unique.push(item);
+            }
+          });
+        } catch (_) {}
+      });
+
+      unique.sort((a, b) => new Date(b.submittedAt || b.appliedAt || b.createdAt || 0) - new Date(a.submittedAt || a.appliedAt || a.createdAt || 0));
+      setLeaves(unique);
+      setLoading(false);
+    };
+
+    if (isFirebaseConfigured && db) {
       setLoading(true);
-      const data = await mockDB.getStudentLeaves(student?.uid);
-      setLeaves(data);
+      const realTimeMap = {};
+      const collectionsToListen = ['leaves', 'student_leaves', 'leave_requests'];
+
+      collectionsToListen.forEach(colName => {
+        try {
+          const colRef = collection(db, colName);
+          const unsub = onSnapshot(colRef, (snapshot) => {
+            snapshot.forEach(docSnap => {
+              const d = docSnap.data();
+              const id = docSnap.id;
+              realTimeMap[id] = { id, leaveId: id, _col: colName, ...d };
+            });
+            processLeavesList(Object.values(realTimeMap));
+          }, (err) => {
+            console.warn(`[Student onSnapshot Error] ${colName}:`, err);
+            loadOfflineLeaves();
+          });
+          unsubscribes.push(unsub);
+        } catch (e) {
+          console.warn(`Error attaching onSnapshot for ${colName}:`, e);
+        }
+      });
+    }
+
+    loadOfflineLeaves();
+
+    return () => {
+      unsubscribes.forEach(unsub => {
+        try { unsub(); } catch (_) {}
+      });
+    };
+  }, [studentUid, studentRoll]);
+
+  const loadOfflineLeaves = async () => {
+    try {
+      const data = await mockDB.getStudentLeaves(studentUid);
+      setLeaves(data || []);
     } catch (e) {
-      console.error(e);
+      console.error("Error loading offline student leaves:", e);
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    loadLeaves();
-  }, [student]);
 
   const handleApplyLeave = async (e) => {
     e.preventDefault();
@@ -656,8 +1009,8 @@ const StudentLeaves = ({ student, isParent }) => {
 
     try {
       setApplying(true);
-      const dept = student?.assignedBranch || student?.department || student?.branch || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)';
-      const sem = student?.assignedSemester || student?.semester || 'Semester 2';
+      const dept = student?.assignedBranch || student?.department || student?.branch || 'CSE';
+      const sem = student?.assignedSemester || student?.semester || 'Semester 6';
       const sec = student?.assignedSection || student?.section || 'Section A';
 
       await mockDB.applyStudentLeave(student?.uid, {
@@ -665,7 +1018,7 @@ const StudentLeaves = ({ student, isParent }) => {
         fromDate,
         toDate,
         reason,
-        studentName: student?.fullName || student?.name || student?.studentName || 'Student',
+        studentName: student?.fullName || student?.name || 'Student',
         rollNumber: student?.rollNumber || student?.studentId || '',
         department: dept,
         branch: dept,
@@ -673,9 +1026,11 @@ const StudentLeaves = ({ student, isParent }) => {
         section: sec
       });
 
-      showToast('Leave application submitted to assigned Ward Counsellor.', 'success');
+      showToast('Leave application submitted directly to your Ward Counsellor for manual review.', 'success');
       setReason('');
-      loadLeaves();
+      setFromDate('');
+      setToDate('');
+      loadOfflineLeaves();
     } catch (_) {
       showToast('Could not submit leave.', 'error');
     } finally {
@@ -684,97 +1039,132 @@ const StudentLeaves = ({ student, isParent }) => {
   };
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
-      
+    <div className="bg-transparent min-h-screen text-white space-y-6 font-sans">
+      {/* Standardized Header Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 mb-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg border border-white/20">
+            <Calendar size={24} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black font-display text-white drop-shadow">Leave Application & Approval Desk</h2>
+            <p className="text-xs text-blue-200 mt-0.5">Submit leave requests directly to your assigned Ward Counsellor & track review status</p>
+          </div>
+        </div>
+        <span className="px-3.5 py-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-2xl font-black text-xs shadow-md self-start sm:self-auto">
+          Counsellor Review Active 🟢
+        </span>
+      </div>
+
+      {/* Apply Form */}
       {!isParent && (
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-4">
-          <h3 className="text-sm font-black text-slate-900 dark:text-white border-b pb-3">Apply Leave (Approved by Assigned Ward Counsellor)</h3>
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-6 space-y-4">
+          <h3 className="text-sm font-black text-white border-b border-white/10 pb-3">Apply New Leave Request</h3>
 
           <form onSubmit={handleApplyLeave} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="text-[10px] text-slate-400 uppercase font-black block mb-1">Leave Type</label>
-                <select value={leaveType} onChange={(e) => setLeaveType(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold">
-                  <option value="Casual Leave">Casual Leave</option>
-                  <option value="Medical Leave">Medical Leave</option>
-                  <option value="Duty Leave">Duty Leave (Sports / Cultural)</option>
+                <label className="text-[10px] text-white/60 uppercase font-black block mb-1.5">Leave Type</label>
+                <select
+                  value={leaveType}
+                  onChange={(e) => setLeaveType(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-black/50 border border-white/20 text-white rounded-xl text-xs font-semibold focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 outline-none"
+                >
+                  <option value="Casual Leave" className="bg-slate-900 text-white">Casual Leave</option>
+                  <option value="Medical Leave" className="bg-slate-900 text-white">Medical Leave</option>
+                  <option value="Duty Leave" className="bg-slate-900 text-white">Duty Leave (Sports / Cultural)</option>
+                  <option value="Emergency Leave" className="bg-slate-900 text-white">Emergency Leave</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-[10px] text-slate-400 uppercase font-black block mb-1">From Date</label>
-                <input type="date" required value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold" />
+                <label className="text-[10px] text-white/60 uppercase font-black block mb-1.5">From Date</label>
+                <input
+                  type="date"
+                  required
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-black/50 border border-white/20 text-white rounded-xl text-xs font-semibold focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 outline-none"
+                />
               </div>
 
               <div>
-                <label className="text-[10px] text-slate-400 uppercase font-black block mb-1">To Date</label>
-                <input type="date" required value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold" />
+                <label className="text-[10px] text-white/60 uppercase font-black block mb-1.5">To Date</label>
+                <input
+                  type="date"
+                  required
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-black/50 border border-white/20 text-white rounded-xl text-xs font-semibold focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 outline-none"
+                />
               </div>
             </div>
 
             <div>
-              <label className="text-[10px] text-slate-400 uppercase font-black block mb-1">Reason for Leave</label>
-              <textarea rows={2} required placeholder="Detailed reason..." value={reason} onChange={(e) => setReason(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium" />
+              <label className="text-[10px] text-white/60 uppercase font-black block mb-1.5">Reason for Absence</label>
+              <textarea
+                rows={2}
+                required
+                placeholder="State the genuine reason for leave request..."
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-black/50 border border-white/20 text-white placeholder-white/40 rounded-xl text-xs font-medium focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 outline-none"
+              />
             </div>
 
-            <button type="submit" disabled={applying} className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl shadow">
+            <button
+              type="submit"
+              disabled={applying}
+              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black rounded-xl text-xs shadow-lg shadow-blue-500/25 border border-white/20 transition-all cursor-pointer"
+            >
               {applying ? 'Submitting...' : 'Submit Leave Request'}
             </button>
           </form>
         </div>
       )}
 
-      {/* Leave Status History */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-4">
-        <h3 className="text-sm font-black text-slate-900 dark:text-white border-b pb-3">My Leave Application Status Ledger</h3>
+      {/* Status History Table */}
+      <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-6 space-y-4">
+        <h3 className="text-sm font-black text-white border-b border-white/10 pb-3">My Leave Application Status Ledger</h3>
 
         {loading ? (
-          <div className="py-12 text-center animate-pulse text-slate-400">Loading leave requests...</div>
+          <div className="py-12 text-center animate-pulse text-white/50">Loading leave requests...</div>
         ) : leaves.length === 0 ? (
-          <div className="py-12 text-center text-slate-400">No leave requests logged.</div>
+          <div className="py-12 text-center text-white/50">No leave requests logged yet.</div>
         ) : (
-          <div className="w-full max-w-full overflow-x-hidden">
-            <table className="w-full table-fixed text-left border-collapse">
+          <div className="w-full max-w-full overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 text-[10px]">
-                  <th className="w-[20%] px-3 py-3">Type</th>
-                  <th className="w-[20%] px-2 py-3 text-center">Dates</th>
-                  <th className="w-[25%] px-3 py-3">Reason</th>
-                  <th className="w-[15%] px-2 py-3 text-center">Status</th>
-                  <th className="w-[20%] px-3 py-3 text-right">Remarks</th>
+                <tr className="border-b border-white/10 text-white/60 font-bold uppercase tracking-wider text-[10px]">
+                  <th className="px-4 py-3">Leave Type</th>
+                  <th className="px-3 py-3 text-center">Duration</th>
+                  <th className="px-4 py-3">Reason</th>
+                  <th className="px-3 py-3 text-center">Status</th>
+                  <th className="px-4 py-3 text-right">Counsellor Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-bold">
+              <tbody className="divide-y divide-white/5 font-semibold">
                 {leaves.map(l => (
-                  <tr key={l.id || l.leaveId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
-                    <td className="px-3 py-3 font-black text-slate-900 dark:text-white break-words align-middle">{l.leaveType}</td>
-                    <td className="px-2 py-3 text-center font-mono text-xs break-words align-middle">{l.fromDate} to {l.toDate}</td>
-                    <td className="px-3 py-3 text-slate-500 font-normal break-words align-middle">{l.reason}</td>
-                    <td className="px-2 py-3 text-center align-middle">
-                      <span className={`px-2 py-0.5 rounded-xl text-[9.5px] font-black uppercase inline-block break-words ${
-                        l.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30' :
-                        l.status === 'Rejected' ? 'bg-rose-500/10 text-rose-600 border border-rose-500/30' :
-                        'bg-amber-500/10 text-amber-600 border border-amber-500/30'
+                  <tr key={l.id || l.leaveId} className="hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3.5 font-bold text-white">{l.leaveType}</td>
+                    <td className="px-3 py-3.5 text-center font-mono text-cyan-300">{l.fromDate} to {l.toDate}</td>
+                    <td className="px-4 py-3.5 text-white/70 max-w-xs truncate">{l.reason}</td>
+                    <td className="px-3 py-3.5 text-center">
+                      <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold uppercase inline-block ${
+                        l.status === 'Approved' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                        l.status === 'Rejected' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' :
+                        'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                       }`}>
-                        {l.status}
+                        {l.status || 'Pending'}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-right font-medium text-xs break-words align-middle">
+                    <td className="px-4 py-3.5 text-right">
                       {l.status === 'Approved' ? (
-                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-                          Approved by {l.approvedByName || 'Ward Counsellor'}
-                        </span>
+                        <span className="text-emerald-400 font-bold">Approved by {l.approvedByName || 'Ward Counsellor'}</span>
                       ) : l.status === 'Rejected' ? (
-                        <div className="text-right space-y-0.5">
-                          <span className="text-rose-600 dark:text-rose-400 font-bold block">
-                            Rejected by {l.rejectedByName || 'Ward Counsellor'}
-                          </span>
-                          <span className="text-rose-700 dark:text-rose-300 font-medium block text-[11px]">
-                            {l.rejectionReason || l.remarks || 'No reason provided'}
-                          </span>
-                        </div>
+                        <span className="text-rose-400 font-bold">Rejected: {l.rejectionReason || 'No reason specified'}</span>
                       ) : (
-                        <span className="text-amber-500 font-semibold italic">Pending Review</span>
+                        <span className="text-amber-400 italic">Under Review</span>
                       )}
                     </td>
                   </tr>
@@ -784,12 +1174,13 @@ const StudentLeaves = ({ student, isParent }) => {
           </div>
         )}
       </div>
-
     </div>
   );
 };
 
-// 11. MY WARD COUNSELLOR MODULE (AUTO-ASSIGNED BY HOD VIA DYNAMIC SCOPE MATCHING)
+// ==========================================
+// 8. WARD COUNSELLOR MODULE
+// ==========================================
 const StudentWardCounsellor = ({ student, isParent }) => {
   const [counsellor, setCounsellor] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -804,138 +1195,141 @@ const StudentWardCounsellor = ({ student, isParent }) => {
     fetchCounsellor();
   }, [student]);
 
-  if (loading) {
-    return (
-      <div className="p-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 animate-pulse space-y-4">
-        <div className="h-20 bg-slate-200 dark:bg-slate-800 rounded-2xl"></div>
-        <div className="h-40 bg-slate-200 dark:bg-slate-800 rounded-2xl"></div>
-      </div>
-    );
-  }
-
-  const dept = student?.department || student?.branch || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)';
+  const dept = student?.department || student?.branch || 'Computer Science & Engineering';
   const semester = student?.semester || 'Semester 6';
   const section = student?.section || 'A';
 
   return (
-    <div className="space-y-6 text-xs font-semibold">
-      {/* Header Banner */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-purple-700 via-indigo-700 to-slate-900 text-white shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <span className="px-3 py-1 bg-white/20 rounded-full text-[10px] font-black uppercase tracking-wider">
-            My Scope: {dept} • {semester} • Section {section}
-          </span>
-          <h2 className="text-xl font-black mt-2">My Ward Counsellor</h2>
-          <p className="text-xs text-purple-200 mt-0.5">Dynamically Assigned by HOD from active scope records</p>
+    <div className="bg-transparent min-h-screen text-white space-y-6 font-sans">
+      {/* Standardized Header Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 mb-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg border border-white/20">
+            <UserCheck size={24} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black font-display text-white drop-shadow">My Ward Counsellor & Academic Mentor</h2>
+            <p className="text-xs text-blue-200 mt-0.5">Assigned by Head of Department for {dept} • {semester} • Section {section}</p>
+          </div>
         </div>
-        <span className="px-3.5 py-1.5 bg-emerald-400 text-slate-950 font-black rounded-2xl text-[10.5px] shadow-lg flex items-center gap-1.5 self-start sm:self-auto">
+        <span className="px-3.5 py-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-2xl font-black text-xs shadow-md self-start sm:self-auto">
           🟢 Active Ward Counsellor
         </span>
       </div>
 
       {counsellor ? (
-        <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xl space-y-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-slate-100 dark:border-slate-800">
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-6 space-y-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-white/10">
             <div className="flex items-center gap-5">
               {counsellor.profilePhotoUrl || counsellor.photo ? (
                 <img
                   src={counsellor.profilePhotoUrl || counsellor.photo}
                   alt={counsellor.fullName}
-                  className="w-20 h-20 rounded-3xl object-cover border-4 border-purple-500/20 shadow-lg shrink-0"
+                  className="w-20 h-20 rounded-2xl object-cover border-2 border-cyan-400/50 shadow-lg shrink-0"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white font-black text-2xl flex items-center justify-center shadow-lg shrink-0">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white font-black text-2xl flex items-center justify-center shadow-lg border border-white/20 shrink-0">
                   {counsellor.fullName?.split(' ').map(n => n[0]).slice(0, 2).join('') || 'WC'}
                 </div>
               )}
               <div>
-                <span className="px-2.5 py-0.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-full text-[10px] font-black uppercase">
-                  Ward Counsellor
+                <span className="px-2.5 py-0.5 bg-purple-500/20 text-purple-300 border border-purple-400/30 rounded-full text-[10px] font-black uppercase">
+                  Faculty Mentor
                 </span>
-                <h3 className="text-xl font-black text-slate-900 dark:text-white mt-1">{counsellor.fullName}</h3>
-                <p className="text-xs text-purple-600 dark:text-purple-400 font-bold">{counsellor.department}</p>
-                <p className="text-xs text-slate-400 mt-0.5">{counsellor.semester} • Section {counsellor.section}</p>
+                <h3 className="text-xl font-black text-white mt-1">{counsellor.fullName}</h3>
+                <p className="text-xs text-cyan-300 font-bold">{counsellor.department}</p>
+                <p className="text-xs text-white/60 mt-0.5">{counsellor.semester} • Section {counsellor.section}</p>
               </div>
             </div>
 
-            {/* Contact Actions */}
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-3">
               <a
-                href={`mailto:${counsellor.email || counsellor.facultyEmail}`}
-                className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-bold text-xs shadow-lg shadow-purple-500/20 flex items-center gap-2"
+                href={`mailto:${counsellor.email || counsellor.facultyEmail || 'counsellor@kbn.edu'}`}
+                className="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold text-xs shadow-lg border border-white/20 flex items-center gap-2"
               >
-                <MessageSquare size={16} /> Email
+                <MessageSquare size={15} /> Email Mentor
               </a>
               <a
-                href={`tel:${counsellor.phoneNumber || counsellor.mobile || counsellor.facultyPhone || '9876543211'}`}
-                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold text-xs shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                href={`tel:${counsellor.phoneNumber || counsellor.mobile || '9876543211'}`}
+                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-lg border border-white/20 flex items-center gap-2"
               >
                 📞 Call
               </a>
             </div>
           </div>
 
-          {/* Details Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-              <span className="text-[10px] text-slate-400 uppercase font-black block mb-1">Official Email</span>
-              <strong className="text-slate-900 dark:text-white text-xs block truncate">{counsellor.email || counsellor.facultyEmail}</strong>
+            <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-1">
+              <span className="text-[10px] text-white/50 uppercase font-black block">Official Email</span>
+              <strong className="text-white text-xs block truncate">{counsellor.email || counsellor.facultyEmail || 'counsellor@kbn.edu'}</strong>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-              <span className="text-[10px] text-slate-400 uppercase font-black block mb-1">Contact Phone</span>
-              <strong className="text-slate-900 dark:text-white text-xs block font-mono">📞 {counsellor.phoneNumber || counsellor.mobile || counsellor.facultyPhone || '9876543211'}</strong>
+            <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-1">
+              <span className="text-[10px] text-white/50 uppercase font-black block">Contact Phone</span>
+              <strong className="text-cyan-300 text-xs block font-mono">📞 {counsellor.phoneNumber || counsellor.mobile || '9876543211'}</strong>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-              <span className="text-[10px] text-slate-400 uppercase font-black block mb-1">Assigned Scope</span>
-              <strong className="text-purple-600 dark:text-purple-400 text-xs block">{counsellor.semester} • Section {counsellor.section}</strong>
+            <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-1">
+              <span className="text-[10px] text-white/50 uppercase font-black block">Assigned Scope</span>
+              <strong className="text-purple-300 text-xs block">{counsellor.semester} • Section {counsellor.section}</strong>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-              <span className="text-[10px] text-slate-400 uppercase font-black block mb-1">Academic Year</span>
-              <strong className="text-slate-900 dark:text-white text-xs block font-mono">{counsellor.academicYear || '2026-2027'}</strong>
+            <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-1">
+              <span className="text-[10px] text-white/50 uppercase font-black block">Academic Year</span>
+              <strong className="text-white text-xs block font-mono">2026-2027</strong>
             </div>
-          </div>
-
-          <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-2xl text-xs text-slate-700 dark:text-slate-300">
-            <span className="font-black text-purple-700 dark:text-purple-300 block mb-0.5">📌 Note for Student:</span>
-            Your Ward Counsellor is automatically retrieved from active HOD assignments matching your Branch ({dept}), Semester ({semester}), and Section ({section}). All your leave applications and academic mentorship requests are processed directly by your assigned Ward Counsellor.
           </div>
         </div>
       ) : (
-        <div className="p-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 text-center space-y-3">
-          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No Ward Counsellor has been assigned to your academic scope yet.</p>
-          <p className="text-xs text-slate-400">Your Head of Department (HOD) will assign a Ward Counsellor shortly.</p>
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-8 text-center space-y-2">
+          <p className="text-sm font-bold text-white">No Ward Counsellor has been assigned to your academic scope yet.</p>
+          <p className="text-xs text-white/50">Your Head of Department (HOD) will assign a Ward Counsellor shortly.</p>
         </div>
       )}
     </div>
   );
 };
 
-// 12. FACULTY DIRECTORY
+// ==========================================
+// 9. FACULTY DIRECTORY
+// ==========================================
 const StudentFaculty = ({ student, isParent }) => {
-  const dept = student?.department || 'CSE';
+  const dept = student?.department || student?.branch || 'Computer Science & Engineering';
   const facultyMembers = [
     { name: 'Dr. Bruce Banner', role: 'Associate Professor', subject: 'Neural Networks & Deep Learning', email: 'bruce.banner@kbn.edu' },
-    { name: 'Prof. Alan Turing', role: 'Professor & HOD', subject: 'Cloud Computing & DevOps', email: 'alan.turing@kbn.edu' }
+    { name: 'Prof. Alan Turing', role: 'Professor & HOD', subject: 'Cloud Computing & DevOps', email: 'alan.turing@kbn.edu' },
+    { name: 'Dr. Grace Hopper', role: 'Professor', subject: 'Web Frameworks & Architecture', email: 'grace.hopper@kbn.edu' },
+    { name: 'Prof. Claude Shannon', role: 'Assistant Professor', subject: 'Data Engineering & Information Theory', email: 'claude.shannon@kbn.edu' }
   ];
 
   return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
-      <div className="border-b pb-4">
-        <h3 className="text-base font-black text-slate-900 dark:text-white">Department Subject Faculty Directory</h3>
-        <p className="text-xs text-slate-400">Teaching faculty assigned to {dept} Department</p>
+    <div className="bg-transparent min-h-screen text-white space-y-6 font-sans">
+      {/* Standardized Header Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 mb-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg border border-white/20">
+            <Users size={24} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black font-display text-white drop-shadow">Department Faculty Directory</h2>
+            <p className="text-xs text-blue-200 mt-0.5">Teaching faculty and course instructors assigned to {dept}</p>
+          </div>
+        </div>
+        <span className="px-3.5 py-1.5 bg-blue-500/20 text-cyan-300 border border-blue-400/30 rounded-2xl font-black text-xs shadow-md self-start sm:self-auto">
+          {facultyMembers.length} Instructors
+        </span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {facultyMembers.map((f, idx) => (
-          <div key={idx} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex items-center gap-4">
-            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="" className="w-12 h-12 rounded-2xl object-cover border" />
-            <div>
-              <h4 className="font-black text-slate-900 dark:text-white text-xs">{f.name}</h4>
-              <p className="text-[10.5px] text-blue-600 font-bold">{f.role} • {f.subject}</p>
-              <p className="text-[10px] text-slate-400">{f.email}</p>
+          <div key={idx} className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-5 flex items-center gap-4 hover:bg-white/5 transition-colors">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-sky-400 text-white font-black text-lg flex items-center justify-center border border-white/20 shadow-md shrink-0">
+              {f.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h4 className="font-extrabold text-white text-sm truncate">{f.name}</h4>
+              <p className="text-xs text-cyan-300 font-bold mt-0.5">{f.role} • {f.subject}</p>
+              <p className="text-[11px] text-white/60 mt-1 font-mono">{f.email}</p>
             </div>
           </div>
         ))}
@@ -943,8 +1337,10 @@ const StudentFaculty = ({ student, isParent }) => {
     </div>
   );
 };
-// 13. PLACEMENTS HUB
-// 13. PLACEMENTS HUB (INTERLINKED WITH PLACEMENT OFFICER PORTAL)
+
+// ==========================================
+// 10. PLACEMENTS HUB
+// ==========================================
 const StudentPlacements = ({ student, isParent }) => {
   const [drives, setDrives] = useState([]);
   const [applications, setApplications] = useState([]);
@@ -953,32 +1349,30 @@ const StudentPlacements = ({ student, isParent }) => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('drives');
   
-  // Apply Modal State
   const [selectedDrive, setSelectedDrive] = useState(null);
   const [showApplyModal, setShowApplyModal] = useState(false);
-  const [resumeFile, setResumeFile] = useState(null);
-  const [githubUrl, setGithubUrl] = useState('');
-  const [linkedinUrl, setLinkedinUrl] = useState('');
-  const [portfolioUrl, setPortfolioUrl] = useState('');
   const [declaration, setDeclaration] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-
   const { showToast } = useAuth();
+
+  const studentBranch = student?.department || student?.branch || 'Computer Science & Engineering';
+  const studentCgpa = parseFloat(student?.cgpa || student?.gpa || 8.5);
+  const studentBacklogs = parseInt(student?.backlogs || 0);
 
   const loadPlacements = async () => {
     try {
       setLoading(true);
       const stId = student?.uid || student?.id;
       const [drivesData, appsData, intsData, trData] = await Promise.all([
-        mockDB.getPlacementDrives(),
+        mockDB.getPlacementDrives('student'),
         mockDB.getPlacementApplications(null, stId),
         mockDB.getPlacementInterviews ? mockDB.getPlacementInterviews(stId) : [],
         mockDB.getPlacementTrainings ? mockDB.getPlacementTrainings() : []
       ]);
-      setDrives(drivesData);
-      setApplications(appsData);
-      setInterviews(intsData);
-      setTrainings(trData);
+      setDrives(drivesData || []);
+      setApplications(appsData || []);
+      setInterviews(intsData || []);
+      setTrainings(trData || []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -987,24 +1381,48 @@ const StudentPlacements = ({ student, isParent }) => {
   };
 
   useEffect(() => {
+    let unsubs = [];
+    const stId = student?.uid || student?.id;
+    const stRoll = student?.rollNumber;
+
     loadPlacements();
+
+    if (isFirebaseConfigured && db) {
+      try {
+        const uDrives = onSnapshot(collection(db, 'placement_drives'), (snap) => {
+          const list = snap.docs.map(d => ({ id: d.id, driveId: d.id, ...d.data() }));
+          if (list.length > 0) setDrives(list);
+        });
+        unsubs.push(uDrives);
+
+        const uApps = onSnapshot(collection(db, 'placement_applications'), (snap) => {
+          const myApps = snap.docs
+            .map(d => ({ id: d.id, applicationId: d.id, ...d.data() }))
+            .filter(a => (stId && a.studentId === stId) || (stRoll && a.rollNumber === stRoll));
+          if (myApps.length > 0) setApplications(myApps);
+        });
+        unsubs.push(uApps);
+      } catch (_) {}
+    }
+
+    return () => {
+      unsubs.forEach(u => {
+        try { u(); } catch (_) {}
+      });
+    };
   }, [student]);
 
-  const selectedApp = applications.find(a => a.status === 'Selected');
+  const isBranchEligible = (drive) => {
+    const elig = drive.eligibleBranches;
+    if (!elig || !Array.isArray(elig) || elig.length === 0) return true;
+    return isDepartmentMatch(studentBranch, elig);
+  };
 
-  useEffect(() => {
-    if (selectedApp) {
-      try { confetti({ particleCount: 70, spread: 50, origin: { y: 0.6 } }); } catch (_) {}
-    }
-  }, [selectedApp]);
+  const eligibleDrives = drives.filter(isBranchEligible);
 
   const handleOpenApplyModal = (drive) => {
     if (isParent) return;
     setSelectedDrive(drive);
-    setResumeFile(null);
-    setGithubUrl('');
-    setLinkedinUrl('');
-    setPortfolioUrl('');
     setDeclaration(false);
     setShowApplyModal(true);
   };
@@ -1012,591 +1430,690 @@ const StudentPlacements = ({ student, isParent }) => {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     if (!declaration) {
-      showToast('Please confirm that the information provided is correct.', 'warning');
+      showToast('Please confirm that the academic credentials provided are accurate.', 'warning');
       return;
     }
     if (!selectedDrive) return;
 
     try {
       setSubmitting(true);
-      const payload = {
-        driveId: selectedDrive.id || selectedDrive.driveId,
-        driveName: `${selectedDrive.companyName} - ${selectedDrive.jobRole || selectedDrive.role}`,
-        companyName: selectedDrive.companyName,
-        jobRole: selectedDrive.jobRole || selectedDrive.role,
-        package: selectedDrive.package || selectedDrive.salaryPackage,
-        studentId: student?.uid || student?.id,
-        studentName: student?.fullName || student?.name || 'Student',
-        rollNumber: student?.rollNumber || student?.regNo || 'STU-2026',
-        email: student?.email || '',
-        phone: student?.phone || student?.mobile || '',
-        department: student?.department || student?.branch || 'CSE',
-        semester: student?.semester || 'Semester 6',
-        section: student?.section || 'Section A',
-        cgpa: parseFloat(student?.cgpa || student?.gpa || 7.5),
-        backlogs: parseInt(student?.backlogs || 0),
-        resumeFile,
-        githubUrl,
-        linkedinUrl,
-        portfolioUrl
-      };
+      const res = await mockDB.applyForDrive(selectedDrive.id || selectedDrive.driveId, student);
+      if (res && !res.success) {
+        showToast(res.reason || 'Could not submit application.', 'error');
+        return;
+      }
 
-      await mockDB.applyForPlacementDrive(payload);
       showToast(`Application submitted successfully for ${selectedDrive.companyName}!`, 'success');
       setShowApplyModal(false);
       loadPlacements();
     } catch (err) {
-      console.error(err);
       showToast(err.message || 'Could not submit application.', 'error');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleRegisterTraining = async (trId) => {
-    if (isParent) return;
-    try {
-      if (mockDB.registerForTraining) {
-        await mockDB.registerForTraining(trId, student);
-      }
-      showToast('Registered for placement training session!', 'success');
-      loadPlacements();
-    } catch (_) {
-      showToast('Could not register for training.', 'error');
-    }
-  };
-
-  const studentBranch = (student?.department || student?.branch || 'CSE').toUpperCase().trim();
-  const studentSem = student?.semester || 'Semester 6';
-  const studentSec = student?.section || 'Section A';
-  const studentCgpa = parseFloat(student?.cgpa || student?.gpa || 7.5);
-  const studentBacklogs = parseInt(student?.backlogs || 0);
-
   return (
-    <div className="space-y-6 text-xs font-semibold">
-      
-      {/* Student Profile Header Banner */}
-      <div className="p-4 rounded-3xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div className="flex flex-wrap items-center gap-2 font-bold text-slate-800 dark:text-white">
-          <span className="px-3 py-1 bg-blue-600 text-white rounded-xl font-black text-[10.5px]">Your Profile</span>
-          <span>Your Branch: <strong className="text-blue-600 dark:text-blue-400">{student?.department || student?.branch || 'CSE'}</strong></span>
-          <span>• Semester: <strong>{studentSem}</strong></span>
-          <span>• Section: <strong>{studentSec}</strong></span>
-        </div>
-        <div className="flex gap-2 text-slate-600 dark:text-slate-300 font-extrabold text-[11px]">
-          <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 rounded-lg">CGPA: {studentCgpa}</span>
-          <span className="px-2.5 py-1 bg-amber-500/10 text-amber-600 rounded-lg">Backlogs: {studentBacklogs}</span>
-        </div>
-      </div>
-
-      {/* Confirmed Selection Banner */}
-      {selectedApp && (
-        <div className="p-6 rounded-3xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-2xl space-y-2 flex justify-between items-center">
-          <div>
-            <span className="px-3 py-1 bg-white/20 rounded-full text-[10px] font-black uppercase">🎉 Placement Offer Confirmed!</span>
-            <h2 className="text-xl font-black mt-1">Selected at {selectedApp.companyName}</h2>
-            <p className="text-xs">Designation: {selectedApp.jobRole} • Package: {selectedApp.package}</p>
+    <div className="bg-transparent min-h-screen text-white space-y-6 font-sans">
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 mb-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg border border-white/20">
+            <Briefcase size={24} />
           </div>
-          <Award size={36} className="text-emerald-200" />
+          <div>
+            <h2 className="text-xl font-black font-display text-white drop-shadow">Campus Placement & Career Hub</h2>
+            <p className="text-xs text-blue-200 mt-0.5">
+              Live recruitment drives scoped for <span className="text-cyan-300 font-bold">{studentBranch}</span> (Sem {student?.semester || 'VI'})
+            </p>
+          </div>
         </div>
-      )}
-
-      {/* Sub-Navigation Tabs */}
-      <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl flex flex-wrap gap-2">
-        <button
-          onClick={() => setActiveTab('drives')}
-          className={`px-4 py-2 rounded-2xl font-black text-xs transition-all ${
-            activeTab === 'drives' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-          }`}
-        >
-          🚀 Upcoming Drives ({drives.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('applications')}
-          className={`px-4 py-2 rounded-2xl font-black text-xs transition-all ${
-            activeTab === 'applications' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-          }`}
-        >
-          📋 My Applications ({applications.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('interviews')}
-          className={`px-4 py-2 rounded-2xl font-black text-xs transition-all ${
-            activeTab === 'interviews' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-          }`}
-        >
-          ⏰ Interview Schedule ({interviews.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('offers')}
-          className={`px-4 py-2 rounded-2xl font-black text-xs transition-all ${
-            activeTab === 'offers' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-          }`}
-        >
-          🏆 Selection Offers ({selectedApp ? 1 : 0})
-        </button>
-        <button
-          onClick={() => setActiveTab('training')}
-          className={`px-4 py-2 rounded-2xl font-black text-xs transition-all ${
-            activeTab === 'training' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-          }`}
-        >
-          📚 Training & Mock Tests ({trainings.length})
-        </button>
+        <div className="flex items-center gap-2">
+          <span className="px-3.5 py-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-2xl font-black text-xs shadow-md">
+            CGPA: {studentCgpa.toFixed(1)} 🟢
+          </span>
+          <span className="px-3.5 py-1.5 bg-blue-500/20 text-cyan-300 border border-blue-400/30 rounded-2xl font-black text-xs shadow-md">
+            Backlogs: {studentBacklogs}
+          </span>
+        </div>
       </div>
 
-      {/* TAB 1: UPCOMING DRIVES */}
-      {activeTab === 'drives' && (
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-4">
-          <h3 className="text-sm font-black text-slate-900 dark:text-white border-b pb-3">Corporate Placement Recruitment Drives</h3>
+      <div className="flex flex-wrap gap-2">
+        {[
+          { id: 'drives', label: `Eligible Drives (${eligibleDrives.length})` },
+          { id: 'applications', label: `My Applications (${applications.length})` },
+          { id: 'interviews', label: `Interview Rounds (${interviews.length})` },
+          { id: 'training', label: `Training & Workshops (${trainings.length})` }
+        ].map(t => (
+          <button
+            key={t.id}
+            onClick={() => setActiveTab(t.id)}
+            className={`px-4 py-2 rounded-2xl font-black text-xs transition-all cursor-pointer ${
+              activeTab === t.id
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25 border border-white/20'
+                : 'bg-black/40 hover:bg-white/10 text-white/70 border border-white/10'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-          {loading ? (
-            <div className="py-12 text-center animate-pulse text-slate-400">Loading placement drives...</div>
-          ) : drives.length === 0 ? (
-            <div className="py-12 text-center text-slate-400">No active placement drives announced by Placement Cell.</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {drives.map(d => {
-                const existingApp = applications.find(a => a.driveId === (d.id || d.driveId));
-                const minCgpaReq = d.minimumCGPA !== undefined ? parseFloat(d.minimumCGPA) : (d.minCgpa !== undefined ? parseFloat(d.minCgpa) : 6.0);
-                const maxBacklogsReq = d.maximumBacklogs !== undefined ? parseInt(d.maximumBacklogs) : (d.maxBacklogs !== undefined ? parseInt(d.maxBacklogs) : 0);
-                const rawBranches = d.eligibleDepartments || d.eligibleBranches || ['All'];
-                const eligibleBranches = Array.isArray(rawBranches) ? rawBranches : [rawBranches];
-
-                let isEligible = true;
-                let ineligibilityReason = '';
-
-                const isBranchMatch = eligibleBranches.some(b => {
-                  const upperB = String(b).toUpperCase().trim();
-                  return upperB === 'ALL' || upperB === 'ALL DEPARTMENTS' || upperB === studentBranch || studentBranch.includes(upperB) || upperB.includes(studentBranch);
-                });
-
-                if (!isBranchMatch) {
-                  isEligible = false;
-                  ineligibilityReason = `Your branch (${studentBranch}) is not eligible for this drive.`;
-                } else if (studentCgpa < minCgpaReq) {
-                  isEligible = false;
-                  ineligibilityReason = `Requires Min CGPA ${minCgpaReq} (Your CGPA: ${studentCgpa})`;
-                } else if (studentBacklogs > maxBacklogsReq) {
-                  isEligible = false;
-                  ineligibilityReason = `Requires Max Backlogs ${maxBacklogsReq} (Your Backlogs: ${studentBacklogs})`;
-                }
-
-                const skills = Array.isArray(d.requiredSkills) ? d.requiredSkills : (d.requiredSkills ? d.requiredSkills.split(',') : []);
-
-                return (
-                  <div key={d.id || d.driveId} className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 space-y-4 flex flex-col justify-between">
-                    
-                    <div className="space-y-3">
-                      <div className="flex items-start gap-4">
-                        {d.companyLogo ? (
-                          <img src={d.companyLogo} alt="" className="w-12 h-12 rounded-2xl object-cover border shrink-0 bg-white" />
-                        ) : (
-                          <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white font-black flex items-center justify-center text-sm shrink-0">
-                            {d.companyName ? d.companyName.charAt(0) : 'C'}
-                          </div>
-                        )}
-                        <div>
-                          <span className="px-2.5 py-0.5 bg-blue-500/10 text-blue-600 rounded text-[9.5px] font-black uppercase tracking-wider">{d.location || 'Pan India'}</span>
-                          <h4 className="font-black text-slate-900 dark:text-white text-base mt-0.5">{d.companyName}</h4>
-                          <p className="text-xs text-blue-600 font-bold">{d.jobRole || d.role}</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 text-[10.5px] bg-white dark:bg-slate-900/60 p-3 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                        <div><span className="text-slate-400 block text-[9px] uppercase font-bold">Package / CTC</span> <span className="font-black text-emerald-600">{d.package || d.salaryPackage}</span></div>
-                        <div><span className="text-slate-400 block text-[9px] uppercase font-bold">Drive Date</span> <span className="font-bold text-slate-700 dark:text-slate-300">{d.driveDate || 'TBA'}</span></div>
-                        <div><span className="text-slate-400 block text-[9px] uppercase font-bold">Deadline</span> <span className="font-bold text-rose-500">{d.applicationDeadline || d.deadline || 'Open'}</span></div>
-                        <div><span className="text-slate-400 block text-[9px] uppercase font-bold">Eligibility</span> <span className="font-bold text-slate-700 dark:text-slate-300">Min {minCgpaReq} CGPA</span></div>
-                      </div>
-
-                      <div className="text-[10px] text-slate-500">
-                        <span className="font-extrabold text-slate-400 uppercase block mb-1">Eligible Branches</span>
-                        <div className="flex flex-wrap gap-1">
-                          {eligibleBranches.map((b, idx) => (
-                            <span key={idx} className="px-2 py-0.5 bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 rounded font-bold text-[9.5px]">
-                              {b}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      {skills.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {skills.map((sk, idx) => (
-                            <span key={idx} className="px-2 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded text-[9px] font-medium">
-                              {sk.trim()}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="pt-3 border-t flex items-center justify-between gap-2">
-                      {isEligible ? (
-                        <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 rounded-xl text-[10px] font-black flex items-center gap-1">
-                          🟢 Eligible
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-1 bg-rose-500/10 text-rose-600 rounded-xl text-[9.5px] font-bold truncate max-w-[200px]" title={ineligibilityReason}>
-                          🔴 {ineligibilityReason}
-                        </span>
-                      )}
-
-                      {existingApp ? (
-                        <div className="text-right">
-                          <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 font-black rounded-xl text-[10.5px] block">
-                            ✅ Applied
-                          </span>
-                          <span className="text-[9px] text-slate-400 block mt-0.5 font-mono">
-                            ID: {existingApp.id || existingApp.applicationId || 'APP-2026-0001'}
-                          </span>
-                        </div>
-                      ) : (
-                        <button 
-                          onClick={() => handleOpenApplyModal(d)} 
-                          disabled={!isEligible || isParent}
-                          className={`px-5 py-2 rounded-xl font-bold text-xs shadow transition ${
-                            isEligible && !isParent
-                              ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                              : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
-                          }`}
-                        >
-                          Apply Now
-                        </button>
-                      )}
-                    </div>
-
-                  </div>
-                );
-              })}
+      <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-6 space-y-4">
+        {activeTab === 'drives' && (
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
+              <h3 className="text-sm font-black text-white">
+                Active Placement Drives for {studentBranch} ({eligibleDrives.length})
+              </h3>
+              <span className="text-[11px] text-cyan-300 font-bold">
+                🎯 Auto-Filtered by Degree & Branch Eligibility
+              </span>
             </div>
-          )}
-        </div>
-      )}
 
-      {/* Apply Now Form Modal */}
-      {showApplyModal && selectedDrive && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-          <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4 my-8">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div>
-                <h3 className="text-base font-black text-slate-900 dark:text-white">Application Form: {selectedDrive.companyName}</h3>
-                <p className="text-xs text-blue-600 font-bold">{selectedDrive.jobRole || selectedDrive.role} ({selectedDrive.package || selectedDrive.salaryPackage})</p>
+            {loading ? (
+              <div className="py-12 text-center text-white/50 animate-pulse">Loading placement opportunities...</div>
+            ) : eligibleDrives.length === 0 ? (
+              <div className="py-12 text-center text-white/50 space-y-2">
+                <p className="text-sm font-bold">No placement drives currently active for your branch ({studentBranch}).</p>
+                <p className="text-xs text-white/40">New recruitment drives published by the Placement Cell will appear here automatically.</p>
               </div>
-              <button onClick={() => setShowApplyModal(false)} className="p-1.5 text-slate-400 hover:text-slate-600"><X size={18} /></button>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {eligibleDrives.map(d => {
+                  const driveId = d.id || d.driveId;
+                  const existingApp = applications.find(a => a.driveId === driveId);
+                  const minCgpa = parseFloat(d.minCgpa || 6.0);
+                  const maxBacklogs = parseInt(d.maxBacklogs ?? 0);
+
+                  const cgpaPass = studentCgpa >= minCgpa;
+                  const backlogsPass = studentBacklogs <= maxBacklogs;
+                  const isEligibleToApply = cgpaPass && backlogsPass;
+
+                  return (
+                    <div key={driveId} className="p-5 rounded-xl bg-white/5 border border-white/10 space-y-4 flex flex-col justify-between hover:bg-white/10 transition-colors">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="px-2.5 py-0.5 bg-blue-500/20 text-cyan-300 border border-blue-400/30 rounded text-[10px] font-black uppercase">
+                            {d.location || 'Campus / Remote'}
+                          </span>
+                          <span className="text-xs font-black text-emerald-400">{d.package || d.salaryPackage || '6.5 - 12 LPA'}</span>
+                        </div>
+
+                        <div>
+                          <h4 className="font-extrabold text-white text-base">{d.companyName}</h4>
+                          <p className="text-xs text-cyan-300 font-bold">{d.jobRole || d.role}</p>
+                          <p className="text-[11px] text-white/60 mt-1">Drive Date: {d.driveDate || 'TBA'} • Deadline: {d.applicationDeadline || d.deadline || 'Open'}</p>
+                        </div>
+
+                        <div className="p-3 bg-black/40 rounded-xl border border-white/10 text-[11px] space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-white/60">Branch Eligibility:</span>
+                            <span className="text-cyan-300 font-bold">✓ Matches ({studentBranch})</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-white/60">Min CGPA Required:</span>
+                            <span className={cgpaPass ? 'text-emerald-300 font-bold' : 'text-rose-300 font-bold'}>
+                              {minCgpa} ({cgpaPass ? `Your CGPA: ${studentCgpa.toFixed(1)} ✓` : `Your CGPA: ${studentCgpa.toFixed(1)} ✗`})
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-white/60">Max Active Backlogs:</span>
+                            <span className={backlogsPass ? 'text-emerald-300 font-bold' : 'text-rose-300 font-bold'}>
+                              {maxBacklogs} ({backlogsPass ? `Your Backlogs: ${studentBacklogs} ✓` : `Your Backlogs: ${studentBacklogs} ✗`})
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+                        {existingApp ? (
+                          <div className="flex items-center gap-2">
+                            <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold">
+                              ✅ {existingApp.status || 'Applied'}
+                            </span>
+                            <span className="text-[10.5px] text-white/60">Submitted on {existingApp.appliedDate || 'Recent'}</span>
+                          </div>
+                        ) : isEligibleToApply ? (
+                          <button
+                            onClick={() => handleOpenApplyModal(d)}
+                            disabled={isParent}
+                            className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-bold text-xs shadow-lg border border-white/20 cursor-pointer"
+                          >
+                            Apply for Drive
+                          </button>
+                        ) : (
+                          <button
+                            disabled
+                            className="px-4 py-2 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-xl font-bold text-xs cursor-not-allowed"
+                          >
+                            Ineligible (Cutoff Criteria)
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'applications' && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-black text-white border-b border-white/10 pb-3">My Submitted Placement Applications</h3>
+            {applications.length === 0 ? (
+              <div className="py-12 text-center text-white/50">You have not submitted any placement applications yet.</div>
+            ) : (
+              <div className="space-y-3">
+                {applications.map(a => (
+                  <div key={a.id || a.applicationId} className="p-4 rounded-xl bg-white/5 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <h4 className="font-extrabold text-white text-sm">{a.companyName}</h4>
+                      <p className="text-xs text-cyan-300 font-bold">{a.jobRole} • Package: {a.package}</p>
+                      <p className="text-[10.5px] text-white/60 mt-0.5">Application ID: {a.id || a.applicationId} • Applied: {a.appliedDate || 'Today'}</p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-xl text-xs font-bold self-start sm:self-auto ${
+                      a.status === 'Selected' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                      a.status === 'Shortlisted' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                      a.status === 'Rejected' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' :
+                      'bg-blue-500/20 text-cyan-300 border border-blue-500/30'
+                    }`}>
+                      {a.status || 'Applied • In Review'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'interviews' && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-black text-white border-b border-white/10 pb-3">Scheduled Interview Rounds</h3>
+            {interviews.length === 0 ? (
+              <div className="py-12 text-center text-white/50">No interview rounds scheduled currently.</div>
+            ) : (
+              <div className="space-y-3">
+                {interviews.map(i => (
+                  <div key={i.id} className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
+                    <div>
+                      <h4 className="font-extrabold text-white text-sm">{i.companyName} ({i.round})</h4>
+                      <p className="text-xs text-white/60">Venue: {i.venue} • Time: {i.time}</p>
+                    </div>
+                    <span className="text-xs text-cyan-300 font-bold font-mono">{i.date}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'training' && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-black text-white border-b border-white/10 pb-3">Placement Training & Mock Workshops</h3>
+            {trainings.length === 0 ? (
+              <div className="py-12 text-center text-white/50">No training sessions published currently.</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {trainings.map(t => (
+                  <div key={t.id} className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2">
+                    <h4 className="font-extrabold text-white text-sm">{t.title}</h4>
+                    <p className="text-xs text-white/60">Trainer: {t.trainer} • Date: {t.date}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {showApplyModal && selectedDrive && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <div className="w-full max-w-md bg-black/80 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl p-6 space-y-4 text-white">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h3 className="text-base font-black text-white">Apply: {selectedDrive.companyName}</h3>
+              <button onClick={() => setShowApplyModal(false)} className="text-white/60 hover:text-white cursor-pointer"><X size={18} /></button>
             </div>
 
             <form onSubmit={handleFormSubmit} className="space-y-4">
-              
-              {/* Read-Only Academic Profile Fields */}
-              <div className="bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-200/60 dark:border-slate-800 space-y-2">
-                <span className="text-[9.5px] font-black uppercase text-slate-400 tracking-wider block">Locked Profile Information (Read-Only)</span>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div><span className="text-slate-400 block text-[9px]">Full Name</span><span className="font-bold text-slate-800 dark:text-white">{student?.fullName || student?.name}</span></div>
-                  <div><span className="text-slate-400 block text-[9px]">Roll Number</span><span className="font-bold text-slate-800 dark:text-white">{student?.rollNumber || student?.regNo || '245949'}</span></div>
-                  <div><span className="text-slate-400 block text-[9px]">College Email</span><span className="font-bold text-slate-800 dark:text-white truncate block">{student?.email}</span></div>
-                  <div><span className="text-slate-400 block text-[9px]">Department</span><span className="font-bold text-blue-600 dark:text-blue-400">{student?.department || student?.branch || 'CSE'}</span></div>
-                  <div><span className="text-slate-400 block text-[9px]">Semester & Section</span><span className="font-bold text-slate-800 dark:text-white">{studentSem} - {studentSec}</span></div>
-                  <div><span className="text-slate-400 block text-[9px]">CGPA & Backlogs</span><span className="font-bold text-emerald-600">{studentCgpa} CGPA ({studentBacklogs} Backlogs)</span></div>
-                </div>
+              <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 text-xs space-y-1.5">
+                <p><span className="text-white/50">Job Role:</span> <strong className="text-cyan-300">{selectedDrive.jobRole || selectedDrive.role}</strong></p>
+                <p><span className="text-white/50">Package:</span> <strong className="text-emerald-400">{selectedDrive.package || selectedDrive.salaryPackage}</strong></p>
+                <p><span className="text-white/50">Candidate:</span> {student?.fullName || 'Student'} ({student?.rollNumber})</p>
+                <p><span className="text-white/50">Branch & Sem:</span> {studentBranch} • Sem {student?.semester || 'VI'}</p>
+                <p><span className="text-white/50">CGPA:</span> <strong className="text-cyan-300">{studentCgpa.toFixed(1)}</strong></p>
               </div>
 
-              {/* Editable Fields */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Upload Resume (PDF/DOCX) *</label>
-                <input
-                  type="file"
-                  accept=".pdf,.docx,.doc"
-                  onChange={e => setResumeFile(e.target.files[0])}
-                  className="w-full text-xs font-medium text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 dark:file:bg-slate-800 dark:file:text-blue-400"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">GitHub URL</label>
-                  <input type="url" value={githubUrl} onChange={e => setGithubUrl(e.target.value)} placeholder="https://github.com/username" className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-medium dark:text-white" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">LinkedIn Profile</label>
-                  <input type="url" value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)} placeholder="https://linkedin.com/in/username" className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-medium dark:text-white" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Portfolio Website</label>
-                <input type="url" value={portfolioUrl} onChange={e => setPortfolioUrl(e.target.value)} placeholder="https://yourportfolio.com" className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-xs font-medium dark:text-white" />
-              </div>
-
-              {/* Declaration Checkbox */}
-              <label className="flex items-start gap-2 pt-1 cursor-pointer">
-                <input type="checkbox" checked={declaration} onChange={e => setDeclaration(e.target.checked)} className="mt-0.5 rounded text-blue-600" />
-                <span className="text-slate-600 dark:text-slate-300 text-xs font-medium">
-                  I confirm that the information provided above is correct and accurate.
-                </span>
+              <label className="flex items-start gap-2 pt-1 cursor-pointer text-xs">
+                <input type="checkbox" checked={declaration} onChange={e => setDeclaration(e.target.checked)} className="mt-0.5" />
+                <span className="text-white/80">I confirm that my academic details and credentials are accurate and I agree to participate in the placement process.</span>
               </label>
 
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
-                <button type="button" onClick={() => setShowApplyModal(false)} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-bold">Cancel</button>
-                <button type="submit" disabled={submitting || !declaration} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20">
-                  {submitting ? 'Submitting...' : 'Submit Application'}
+              <div className="flex justify-end gap-3 pt-2 border-t border-white/10">
+                <button type="button" onClick={() => setShowApplyModal(false)} className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold cursor-pointer">
+                  Cancel
+                </button>
+                <button type="submit" disabled={submitting || !declaration} className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-lg cursor-pointer">
+                  {submitting ? 'Submitting...' : 'Confirm Application'}
                 </button>
               </div>
-
             </form>
           </div>
         </div>
       )}
-
-      {/* TAB 2: MY APPLICATIONS */}
-      {activeTab === 'applications' && (
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-4">
-          <h3 className="text-sm font-black text-slate-900 dark:text-white border-b pb-3">My Submitted Placement Applications</h3>
-          {applications.length === 0 ? (
-            <div className="py-12 text-center text-slate-400">You have not submitted any placement drive applications yet.</div>
-          ) : (
-            <div className="space-y-3">
-              {applications.map(a => (
-                <div key={a.id || a.applicationId} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
-                  <div>
-                    <h4 className="font-black text-slate-900 dark:text-white text-sm">{a.companyName}</h4>
-                    <p className="text-xs text-blue-600 font-bold">{a.jobRole} ({a.package})</p>
-                    <span className="text-[10px] text-slate-400 block mt-1">Applied Date: {a.appliedDate || 'Recent'}</span>
-                  </div>
-                  <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase ${
-                    a.status === 'Selected' ? 'bg-emerald-500/10 text-emerald-600' :
-                    a.status === 'Shortlisted' ? 'bg-blue-500/10 text-blue-600' :
-                    a.status === 'Interview Scheduled' ? 'bg-purple-500/10 text-purple-600' :
-                    a.status === 'Rejected' ? 'bg-rose-500/10 text-rose-500' :
-                    'bg-amber-500/10 text-amber-600'
-                  }`}>
-                    {a.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB 3: INTERVIEW SCHEDULE */}
-      {activeTab === 'interviews' && (
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-4">
-          <h3 className="text-sm font-black text-slate-900 dark:text-white border-b pb-3">Scheduled Interview Rounds</h3>
-          {interviews.length === 0 ? (
-            <div className="py-12 text-center text-slate-400">No interview rounds scheduled currently.</div>
-          ) : (
-            <div className="space-y-3">
-              {interviews.map(i => (
-                <div key={i.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <span className="px-2.5 py-0.5 bg-purple-500/10 text-purple-600 rounded text-[9.5px] font-black uppercase">{i.round}</span>
-                    <h4 className="font-black text-slate-900 dark:text-white text-sm mt-1">{i.companyName} ({i.jobRole})</h4>
-                    <p className="text-[10.5px] text-slate-500">Venue: {i.venue}</p>
-                    {i.instructions && <p className="text-[10px] text-slate-400 italic">Instructions: {i.instructions}</p>}
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs font-black text-slate-800 dark:text-slate-200">{i.date} at {i.time}</p>
-                    {i.meetingLink && (
-                      <a href={i.meetingLink} target="_blank" rel="noreferrer" className="text-xs text-purple-500 hover:underline flex items-center gap-1 justify-end font-bold mt-1">
-                        Virtual Meeting Link
-                      </a>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB 4: SELECTION OFFERS */}
-      {activeTab === 'offers' && (
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-4">
-          <h3 className="text-sm font-black text-slate-900 dark:text-white border-b pb-3">My Confirmed Placement Offers</h3>
-          {!selectedApp ? (
-            <div className="py-12 text-center text-slate-400">No confirmed placement offers yet. Keep applying to active drives!</div>
-          ) : (
-            <div className="p-6 rounded-3xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-xl space-y-3">
-              <span className="px-3 py-1 bg-white/20 rounded-full text-[10px] font-black uppercase">Official Offer Letter Issued</span>
-              <h3 className="text-2xl font-black">{selectedApp.companyName}</h3>
-              <p className="text-sm font-bold">Designation: {selectedApp.jobRole}</p>
-              <p className="text-sm font-black text-emerald-200">Salary Package: {selectedApp.package}</p>
-              <p className="text-xs text-emerald-100">Congratulations on your campus recruitment success!</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB 5: TRAINING & MOCK TESTS */}
-      {activeTab === 'training' && (
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-4">
-          <h3 className="text-sm font-black text-slate-900 dark:text-white border-b pb-3">Placement Training & Mock Workshops</h3>
-          {trainings.length === 0 ? (
-            <div className="py-12 text-center text-slate-400">No training sessions published currently.</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {trainings.map(t => {
-                const stId = student?.uid || student?.id;
-                const isRegistered = Array.isArray(t.registeredStudents) && t.registeredStudents.includes(stId);
-
-                return (
-                  <div key={t.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 space-y-3 flex flex-col justify-between">
-                    <div>
-                      <span className="px-2.5 py-0.5 bg-blue-500/10 text-blue-600 rounded text-[9.5px] font-black uppercase">{t.type}</span>
-                      <h4 className="font-black text-slate-900 dark:text-white text-sm mt-1">{t.title}</h4>
-                      <p className="text-xs text-slate-400 mt-0.5">Trainer: {t.trainer} • Date: {t.date}</p>
-                      <p className="text-[10px] text-slate-500 mt-1">Venue: {t.venue} ({t.duration})</p>
-                    </div>
-
-                    <div className="pt-3 border-t flex items-center justify-between">
-                      <span className="text-[10px] text-blue-500 font-bold">{t.targetBranches}</span>
-                      {isRegistered ? (
-                        <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-xl text-[10px] font-black">Registered</span>
-                      ) : (
-                        <button
-                          onClick={() => handleRegisterTraining(t.id)}
-                          disabled={isParent}
-                          className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-[10px] shadow"
-                        >
-                          Register Now
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
     </div>
   );
 };
 
-
-// 14. COUNSELLING HUB
+// ==========================================
+// 11. COUNSELLING SESSIONS
+// ==========================================
 const StudentCounselling = ({ student, isParent }) => {
   const [meetings, setMeetings] = useState([]);
-  const { showToast } = useAuth();
 
   useEffect(() => {
     const load = async () => {
       const data = await mockDB.getCounsellingMeetings('student', student?.uid);
-      setMeetings(data);
+      setMeetings(data || []);
     };
     load();
   }, [student]);
 
   return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
-      <div className="border-b pb-4">
-        <h3 className="text-base font-black text-slate-900 dark:text-white">Ward Counselling Meetings & Mentoring Console</h3>
-        <p className="text-xs text-slate-400">Scheduled one-on-one sessions with your assigned Ward Counsellor</p>
+    <div className="bg-transparent min-h-screen text-white space-y-6 font-sans">
+      {/* Standardized Header Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 mb-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg border border-white/20">
+            <MessageSquare size={24} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black font-display text-white drop-shadow">Ward Counselling & Mentoring Console</h2>
+            <p className="text-xs text-blue-200 mt-0.5">Scheduled one-on-one sessions with your assigned Ward Counsellor</p>
+          </div>
+        </div>
+        <span className="px-3.5 py-1.5 bg-purple-500/20 text-purple-300 border border-purple-400/30 rounded-2xl font-black text-xs shadow-md self-start sm:self-auto">
+          Mentorship Active 🟢
+        </span>
       </div>
 
-      {meetings.length === 0 ? (
-        <div className="py-16 text-center text-slate-400">No scheduled counselling meetings at this time.</div>
-      ) : (
-        <div className="space-y-3">
-          {meetings.map(m => (
-            <div key={m.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex justify-between items-center">
-              <div>
-                <span className="px-2.5 py-0.5 bg-purple-500/10 text-purple-600 rounded text-[9.5px] font-black uppercase">{m.category || 'Mentoring'}</span>
-                <h4 className="font-black text-slate-900 dark:text-white text-xs mt-1">{m.title || 'Counselling Session'}</h4>
-                <p className="text-[10.5px] text-slate-500">{m.date} at {m.time}</p>
+      <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-6 space-y-4">
+        <h3 className="text-sm font-black text-white border-b border-white/10 pb-3">Session Log</h3>
+        {meetings.length === 0 ? (
+          <div className="py-12 text-center text-white/50">No scheduled counselling meetings at this time.</div>
+        ) : (
+          <div className="space-y-3">
+            {meetings.map(m => (
+              <div key={m.id} className="p-4 rounded-xl bg-white/5 border border-white/10 flex justify-between items-center">
+                <div>
+                  <h4 className="font-extrabold text-white text-xs">{m.title || 'Counselling Session'}</h4>
+                  <p className="text-[11px] text-white/60">{m.date} at {m.time}</p>
+                </div>
+                <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold">
+                  {m.status || 'Scheduled'}
+                </span>
               </div>
-              <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-xl font-bold">{m.status || 'Scheduled'}</span>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-// 15. NOTIFICATIONS
+// ==========================================
+// 12. NOTIFICATIONS & BROADCASTS
+// ==========================================
 const StudentNotifications = ({ student, isParent }) => {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     const load = async () => {
       const data = await mockDB.getNotifications(student?.uid);
-      setNotifications(data);
+      setNotifications(data || []);
     };
     load();
   }, [student]);
 
   return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
-      <div className="border-b pb-4">
-        <h3 className="text-base font-black text-slate-900 dark:text-white">Campus Official Notifications & Broadcast Feed</h3>
-        <p className="text-xs text-slate-400">Important academic alerts, placement updates, and leave statuses</p>
+    <div className="bg-transparent min-h-screen text-white space-y-6 font-sans">
+      {/* Standardized Header Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 mb-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg border border-white/20">
+            <Bell size={24} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black font-display text-white drop-shadow">Campus Official Notifications & Broadcast Feed</h2>
+            <p className="text-xs text-blue-200 mt-0.5">Important academic circulars, placement alerts, and examination updates</p>
+          </div>
+        </div>
+        <span className="px-3.5 py-1.5 bg-blue-500/20 text-cyan-300 border border-blue-400/30 rounded-2xl font-black text-xs shadow-md self-start sm:self-auto">
+          {notifications.length} Broadcasts
+        </span>
       </div>
 
-      {notifications.length === 0 ? (
-        <div className="py-16 text-center text-slate-400">No unread campus notifications.</div>
-      ) : (
-        <div className="space-y-3">
-          {notifications.map((n, idx) => (
-            <div key={idx} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex items-start gap-3">
-              <Bell size={16} className="text-blue-500 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{n.content || n.message}</p>
-                <span className="text-[9.5px] text-slate-400 block mt-1">{n.createdAt ? new Date(n.createdAt).toLocaleDateString() : 'Today'}</span>
+      <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-6 space-y-4">
+        <h3 className="text-sm font-black text-white border-b border-white/10 pb-3">Latest Broadcast Announcements</h3>
+        {notifications.length === 0 ? (
+          <div className="py-12 text-center text-white/50">No unread campus notifications.</div>
+        ) : (
+          <div className="space-y-3">
+            {notifications.map((n, idx) => (
+              <div key={idx} className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-start gap-3 hover:bg-white/10 transition-colors">
+                <Bell size={16} className="text-cyan-400 shrink-0 mt-0.5" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-white leading-relaxed">{n.content || n.message}</p>
+                  <span className="text-[10px] text-white/50 block mt-1">{n.createdAt ? new Date(n.createdAt).toLocaleDateString() : 'Today'}</span>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-// 16. MY PERFORMANCE
+// ==========================================
+// 13. PERFORMANCE MATRIX
+// ==========================================
 const StudentPerformance = ({ student, isParent }) => {
-  const att = parseFloat(student?.attendancePercentage || student?.attendance || 84.5);
+  const att = parseFloat(student?.attendancePercentage || student?.attendance || 88.5);
 
   return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-6 text-xs font-semibold">
-      <div className="border-b pb-4">
-        <h3 className="text-base font-black text-slate-900 dark:text-white">My Academic Performance Matrix</h3>
-        <p className="text-xs text-slate-400">Integrated attendance, internal test marks, and assignment evaluation</p>
+    <div className="bg-transparent min-h-screen text-white space-y-6 font-sans">
+      {/* Standardized Header Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 mb-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg border border-white/20">
+            <Activity size={24} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black font-display text-white drop-shadow">My Academic Performance Matrix</h2>
+            <p className="text-xs text-blue-200 mt-0.5">Integrated attendance metrics, internal test score distributions, and learning progress</p>
+          </div>
+        </div>
+        <span className="px-3.5 py-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-2xl font-black text-xs shadow-md self-start sm:self-auto">
+          Standing: Grade A+ 🌟
+        </span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 space-y-2">
-          <span className="text-[10px] text-slate-400 uppercase font-black">Academic Strengths</span>
-          <p className="text-xs text-emerald-600 font-black">High Attendance ({att}%) • Strong Internal Marks (44/50)</p>
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-6 space-y-2">
+          <span className="text-[10px] text-white/50 uppercase font-black tracking-wider block">Academic Strengths</span>
+          <p className="text-sm text-emerald-400 font-extrabold">High Attendance ({att}%) • Strong Internal Marks (46/50)</p>
+          <p className="text-xs text-white/70 pt-1">Consistently excelling in algorithmic theory and laboratory practicals.</p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 space-y-2">
-          <span className="text-[10px] text-slate-400 uppercase font-black">Overall Performance Status</span>
-          <p className="text-xs text-blue-600 font-black">Grade A • Consistent Performer</p>
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-6 space-y-2">
+          <span className="text-[10px] text-white/50 uppercase font-black tracking-wider block">Overall Performance Standing</span>
+          <p className="text-sm text-cyan-300 font-extrabold">Top 5% in {student?.department || 'Department'}</p>
+          <p className="text-xs text-white/70 pt-1">Eligible for Dean's Honor Roll and corporate recruitment fast-track.</p>
         </div>
       </div>
     </div>
   );
 };
 
-// 17. DOCUMENT REQUESTS DESK
+// ==========================================
+// 14. DOCUMENT REQUESTS DESK
+// ==========================================
 const StudentDocumentRequests = ({ student, isParent }) => {
+  const [docType, setDocType] = useState('Bonafide Certificate');
+  const [purpose, setPurpose] = useState('');
+  const [requests, setRequests] = useState([
+    { id: 'DOC-8821', type: 'Bonafide Certificate', date: '2026-03-12', status: 'Approved', fee: 'Free' },
+    { id: 'DOC-7419', type: 'Official Grade Transcript', date: '2026-02-18', status: 'Issued & Dispatched', fee: '₹200' }
+  ]);
+  const { showToast } = useAuth();
+
+  const handleRequestDoc = (e) => {
+    e.preventDefault();
+    if (isParent) return;
+    const newReq = {
+      id: `DOC-${Math.floor(1000 + Math.random() * 9000)}`,
+      type: docType,
+      date: new Date().toISOString().split('T')[0],
+      status: 'Under Review',
+      fee: 'Free'
+    };
+    setRequests(prev => [newReq, ...prev]);
+    showToast('Document request submitted to College Registrar Office.', 'success');
+    setPurpose('');
+  };
+
   return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-4 text-xs font-semibold">
-      <h3 className="text-base font-black text-slate-900 dark:text-white border-b pb-4">Document Requests Desk</h3>
-      <p className="text-slate-400">Request bonafide certificates, transcripts, or conduct letters.</p>
+    <div className="bg-transparent min-h-screen text-white space-y-6 font-sans">
+      {/* Standardized Header Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 mb-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg border border-white/20">
+            <FileCheck size={24} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black font-display text-white drop-shadow">Official Document & Certificate Requests Desk</h2>
+            <p className="text-xs text-blue-200 mt-0.5">Apply for Bonafide Certificates, Study Certificates, Transcripts & NOCs digitally</p>
+          </div>
+        </div>
+        <span className="px-3.5 py-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-2xl font-black text-xs shadow-md self-start sm:self-auto">
+          Digital Dispatch Active 📜
+        </span>
+      </div>
+
+      {/* Form */}
+      {!isParent && (
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-6 space-y-4">
+          <h3 className="text-sm font-black text-white border-b border-white/10 pb-3">Apply for Institutional Certificate</h3>
+          <form onSubmit={handleRequestDoc} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] text-white/60 uppercase font-black block mb-1.5">Document Type</label>
+                <select
+                  value={docType}
+                  onChange={e => setDocType(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-black/50 border border-white/20 text-white rounded-xl text-xs font-semibold focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 outline-none"
+                >
+                  <option value="Bonafide Certificate" className="bg-slate-900 text-white">Bonafide Certificate</option>
+                  <option value="Official Grade Transcript" className="bg-slate-900 text-white">Official Grade Transcript</option>
+                  <option value="No Objection Certificate (NOC)" className="bg-slate-900 text-white">No Objection Certificate (NOC)</option>
+                  <option value="Conduct & Character Certificate" className="bg-slate-900 text-white">Conduct & Character Certificate</option>
+                  <option value="Fee Structure Certificate" className="bg-slate-900 text-white">Fee Structure Certificate</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] text-white/60 uppercase font-black block mb-1.5">Purpose / Recipient</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Passport verification, Education loan, Internship..."
+                  value={purpose}
+                  onChange={e => setPurpose(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-black/50 border border-white/20 text-white placeholder-white/40 rounded-xl text-xs font-semibold focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 outline-none"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black rounded-xl text-xs shadow-lg shadow-blue-500/25 border border-white/20 transition-all cursor-pointer"
+            >
+              Submit Certificate Request
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* History */}
+      <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-6 space-y-4">
+        <h3 className="text-sm font-black text-white border-b border-white/10 pb-3">Document Request History</h3>
+        <div className="w-full max-w-full overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="border-b border-white/10 text-white/60 font-bold uppercase tracking-wider text-[10px]">
+                <th className="px-4 py-3">Tracking ID</th>
+                <th className="px-4 py-3">Document Requested</th>
+                <th className="px-3 py-3 text-center">Date</th>
+                <th className="px-3 py-3 text-center">Processing Fee</th>
+                <th className="px-4 py-3 text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5 font-semibold">
+              {requests.map(r => (
+                <tr key={r.id} className="hover:bg-white/5 transition-colors">
+                  <td className="px-4 py-3.5 font-mono text-cyan-300 font-bold">{r.id}</td>
+                  <td className="px-4 py-3.5 font-bold text-white">{r.type}</td>
+                  <td className="px-3 py-3.5 text-center text-white/80 font-mono">{r.date}</td>
+                  <td className="px-3 py-3.5 text-center text-emerald-400">{r.fee}</td>
+                  <td className="px-4 py-3.5 text-right">
+                    <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-xl text-[10px] font-bold uppercase">
+                      {r.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };
 
-// 18. SUPPORT DESK
+// ==========================================
+// 15. SUPPORT DESK
+// ==========================================
 const StudentSupportDesk = ({ student, isParent }) => {
+  const [subject, setSubject] = useState('');
+  const [category, setCategory] = useState('Academic Query');
+  const [description, setDescription] = useState('');
+  const [tickets, setTickets] = useState([
+    { id: 'TKT-1049', category: 'Academic Ledger', subject: 'Course Registration / Credit Ledger Check', status: 'Resolved', date: '2026-03-01' }
+  ]);
+  const { showToast } = useAuth();
+
+  const handleCreateTicket = (e) => {
+    e.preventDefault();
+    if (isParent) return;
+    const newTkt = {
+      id: `TKT-${Math.floor(1000 + Math.random() * 9000)}`,
+      category,
+      subject,
+      status: 'In Progress',
+      date: new Date().toISOString().split('T')[0]
+    };
+    setTickets(prev => [newTkt, ...prev]);
+    showToast('Support ticket logged. Administrative team will respond within 24 hours.', 'success');
+    setSubject('');
+    setDescription('');
+  };
+
   return (
-    <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-4 text-xs font-semibold">
-      <h3 className="text-base font-black text-slate-900 dark:text-white border-b pb-4">Grievance & Support Desk</h3>
-      <p className="text-slate-400">Submit support tickets to college admin staff.</p>
+    <div className="bg-transparent min-h-screen text-white space-y-6 font-sans">
+      {/* Standardized Header Banner */}
+      <div className="bg-gradient-to-r from-blue-950/50 to-indigo-950/50 backdrop-blur-xl border border-blue-500/30 rounded-3xl shadow-lg p-6 mb-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg border border-white/20">
+            <ShieldCheck size={24} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black font-display text-white drop-shadow">Student Support & Grievance Desk</h2>
+            <p className="text-xs text-blue-200 mt-0.5">Direct institutional assistance for academic, administrative, and technical inquiries</p>
+          </div>
+        </div>
+        <span className="px-3.5 py-1.5 bg-blue-500/20 text-cyan-300 border border-blue-400/30 rounded-2xl font-black text-xs shadow-md self-start sm:self-auto">
+          24/7 Response Active 🛡️
+        </span>
+      </div>
+
+      {!isParent && (
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-6 space-y-4">
+          <h3 className="text-sm font-black text-white border-b border-white/10 pb-3">Open New Support Inquiry Ticket</h3>
+          <form onSubmit={handleCreateTicket} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] text-white/60 uppercase font-black block mb-1.5">Category</label>
+                <select
+                  value={category}
+                  onChange={e => setCategory(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-black/50 border border-white/20 text-white rounded-xl text-xs font-semibold focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 outline-none"
+                >
+                  <option value="Academic Query" className="bg-slate-900 text-white">Academic Query</option>
+                  <option value="Examination & Results" className="bg-slate-900 text-white">Examination & Results</option>
+                  <option value="Attendance & Leave Records" className="bg-slate-900 text-white">Attendance & Leave Records</option>
+                  <option value="IT & Portal Access" className="bg-slate-900 text-white">IT & Portal Access</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] text-white/60 uppercase font-black block mb-1.5">Subject Summary</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Brief summary of inquiry..."
+                  value={subject}
+                  onChange={e => setSubject(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-black/50 border border-white/20 text-white placeholder-white/40 rounded-xl text-xs font-semibold focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] text-white/60 uppercase font-black block mb-1.5">Detailed Description</label>
+              <textarea
+                rows={2}
+                required
+                placeholder="Explain the problem or requirement with all details..."
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-black/50 border border-white/20 text-white placeholder-white/40 rounded-xl text-xs font-medium focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 outline-none"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black rounded-xl text-xs shadow-lg shadow-blue-500/25 border border-white/20 transition-all cursor-pointer"
+            >
+              Submit Ticket
+            </button>
+          </form>
+        </div>
+      )}
+
+      <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-6 space-y-4">
+        <h3 className="text-sm font-black text-white border-b border-white/10 pb-3">My Support Tickets Ledger</h3>
+        <div className="w-full max-w-full overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="border-b border-white/10 text-white/60 font-bold uppercase tracking-wider text-[10px]">
+                <th className="px-4 py-3">Ticket ID</th>
+                <th className="px-4 py-3">Category</th>
+                <th className="px-4 py-3">Subject</th>
+                <th className="px-3 py-3 text-center">Date</th>
+                <th className="px-4 py-3 text-right">Resolution Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5 font-semibold">
+              {tickets.map(t => (
+                <tr key={t.id} className="hover:bg-white/5 transition-colors">
+                  <td className="px-4 py-3.5 font-mono text-cyan-300 font-bold">{t.id}</td>
+                  <td className="px-4 py-3.5 text-white/80">{t.category}</td>
+                  <td className="px-4 py-3.5 font-bold text-white">{t.subject}</td>
+                  <td className="px-3 py-3.5 text-center text-white/80 font-mono">{t.date}</td>
+                  <td className="px-4 py-3.5 text-right">
+                    <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold uppercase ${
+                      t.status === 'Resolved' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    }`}>
+                      {t.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };

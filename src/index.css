@@ -321,8 +321,8 @@ body {
 
 .ultra-glass-panel {
   background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25), inset 0 1px 1px 0 rgba(255, 255, 255, 0.35);
   border-radius: 1.25rem;
@@ -338,8 +338,8 @@ body {
 
 .ultra-glass-button {
   background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.2), inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
   transition: all 0.25s ease-out;
@@ -422,8 +422,8 @@ p,
 .card-3d {
   background-color: var(--card-bg) !important;
   color: var(--text-primary) !important;
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-3d-card), var(--inner-bevel-top);
@@ -437,8 +437,8 @@ p,
 .card-3d-elevated {
   background-color: var(--surface-elevated) !important;
   color: var(--text-primary) !important;
-  backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
   border: 1px solid var(--border-highlight);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-3d-card), var(--inner-bevel-top), var(--inner-bevel-depth);
@@ -451,8 +451,8 @@ p,
 .card-3d-interactive {
   background-color: var(--card-bg) !important;
   color: var(--text-primary) !important;
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-3d-card), var(--inner-bevel-top);
@@ -480,8 +480,8 @@ p,
 .card-3d-glass {
   background-color: var(--surface-glass) !important;
   color: var(--text-primary) !important;
-  backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
   border: 1px solid var(--border-highlight);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-3d-card), var(--inner-bevel-top);
@@ -492,8 +492,8 @@ p,
 .stat-card-3d {
   background-color: var(--card-bg) !important;
   color: var(--text-primary) !important;
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   padding: 1.25rem 1.5rem;
@@ -559,6 +559,7 @@ p,
   border-radius: var(--radius-md);
   border: 1px solid transparent;
   cursor: pointer;
+  -webkit-user-select: none;
   user-select: none;
   transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast), background var(--transition-fast);
   text-decoration: none;
@@ -766,8 +767,8 @@ p,
 
 .table-3d-container {
   background-color: var(--card-bg) !important;
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-3d-card), var(--inner-bevel-top);
@@ -907,8 +908,8 @@ p,
   position: fixed;
   inset: 0;
   background: rgba(5, 8, 17, 0.8);
-  backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   z-index: 50;
   display: flex;
   align-items: center;
@@ -921,8 +922,8 @@ p,
 .modal-3d-content {
   background-color: var(--surface-elevated) !important;
   color: var(--text-primary) !important;
-  backdrop-filter: blur(28px);
   -webkit-backdrop-filter: blur(28px);
+  backdrop-filter: blur(28px);
   border: 1px solid var(--border-highlight);
   border-radius: var(--radius-xl);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), var(--inner-bevel-top), var(--shadow-glow);
@@ -974,8 +975,8 @@ p,
 /* Navbar floating glass header */
 .navbar-3d {
   background-color: var(--surface-glass) !important;
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
   box-shadow: 0 2px 14px rgba(0, 0, 0, 0.05);
 }
@@ -1183,8 +1184,8 @@ tbody td {
 .glass-container,
 .card-glass-dark {
   background-color: rgba(0, 0, 0, 0.4) !important;
-  backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
+  backdrop-filter: blur(16px) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 1rem !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;

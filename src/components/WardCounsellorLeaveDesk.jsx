@@ -95,11 +95,8 @@ export const WardCounsellorLeaveDesk = ({ counsellor }) => {
   // 2. ACTION SECURITY VALIDATION BEFORE APPROVE / REJECT
   const validateActionAuthorization = (leave) => {
     const deptMatch = isDepartmentMatch(leave.department || leave.branch, scope.assignedDepartment);
-    const semMatch = !leave.semester || normalizeSemester(leave.semester) === normalizeSemester(scope.assignedSemester);
-    const secMatch = !leave.section || normalizeSection(leave.section) === normalizeSection(scope.assignedSection);
-
-    if (!deptMatch || !semMatch || !secMatch) {
-      showToast("You are not authorized to manage this student's leave.", "error");
+    if (!deptMatch) {
+      showToast("You are not authorized to manage this student's leave (Department mismatch).", "error");
       return false;
     }
     return true;

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { db, isFirebaseConfigured, mockDB, isDepartmentMatch, normalizeSemester, normalizeSection } from '../services/firebase';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { 
   GraduationCap, 
   BookOpen, 
@@ -14,11 +15,14 @@ import {
   AlertCircle,
   Calendar,
   Layers,
-  UserCheck
+  UserCheck,
+  CheckSquare,
+  FileCheck
 } from 'lucide-react';
 
 export const StudentDashboard = ({ onNavigate }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   // Profile & State
   const [profile, setProfile] = useState(null);
@@ -105,47 +109,35 @@ export const StudentDashboard = ({ onNavigate }) => {
     fetchStudentProfile();
   }, [user]);
 
-  // 2. Dependent Firestore Queries based on fetched Branch, Semester, and Section
+  // 2. Dependent Firestore Queries based on fetched Branch, Semester, and Section (Cross-Section & Real-Time Sync)
   useEffect(() => {
     if (!profile) return;
+
+    let unsubs = [];
+    const studentUid = profile.uid;
+    const studentRoll = profile.rollNumber;
+    const dept = (profile.branch || '').trim();
+    const sem = (profile.semester || '').trim();
+    const sec = (profile.section || '').trim();
+    const rawSec = (profile.rawSection || sec).trim();
 
     const fetchDependentData = async () => {
       setLoadingData(true);
       try {
-        const studentUid = profile.uid;
-        const dept = (profile.branch || '').trim();
-        const sem = (profile.semester || '').trim();
-        const sec = (profile.section || '').trim();
-        const rawSec = (profile.rawSection || sec).trim();
-
-        // 1. QUERY ASSIGNMENTS
+        // 1. QUERY ASSIGNMENTS (Cross-Section: All students of matching Branch & Semester receive material)
         let firestoreAssignments = [];
         if (isFirebaseConfigured && db) {
           try {
-            const assRef = collection(db, 'assignments');
-            const qAss = query(
-              assRef,
-              where('targetBranch', '==', dept),
-              where('targetSemester', '==', sem),
-              where('targetSection', '==', sec)
-            );
-            const snapAss = await getDocs(qAss);
-            firestoreAssignments = snapAss.docs.map(d => ({ id: d.id, assignmentId: d.id, ...d.data() }));
+            const snapAll = await getDocs(collection(db, 'assignments'));
+            firestoreAssignments = snapAll.docs.map(d => ({ id: d.id, assignmentId: d.id, ...d.data() }));
           } catch (err) {
-            console.error("Firestore Fetch Error:", err.message);
-            if (err.code) console.error("Firestore Error Code:", err.code);
-            try {
-              const snapAll = await getDocs(collection(db, 'assignments'));
-              firestoreAssignments = snapAll.docs.map(d => ({ id: d.id, assignmentId: d.id, ...d.data() }));
-            } catch (fallbackErr) {
-              console.error("Firestore Fetch Error (Assignments Fallback):", fallbackErr.message);
-            }
+            console.error("Firestore Fetch Error (Assignments):", err.message);
           }
         }
 
         let mockAss = [];
         try {
-          mockAss = await mockDB.getAssignments(dept, sem, sec);
+          mockAss = await mockDB.getAssignments(dept, sem);
         } catch (e) {
           console.warn("MockDB getAssignments fallback:", e);
         }
@@ -159,45 +151,29 @@ export const StudentDashboard = ({ onNavigate }) => {
         const filteredAssignments = Array.from(combinedAssMap.values()).filter(a => {
           const aBranch = (a.targetBranch || a.branch || a.department || '').trim();
           const aSem = (a.targetSemester || a.semester || '').trim();
-          const aSec = (a.targetSection || a.section || '').trim();
 
           const branchOk = !aBranch || isDepartmentMatch(dept, aBranch) || isDepartmentMatch(aBranch, dept);
           const semOk = !aSem || aSem === 'All' || normalizeSemester(aSem) === normalizeSemester(sem);
-          const secOk = !aSec || aSec === 'All' || aSec === 'All Sections' || normalizeSection(aSec) === normalizeSection(sec) || normalizeSection(aSec) === normalizeSection(rawSec);
 
-          return branchOk && semOk && secOk;
+          return branchOk && semOk;
         });
 
         setAssignments(filteredAssignments);
 
-        // 2. QUERY STUDY NOTES
+        // 2. QUERY STUDY NOTES (Cross-Section: Same Branch + Same Semester)
         let firestoreNotes = [];
         if (isFirebaseConfigured && db) {
           try {
-            const notesRef = collection(db, 'notes');
-            const qNotes = query(
-              notesRef,
-              where('targetBranch', '==', dept),
-              where('targetSemester', '==', sem),
-              where('targetSection', '==', sec)
-            );
-            const snapNotes = await getDocs(qNotes);
-            firestoreNotes = snapNotes.docs.map(d => ({ id: d.id, noteId: d.id, ...d.data() }));
+            const snapAllNotes = await getDocs(collection(db, 'notes'));
+            firestoreNotes = snapAllNotes.docs.map(d => ({ id: d.id, noteId: d.id, ...d.data() }));
           } catch (err) {
-            console.error("Firestore Fetch Error:", err.message);
-            if (err.code) console.error("Firestore Error Code:", err.code);
-            try {
-              const snapAllNotes = await getDocs(collection(db, 'notes'));
-              firestoreNotes = snapAllNotes.docs.map(d => ({ id: d.id, noteId: d.id, ...d.data() }));
-            } catch (fallbackErr) {
-              console.error("Firestore Fetch Error (Notes Fallback):", fallbackErr.message);
-            }
+            console.error("Firestore Fetch Error (Notes):", err.message);
           }
         }
 
         let mockNotes = [];
         try {
-          mockNotes = await mockDB.getStudyNotes ? await mockDB.getStudyNotes(dept, sem, sec) : (await mockDB.getNotes(dept, sem, sec));
+          mockNotes = await mockDB.getStudyNotes ? await mockDB.getStudyNotes(dept, sem) : (await mockDB.getNotes(dept, sem));
         } catch (e) {
           console.warn("MockDB getNotes fallback:", e);
         }
@@ -211,48 +187,88 @@ export const StudentDashboard = ({ onNavigate }) => {
         const filteredNotes = Array.from(combinedNotesMap.values()).filter(n => {
           const nBranch = (n.targetBranch || n.department || n.branch || '').trim();
           const nSem = (n.targetSemester || n.semester || '').trim();
-          const nSec = (n.targetSection || n.section || '').trim();
 
           const branchOk = !nBranch || isDepartmentMatch(dept, nBranch) || isDepartmentMatch(nBranch, dept);
           const semOk = !nSem || nSem === 'All' || normalizeSemester(nSem) === normalizeSemester(sem);
-          const secOk = !nSec || nSec === 'All' || nSec === 'All Sections' || normalizeSection(nSec) === normalizeSection(sec) || normalizeSection(nSec) === normalizeSection(rawSec);
 
-          return branchOk && semOk && secOk;
+          return branchOk && semOk;
         });
 
         setNotes(filteredNotes);
 
-        // 3. Query Attendance Records for this Student
-        let attDocs = [];
-        if (isFirebaseConfigured && db) {
+        // 3. Real-Time Attendance Listener
+        const processAttendance = (rawAtt) => {
+          const myAtt = rawAtt.filter(a =>
+            (studentUid && (a.studentId === studentUid || a.uid === studentUid)) ||
+            (studentRoll && (a.rollNumber === studentRoll || a.studentId === studentRoll))
+          );
+          // Merge local fallback
           try {
-            const attendanceQuery = query(
-              collection(db, 'attendance'),
-              where('studentId', '==', studentUid)
-            );
-            const attSnap = await getDocs(attendanceQuery);
-            attDocs = attSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-          } catch (err) {
-            console.error("Firestore Fetch Error (Attendance):", err.message);
-          }
-        }
-        setAttendanceRecords(attDocs);
+            const local = JSON.parse(localStorage.getItem('acad_attendance') || '[]');
+            local.forEach(item => {
+              const match = (studentUid && (item.studentId === studentUid || item.uid === studentUid)) ||
+                            (studentRoll && (item.rollNumber === studentRoll || item.studentId === studentRoll));
+              if (match && !myAtt.some(r => r.id === item.id || `${r.studentId}-${r.date}-${r.subject}-${r.lecturePeriod}` === `${item.studentId}-${item.date}-${item.subject}-${item.lecturePeriod}`)) {
+                myAtt.push(item);
+              }
+            });
+          } catch (_) {}
+          setAttendanceRecords(myAtt);
+        };
 
-        // 4. Query Internal Marks for this Student
-        let marksDocs = [];
         if (isFirebaseConfigured && db) {
           try {
-            const marksQuery = query(
-              collection(db, 'internal_marks'),
-              where('studentId', '==', studentUid)
-            );
-            const marksSnap = await getDocs(marksQuery);
-            marksDocs = marksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-          } catch (err) {
-            console.error("Firestore Fetch Error (Marks):", err.message);
-          }
+            const unsubAtt = onSnapshot(collection(db, 'attendance'), (snap) => {
+              const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+              processAttendance(docs);
+            }, (err) => {
+              console.warn("Firestore Attendance onSnapshot fallback:", err);
+            });
+            unsubs.push(unsubAtt);
+          } catch (_) {}
+        } else {
+          try {
+            const localAtt = JSON.parse(localStorage.getItem('acad_attendance') || '[]');
+            processAttendance(localAtt);
+          } catch (_) {}
         }
-        setInternalMarks(marksDocs);
+
+        // 4. Real-Time Internal Marks Listener
+        const processMarks = (rawMarks) => {
+          const myMarks = rawMarks.filter(m =>
+            (studentUid && (m.studentId === studentUid || m.uid === studentUid || m.studentUid === studentUid)) ||
+            (studentRoll && (m.rollNumber === studentRoll || m.studentRollNumber === studentRoll || m.studentId === studentRoll))
+          );
+          // Merge local fallback
+          try {
+            const local = JSON.parse(localStorage.getItem('acad_internal_marks') || '[]');
+            local.forEach(item => {
+              const match = (studentUid && (item.studentId === studentUid || item.uid === studentUid)) ||
+                            (studentRoll && (item.rollNumber === studentRoll || item.studentId === studentRoll));
+              if (match && !myMarks.some(r => r.id === item.id || `${r.subject}_${r.studentId}` === `${item.subject}_${item.studentId}`)) {
+                myMarks.push(item);
+              }
+            });
+          } catch (_) {}
+          setInternalMarks(myMarks);
+        };
+
+        if (isFirebaseConfigured && db) {
+          try {
+            const unsubMarks = onSnapshot(collection(db, 'internal_marks'), (snap) => {
+              const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+              processMarks(docs);
+            }, (err) => {
+              console.warn("Firestore Marks onSnapshot fallback:", err);
+            });
+            unsubs.push(unsubMarks);
+          } catch (_) {}
+        } else {
+          try {
+            const localMarks = JSON.parse(localStorage.getItem('acad_internal_marks') || '[]');
+            processMarks(localMarks);
+          } catch (_) {}
+        }
 
       } catch (err) {
         console.error("Firestore Fetch Error:", err.message);
@@ -262,6 +278,12 @@ export const StudentDashboard = ({ onNavigate }) => {
     };
 
     fetchDependentData();
+
+    return () => {
+      unsubs.forEach(u => {
+        try { u(); } catch (_) {}
+      });
+    };
   }, [profile]);
 
   if (loadingProfile) {
@@ -435,20 +457,23 @@ export const StudentDashboard = ({ onNavigate }) => {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 sm:gap-3">
           {[
-            { label: 'Apply Leave', page: 'leaves', icon: Calendar, color: 'text-amber-300 hover:border-amber-400/50' },
-            { label: 'View Attendance', page: 'attendance', icon: UserCheck, color: 'text-emerald-300 hover:border-emerald-400/50' },
-            { label: 'Internal Marks', page: 'marks', icon: FileText, color: 'text-cyan-300 hover:border-cyan-400/50' },
+            { label: 'My Profile', page: 'profile', icon: UserCheck, color: 'text-cyan-300 hover:border-cyan-400/50' },
+            { label: 'View Attendance', page: 'attendance', icon: CheckSquare, color: 'text-emerald-300 hover:border-emerald-400/50' },
+            { label: 'Internal Marks', page: 'marks', icon: FileText, color: 'text-blue-300 hover:border-blue-400/50' },
             { label: 'Semester Results', page: 'results', icon: Award, color: 'text-purple-300 hover:border-purple-400/50' },
-            { label: 'Assignments', page: 'assignments', icon: Layers, color: 'text-blue-300 hover:border-blue-400/50' },
+            { label: 'Assignments', page: 'assignments', icon: Layers, color: 'text-sky-300 hover:border-sky-400/50' },
             { label: 'Study Notes', page: 'notes', icon: BookOpen, color: 'text-indigo-300 hover:border-indigo-400/50' },
-            { label: 'Online Fees', page: 'academic-overview', icon: CheckCircle2, color: 'text-rose-300 hover:border-rose-400/50' },
-            { label: 'Library', page: 'notes', icon: BookOpen, color: 'text-teal-300 hover:border-teal-400/50' }
+            { label: 'Apply Leave', page: 'leaves', icon: Calendar, color: 'text-amber-300 hover:border-amber-400/50' },
+            { label: 'Documents', page: 'document-requests', icon: FileCheck, color: 'text-teal-300 hover:border-teal-400/50' }
           ].map((act, idx) => {
             const Icon = act.icon;
             return (
               <button
                 key={idx}
-                onClick={() => onNavigate && onNavigate(act.page)}
+                onClick={() => {
+                  if (onNavigate) onNavigate(act.page);
+                  else navigate(`/student/${act.page}`);
+                }}
                 className={`p-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col items-center justify-center text-center gap-2 cursor-pointer group ${act.color}`}
               >
                 <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">

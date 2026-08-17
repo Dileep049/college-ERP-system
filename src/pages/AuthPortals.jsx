@@ -215,8 +215,3 @@ export const LibrarianLogin = () => (
 export const AdminLogin = () => (
   <CommonPortalLogin roleLabel="Administrator" roleFilter="admin" prefillEmail="admin@kbn.edu" dashboardPath="/admin/dashboard" />
 );
-
-// 9. PARENT LOGIN
-export const ParentLogin = () => (
-  <CommonPortalLogin roleLabel="Parent" roleFilter="parent" prefillEmail="parent@kbn.edu" dashboardPath="/parent/dashboard" />
-);

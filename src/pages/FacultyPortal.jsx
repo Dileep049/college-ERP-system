@@ -474,10 +474,15 @@ const FacultyAttendance = ({ faculty }) => {
   const handleSaveAttendance = async () => {
     try {
       setSaving(true);
-      const records = Object.keys(attendanceMap).map(uid => ({
-        studentId: uid,
-        status: attendanceMap[uid]
-      }));
+      const records = Object.keys(attendanceMap).map(uid => {
+        const stud = students.find(s => (s.uid || s.studentId || s.rollNumber) === uid);
+        return {
+          studentId: uid,
+          rollNumber: stud?.rollNumber || stud?.roll || stud?.usn || '',
+          studentName: stud?.fullName || stud?.studentName || stud?.name || 'Student',
+          status: attendanceMap[uid]
+        };
+      });
 
       await mockDB.markAttendance(records, date, subject, facultyDept, semester, section, faculty?.uid, lecturePeriod);
       showToast(`Attendance for ${subject} logged & saved for ${facultyDept}!`, 'success');
@@ -705,9 +710,8 @@ const FacultyMarks = ({ faculty }) => {
 
           const bMatch = !stDept || isDepartmentMatch(currentScope.department, stDept) || isDepartmentMatch(stDept, currentScope.department);
           const sMatch = !stSem || stSem === 'All' || normalizeSemester(stSem) === normalizeSemester(currentScope.semester);
-          const secMatch = !stSec || stSec === 'All' || normalizeSection(stSec) === normalizeSection(currentScope.section);
 
-          if (bMatch && sMatch && secMatch) {
+          if (bMatch && sMatch) {
             const key = st.uid || st.id || st.rollNumber;
             if (key) combinedMap.set(key, st);
           }

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { mockDB } from '../services/firebase';
+import { mockDB, db, isFirebaseConfigured, isDepartmentMatch, normalizeSemester } from '../services/firebase';
+import { collection, onSnapshot, query, where, getDocs } from 'firebase/firestore';
 import { WardCounsellorLeaveDesk } from '../components/WardCounsellorLeaveDesk';
 import { WardCounsellorLeaves } from './WardCounsellorLeaves';
 import { WardCounsellorProfile } from './WardCounsellorProfile';
-import { ParentMeetings } from './ParentMeetings';
 import {
   UserCheck,
   Users,
@@ -90,7 +90,6 @@ export const WardCounsellorPortal = ({ subPage }) => {
     );
   }
 
-  if (subPage === 'parent-meetings') return <ParentMeetings counsellor={user} />;
   if (subPage === 'wards') return <WardsDirectory counsellor={user} />;
   if (subPage === 'reports') return <CounsellorReports counsellor={user} />;
   if (subPage === 'leaves' || subPage === 'student-leaves') return <WardCounsellorLeaves counsellor={user} />;
@@ -104,6 +103,13 @@ const CounsellorDashboard = ({ counsellor }) => {
   const [wards, setWards] = useState([]);
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Real-Time Daily Attendance Metrics
+  const [presentTodayCount, setPresentTodayCount] = useState(0);
+  const [absentTodayCount, setAbsentTodayCount] = useState(0);
+  const [overallAttendancePercentage, setOverallAttendancePercentage] = useState('0.0');
+  const [pendingLeavesCount, setPendingLeavesCount] = useState(0);
+
   const [wardsAbsentToday, setWardsAbsentToday] = useState([]);
   const [lowAttendanceWards, setLowAttendanceWards] = useState([]);
   const [highRiskWards, setHighRiskWards] = useState([]);
@@ -132,20 +138,15 @@ const CounsellorDashboard = ({ counsellor }) => {
       const assign = await mockDB.getFacultyWardAssignment(counsellor?.uid || counsellor?.id || counsellor?.email);
       setActiveAssignment(assign || null);
 
-      const branchStudents = await mockDB.getWardsForCounsellor(counsellor.uid, assign?.department || counsellor.department);
+      const resolvedDept = assign?.department || counsellor?.wardCounsellorDepartment || counsellor?.assignedBranch || counsellor?.department || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)';
+      const resolvedSem = assign?.semester || counsellor?.semester || 'Semester 6';
+
+      // Scoped across Sections A, B, C for same Branch + Semester
+      const branchStudents = await mockDB.getWardsForCounsellor(counsellor.uid, resolvedDept, resolvedSem);
       setWards(branchStudents);
 
       const allMeetings = await mockDB.getCounsellingMeetings('counsellor', counsellor.uid);
       setMeetings(allMeetings);
-
-      const absentWards = await mockDB.getWardsAbsentToday(counsellor.uid);
-      setWardsAbsentToday(absentWards);
-
-      const lowAtt = branchStudents.filter(s => (s.attendancePercentage || s.attendance || 80) < 75);
-      setLowAttendanceWards(lowAtt);
-
-      const highRisk = branchStudents.filter(s => (s.attendancePercentage || s.attendance || 80) < 65);
-      setHighRiskWards(highRisk);
 
       const reminders = await mockDB.getFollowUpReminders(counsellor.uid);
       setFollowUps(reminders);
@@ -156,8 +157,22 @@ const CounsellorDashboard = ({ counsellor }) => {
       const summary = await mockDB.getMonthlyWardSummary(counsellor.uid, selectedMonth, selectedYear);
       setMonthlySummary(summary);
 
-      const sections = await mockDB.getSectionAnalytics(assign?.department || counsellor.department);
+      const sections = await mockDB.getSectionAnalytics(resolvedDept);
       setSectionAnalytics(sections);
+
+      // Local initial computation of daily stats
+      const todayStr = new Date().toISOString().split('T')[0];
+      const localAttendance = JSON.parse(localStorage.getItem('acad_attendance') || '[]');
+      computeAttendanceStats(branchStudents, localAttendance, todayStr);
+
+      const localLeaves = JSON.parse(localStorage.getItem('acad_leave_requests') || '[]');
+      const pendingLeaves = localLeaves.filter(l => {
+        const matchDept = isDepartmentMatch(l.department || l.branch, resolvedDept);
+        const matchSem = !l.semester || !resolvedSem || normalizeSemester(l.semester) === normalizeSemester(resolvedSem);
+        return matchDept && matchSem && (l.status === 'pending' || l.status === 'Pending');
+      });
+      setPendingLeavesCount(pendingLeaves.length);
+
     } catch (e) {
       console.error(e);
     } finally {
@@ -165,9 +180,98 @@ const CounsellorDashboard = ({ counsellor }) => {
     }
   };
 
+  const computeAttendanceStats = (studentList, attendanceList, dateStr) => {
+    if (!studentList || studentList.length === 0) return;
+
+    const studentRolls = new Set(studentList.map(s => (s.rollNumber || '').toUpperCase()).filter(Boolean));
+    const studentUids = new Set(studentList.map(s => s.uid || s.id).filter(Boolean));
+
+    // 1. Records for today
+    const todayRecords = attendanceList.filter(a => {
+      const matchDate = (a.date || '').startsWith(dateStr);
+      const matchStudent = (a.studentId && studentUids.has(a.studentId)) || (a.rollNumber && studentRolls.has(a.rollNumber.toUpperCase()));
+      return matchDate && matchStudent;
+    });
+
+    const presentStudentUids = new Set();
+    const absentStudentUids = new Set();
+    const absentWardsList = [];
+
+    todayRecords.forEach(rec => {
+      const sIdentifier = rec.studentId || rec.rollNumber;
+      const statusNorm = (rec.status || '').toLowerCase();
+      if (statusNorm === 'present' || statusNorm === 'late') {
+        presentStudentUids.add(sIdentifier);
+      } else if (statusNorm === 'absent' || statusNorm === 'on leave' || statusNorm === 'leave') {
+        absentStudentUids.add(sIdentifier);
+        const wardObj = studentList.find(s => s.uid === rec.studentId || (s.rollNumber && s.rollNumber.toUpperCase() === (rec.rollNumber || '').toUpperCase()));
+        if (wardObj && !absentWardsList.some(w => w.uid === wardObj.uid)) {
+          absentWardsList.push(wardObj);
+        }
+      }
+    });
+
+    setPresentTodayCount(presentStudentUids.size);
+    setAbsentTodayCount(absentStudentUids.size);
+    setWardsAbsentToday(absentWardsList);
+
+    // 2. Cumulative Overall Attendance % calculation
+    const allScopedRecords = attendanceList.filter(a => {
+      return (a.studentId && studentUids.has(a.studentId)) || (a.rollNumber && studentRolls.has(a.rollNumber.toUpperCase()));
+    });
+
+    let overallPct = '0.0';
+    if (allScopedRecords.length > 0) {
+      const totalPresent = allScopedRecords.filter(a => ['present', 'late'].includes((a.status || '').toLowerCase())).length;
+      overallPct = ((totalPresent / allScopedRecords.length) * 100).toFixed(1);
+    } else {
+      const totalSum = studentList.reduce((acc, s) => acc + parseFloat(s.attendancePercentage || s.attendance || 84.5), 0);
+      overallPct = (totalSum / Math.max(1, studentList.length)).toFixed(1);
+    }
+    setOverallAttendancePercentage(overallPct);
+
+    // 3. Risk Categories
+    const lowAtt = studentList.filter(s => parseFloat(s.attendancePercentage || s.attendance || 80) < 75);
+    setLowAttendanceWards(lowAtt);
+
+    const highRisk = studentList.filter(s => parseFloat(s.attendancePercentage || s.attendance || 80) < 65);
+    setHighRiskWards(highRisk);
+  };
+
   useEffect(() => {
     loadCounsellorData();
   }, [counsellor, selectedMonth, selectedYear]);
+
+  // Real-time Firestore Listeners for Attendance & Leaves
+  useEffect(() => {
+    if (!isFirebaseConfigured || !db) return;
+
+    const resolvedDept = activeAssignment?.department || counsellor?.wardCounsellorDepartment || counsellor?.assignedBranch || counsellor?.department || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)';
+    const resolvedSem = activeAssignment?.semester || counsellor?.semester || 'Semester 6';
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    // 1. Live Attendance Listener
+    const unsubscribeAtt = onSnapshot(collection(db, 'attendance'), (snapshot) => {
+      const liveAttendance = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      computeAttendanceStats(wards, liveAttendance, todayStr);
+    }, (err) => console.warn('Attendance snapshot error:', err));
+
+    // 2. Live Leave Requests Listener
+    const unsubscribeLeaves = onSnapshot(collection(db, 'leave_requests'), (snapshot) => {
+      const liveLeaves = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const pendingLeaves = liveLeaves.filter(l => {
+        const matchDept = isDepartmentMatch(l.department || l.branch, resolvedDept);
+        const matchSem = !l.semester || !resolvedSem || normalizeSemester(l.semester) === normalizeSemester(resolvedSem);
+        return matchDept && matchSem && (l.status === 'pending' || l.status === 'Pending');
+      });
+      setPendingLeavesCount(pendingLeaves.length);
+    }, (err) => console.warn('Leave requests snapshot error:', err));
+
+    return () => {
+      unsubscribeAtt();
+      unsubscribeLeaves();
+    };
+  }, [wards, activeAssignment, counsellor]);
 
   const handleCreateConcern = async (e) => {
     e.preventDefault();
@@ -194,6 +298,10 @@ const CounsellorDashboard = ({ counsellor }) => {
     }
   };
 
+  const currentDept = activeAssignment?.department || counsellor?.wardCounsellorDepartment || counsellor?.assignedBranch || counsellor?.department || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)';
+  const currentSem = activeAssignment?.semester || counsellor?.semester || 'Semester 6';
+  const todayDateFormatted = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
   if (loading) return <div className="p-8 text-center text-gray-200 font-bold text-xs animate-pulse">Loading mentoring dashboard...</div>;
 
   return (
@@ -203,12 +311,17 @@ const CounsellorDashboard = ({ counsellor }) => {
       <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-fuchsia-900/50 to-purple-900/50 backdrop-blur-xl border border-fuchsia-500/30 text-white shadow-[0_8px_32px_rgba(0,0,0,0.6)] relative overflow-hidden">
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div>
-            <span className="px-3.5 py-1 bg-fuchsia-500/20 text-fuchsia-200 border border-fuchsia-400/30 text-[10px] font-black uppercase tracking-wider rounded-full drop-shadow-md">
-              Ward Mentoring & Early Warning System
-            </span>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-3.5 py-1 bg-fuchsia-500/20 text-fuchsia-200 border border-fuchsia-400/30 text-[10px] font-black uppercase tracking-wider rounded-full drop-shadow-md">
+                Ward Mentoring & Daily Attendance Console
+              </span>
+              <span className="flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[9.5px] font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Live Sync
+              </span>
+            </div>
             <h2 className="text-2xl md:text-3xl font-extrabold font-display mt-2 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] text-white">Mentoring Command Board</h2>
             <p className="text-xs text-gray-100 font-medium drop-shadow-md mt-0.5">
-              Counsellor: <strong className="text-fuchsia-300 font-bold drop-shadow">{counsellor.fullName}</strong> • Department of {activeAssignment?.department || counsellor.department || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)'}
+              Counsellor: <strong className="text-fuchsia-300 font-bold drop-shadow">{counsellor.fullName}</strong> • {currentDept} • {currentSem} (Sections A, B, C)
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -223,71 +336,86 @@ const CounsellorDashboard = ({ counsellor }) => {
         </div>
       </div>
 
-      {/* 2. LOCKED SCOPE CARDS (DARK TINTED GLASS) */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <div className="p-4 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex items-center justify-between">
-          <div>
-            <span className="text-[10px] text-gray-200 font-extrabold uppercase tracking-wide block drop-shadow-sm">Branch / Department</span>
-            <strong className="text-white text-xs block font-bold mt-0.5 drop-shadow">{activeAssignment?.department || counsellor?.department || 'AI & ML'}</strong>
+      {/* 2. REAL-TIME DAILY ATTENDANCE & SCOPE SUMMARY CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        {/* Total Students */}
+        <div className="p-5 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/5 transition-all text-white">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-white/70 uppercase font-black tracking-wider">Total Scoped Wards</span>
+            <Users className="text-cyan-400" size={20} />
           </div>
-          <span className="text-sm font-bold text-gray-300">🔒</span>
-        </div>
-        <div className="p-4 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex items-center justify-between">
-          <div>
-            <span className="text-[10px] text-gray-200 font-extrabold uppercase tracking-wide block drop-shadow-sm">Assigned Semester</span>
-            <strong className="text-purple-300 text-xs block font-bold mt-0.5 drop-shadow">{activeAssignment?.semester || 'Semester 6'}</strong>
+          <p className="text-3xl sm:text-4xl font-black text-white font-display mt-2 drop-shadow-md">{wards.length}</p>
+          <div className="flex items-center justify-between text-[10.5px] mt-1.5 pt-1.5 border-t border-white/10 text-cyan-300 font-bold">
+            <span>{currentSem} (All Sections)</span>
+            <span className="text-white/60 font-mono">Cross-Section</span>
           </div>
-          <span className="text-sm font-bold text-gray-300">🔒</span>
         </div>
-        <div className="p-4 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex items-center justify-between">
-          <div>
-            <span className="text-[10px] text-gray-200 font-extrabold uppercase tracking-wide block drop-shadow-sm">Assigned Section</span>
-            <strong className="text-indigo-300 text-xs block font-bold mt-0.5 drop-shadow">Section {activeAssignment?.section || 'A'}</strong>
+
+        {/* Present Today */}
+        <div className="p-5 bg-black/40 backdrop-blur-md rounded-2xl border border-emerald-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/5 transition-all text-white">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-emerald-300 uppercase font-black tracking-wider">Present Today</span>
+            <CheckCircle2 className="text-emerald-400" size={20} />
           </div>
-          <span className="text-sm font-bold text-gray-300">🔒</span>
-        </div>
-        <div className="p-4 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex items-center justify-between">
-          <div>
-            <span className="text-[10px] text-gray-200 font-extrabold uppercase tracking-wide block drop-shadow-sm">Academic Year</span>
-            <strong className="text-white text-xs block font-mono font-bold mt-0.5 drop-shadow">{activeAssignment?.academicYear || '2026-2027'}</strong>
+          <p className="text-3xl sm:text-4xl font-black text-emerald-300 font-display mt-2 drop-shadow-md">{presentTodayCount}</p>
+          <div className="flex items-center justify-between text-[10.5px] mt-1.5 pt-1.5 border-t border-white/10 text-emerald-200/80 font-semibold">
+            <span>Date: {todayDateFormatted}</span>
+            <span className="text-emerald-400 font-bold">
+              {wards.length > 0 ? `${Math.round((presentTodayCount / wards.length) * 100)}%` : '0%'}
+            </span>
           </div>
-          <span className="text-sm font-bold text-gray-300">🔒</span>
         </div>
+
+        {/* Absent Today */}
+        <div className="p-5 bg-black/40 backdrop-blur-md rounded-2xl border border-rose-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/5 transition-all text-white">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-rose-300 uppercase font-black tracking-wider">Absent Today</span>
+            <XCircle className="text-rose-400" size={20} />
+          </div>
+          <p className="text-3xl sm:text-4xl font-black text-rose-400 font-display mt-2 drop-shadow-md">{absentTodayCount}</p>
+          <div className="flex items-center justify-between text-[10.5px] mt-1.5 pt-1.5 border-t border-white/10 text-rose-300/80 font-semibold">
+            <span>Action: Immediate Follow-up</span>
+            <span className="text-rose-400 font-bold">
+              {wards.length > 0 ? `${Math.round((absentTodayCount / wards.length) * 100)}%` : '0%'}
+            </span>
+          </div>
+        </div>
+
+        {/* Overall Attendance % */}
+        <div className="p-5 bg-black/40 backdrop-blur-md rounded-2xl border border-purple-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/5 transition-all text-white">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-purple-300 uppercase font-black tracking-wider">Overall Attendance %</span>
+            <TrendingUp className="text-purple-400" size={20} />
+          </div>
+          <p className="text-3xl sm:text-4xl font-black text-purple-300 font-display mt-2 drop-shadow-md">{overallAttendancePercentage}%</p>
+          <div className="flex items-center justify-between text-[10.5px] mt-1.5 pt-1.5 border-t border-white/10 text-purple-200/80 font-semibold">
+            <span>Institutional Cutoff: 75%</span>
+            <span className={parseFloat(overallAttendancePercentage) >= 75 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+              {parseFloat(overallAttendancePercentage) >= 75 ? '🟢 Compliant' : '🔴 At Risk'}
+            </span>
+          </div>
+        </div>
+
       </div>
 
-      {/* 3. 8 DASHBOARD KPI CARDS */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 text-center">
-        <div className="p-3.5 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
-          <span className="text-[9.5px] uppercase text-gray-100 font-extrabold tracking-wide block drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Absentees Today</span>
-          <span className="text-rose-400 font-black text-4xl drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display mt-0.5 block">{wardsAbsentToday.length}</span>
+      {/* 3. SECONDARY STAT & RISK METRICS GRID */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+        <div className="p-3.5 bg-black/40 backdrop-blur-md rounded-2xl border border-amber-500/20 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 transition-all duration-300">
+          <span className="text-[9.5px] uppercase text-amber-300 font-extrabold tracking-wide block drop-shadow">Attendance Warning (&lt;75%)</span>
+          <span className="text-amber-300 font-black text-3xl drop-shadow font-display mt-0.5 block">{lowAttendanceWards.length}</span>
         </div>
-        <div className="p-3.5 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
-          <span className="text-[9.5px] uppercase text-gray-100 font-extrabold tracking-wide block drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">&lt;75% Attendance</span>
-          <span className="text-amber-300 font-black text-4xl drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display mt-0.5 block">{lowAttendanceWards.length}</span>
+        <div className="p-3.5 bg-black/40 backdrop-blur-md rounded-2xl border border-rose-500/20 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 transition-all duration-300">
+          <span className="text-[9.5px] uppercase text-rose-400 font-extrabold tracking-wide block drop-shadow">High Risk Wards (&lt;65%)</span>
+          <span className="text-rose-400 font-black text-3xl drop-shadow font-display mt-0.5 block">{highRiskWards.length}</span>
         </div>
-        <div className="p-3.5 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
-          <span className="text-[9.5px] uppercase text-gray-100 font-extrabold tracking-wide block drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">High Risk (&lt;65%)</span>
-          <span className="text-rose-400 font-black text-4xl drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display mt-0.5 block">{highRiskWards.length}</span>
+        <div className="p-3.5 bg-black/40 backdrop-blur-md border border-cyan-500/20 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 transition-all duration-300">
+          <span className="text-[9.5px] uppercase text-cyan-300 font-extrabold tracking-wide block drop-shadow">Pending Leaves Review</span>
+          <span className="text-cyan-300 font-black text-3xl drop-shadow font-display mt-0.5 block">{pendingLeavesCount}</span>
         </div>
-        <div className="p-3.5 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
-          <span className="text-[9.5px] uppercase text-gray-100 font-extrabold tracking-wide block drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Follow-ups</span>
-          <span className="text-purple-300 font-black text-4xl drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display mt-0.5 block">{followUps.length}</span>
-        </div>
-        <div className="p-3.5 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
-          <span className="text-[9.5px] uppercase text-gray-100 font-extrabold tracking-wide block drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Pending Meetings</span>
-          <span className="text-indigo-300 font-black text-4xl drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display mt-0.5 block">{meetings.filter(m => m.status === 'pending').length}</span>
-        </div>
-        <div className="p-3.5 bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
-          <span className="text-[9.5px] uppercase text-gray-100 font-extrabold tracking-wide block drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Open Concerns</span>
-          <span className="text-rose-400 font-black text-4xl drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display mt-0.5 block">{concerns.filter(c => c.status === 'Open' || c.status === 'In Progress').length}</span>
-        </div>
-        <div className="p-3.5 bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
-          <span className="text-[9.5px] uppercase text-gray-100 font-extrabold tracking-wide block drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Monthly Sessions</span>
-          <span className="text-emerald-300 font-black text-4xl drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display mt-0.5 block">{monthlySummary?.counsellingSessions || 18}</span>
-        </div>
-        <div className="p-3.5 bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
-          <span className="text-[9.5px] uppercase text-gray-100 font-extrabold tracking-wide block drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">Improved Wards</span>
-          <span className="text-emerald-300 font-black text-4xl drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display mt-0.5 block">{monthlySummary?.improvedStudents || 9}</span>
+        <div className="p-3.5 bg-black/40 backdrop-blur-md border border-purple-500/20 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 transition-all duration-300">
+          <span className="text-[9.5px] uppercase text-purple-300 font-extrabold tracking-wide block drop-shadow">Active Student Concerns</span>
+          <span className="text-purple-300 font-black text-3xl drop-shadow font-display mt-0.5 block">{concerns.filter(c => c.status === 'Open' || c.status === 'In Progress').length}</span>
         </div>
       </div>
 
@@ -334,8 +462,8 @@ const CounsellorDashboard = ({ counsellor }) => {
               <span className="text-lg font-black text-purple-300 drop-shadow mt-1 block font-display">{monthlySummary.counsellingSessions}</span>
             </div>
             <div className="p-3.5 bg-black/30 backdrop-blur-md rounded-xl border border-white/10 text-center">
-              <span className="text-[10px] text-gray-200 uppercase font-extrabold block drop-shadow-sm">Parent Meetings</span>
-              <span className="text-lg font-black text-indigo-300 drop-shadow mt-1 block font-display">{monthlySummary.parentMeetings}</span>
+              <span className="text-[10px] text-gray-200 uppercase font-extrabold block drop-shadow-sm">Mentorship Reviews</span>
+              <span className="text-lg font-black text-indigo-300 drop-shadow mt-1 block font-display">{monthlySummary.counsellingSessions || 12}</span>
             </div>
             <div className="p-3.5 bg-black/30 backdrop-blur-md rounded-xl border border-white/10 text-center">
               <span className="text-[10px] text-gray-200 uppercase font-extrabold block drop-shadow-sm">Open Concerns</span>
@@ -538,15 +666,23 @@ const WardsDirectory = ({ counsellor }) => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [riskFilter, setRiskFilter] = useState('All');
+  const [sectionFilter, setSectionFilter] = useState('All');
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [modalTab, setModalTab] = useState('PROFILE'); // PROFILE | ACADEMIC | COUNSELLING | ACTIONS
   const [academicProgress, setAcademicProgress] = useState(null);
   const [riskHistory, setRiskHistory] = useState([]);
+  const [activeAssign, setActiveAssign] = useState(null);
 
   useEffect(() => {
     const fetchWards = async () => {
       setLoading(true);
-      const res = await mockDB.getWardsForCounsellor(counsellor.uid, counsellor.department);
+      const assign = await mockDB.getFacultyWardAssignment(counsellor?.uid || counsellor?.id || counsellor?.email);
+      setActiveAssign(assign || null);
+
+      const resolvedDept = assign?.department || counsellor?.wardCounsellorDepartment || counsellor?.assignedBranch || counsellor?.department || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)';
+      const resolvedSem = assign?.semester || counsellor?.semester || 'Semester 6';
+
+      const res = await mockDB.getWardsForCounsellor(counsellor.uid, resolvedDept, resolvedSem);
       setWards(res);
       setLoading(false);
     };
@@ -568,8 +704,12 @@ const WardsDirectory = ({ counsellor }) => {
     const att = w.attendancePercentage || w.attendance || 80;
     const riskLevel = att < 65 ? 'High Risk' : att < 75 ? 'Warning' : 'Good';
     const riskMatch = riskFilter === 'All' || riskLevel === riskFilter;
-    return nameMatch && riskMatch;
+    const sectionMatch = sectionFilter === 'All' || (w.section || 'A').toUpperCase() === sectionFilter.toUpperCase();
+    return nameMatch && riskMatch && sectionMatch;
   });
+
+  const resolvedDept = activeAssign?.department || counsellor?.wardCounsellorDepartment || counsellor?.assignedBranch || counsellor?.department || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)';
+  const resolvedSem = activeAssign?.semester || counsellor?.semester || 'Semester 6';
 
   if (loading) return <div className="p-8 text-center text-slate-400 text-xs">Loading ward directory...</div>;
 
@@ -580,13 +720,19 @@ const WardsDirectory = ({ counsellor }) => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-black text-white">Counselling Wards Roster</h2>
-            <p className="text-xs text-gray-400">Assigned ward students in {counsellor.department || 'Department'}</p>
+            <p className="text-xs text-gray-400">{resolvedDept} • {resolvedSem} (Cross-Section Access)</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
               <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
               <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name or roll..." className="pl-9 pr-4 py-2 rounded-xl border border-white/10 bg-white/5 text-white text-xs font-bold placeholder-gray-400 focus:bg-white/10 focus:ring-1 focus:ring-blue-400 outline-none transition-all" />
             </div>
+            <select value={sectionFilter} onChange={e => setSectionFilter(e.target.value)} className="p-2 rounded-xl border border-white/10 bg-white/5 text-white text-xs font-bold focus:bg-white/10 focus:ring-1 focus:ring-blue-400 outline-none transition-all">
+              <option value="All" className="bg-slate-900 text-white">All Sections (A, B, C)</option>
+              <option value="A" className="bg-slate-900 text-white">Section A</option>
+              <option value="B" className="bg-slate-900 text-white">Section B</option>
+              <option value="C" className="bg-slate-900 text-white">Section C</option>
+            </select>
             <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)} className="p-2 rounded-xl border border-white/10 bg-white/5 text-white text-xs font-bold focus:bg-white/10 focus:ring-1 focus:ring-blue-400 outline-none transition-all">
               <option value="All" className="bg-slate-900 text-white">All Risk Levels</option>
               <option value="Good" className="bg-slate-900 text-white">🟢 Good (&gt;=75%)</option>
@@ -601,12 +747,13 @@ const WardsDirectory = ({ counsellor }) => {
           <table className="w-full text-left text-xs font-semibold text-gray-200 border-collapse table-fixed">
             <thead className="bg-white/5 uppercase text-[10px] text-gray-400 tracking-wider border-b border-white/10">
               <tr>
-                <th className="w-[18%] p-3 sm:p-4">Roll Number</th>
-                <th className="w-[28%] p-3 sm:p-4">Student Name</th>
-                <th className="w-[18%] p-3 sm:p-4">Branch</th>
-                <th className="w-[12%] p-3 sm:p-4 text-center">Attendance</th>
-                <th className="w-[12%] p-3 sm:p-4 text-center">Status</th>
-                <th className="w-[12%] p-3 sm:p-4 text-center">Risk Level</th>
+                <th className="w-[16%] p-3 sm:p-4">Roll Number</th>
+                <th className="w-[26%] p-3 sm:p-4">Student Name</th>
+                <th className="w-[16%] p-3 sm:p-4">Branch</th>
+                <th className="w-[10%] p-3 sm:p-4 text-center">Section</th>
+                <th className="w-[11%] p-3 sm:p-4 text-center">Attendance</th>
+                <th className="w-[10%] p-3 sm:p-4 text-center">Status</th>
+                <th className="w-[11%] p-3 sm:p-4 text-center">Risk Level</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -629,7 +776,12 @@ const WardsDirectory = ({ counsellor }) => {
                         <span className="truncate">{w.fullName || w.name}</span>
                       </div>
                     </td>
-                    <td className="p-3 sm:p-4 font-bold text-purple-300 whitespace-normal break-words">{w.department || counsellor.department}</td>
+                    <td className="p-3 sm:p-4 font-bold text-purple-300 whitespace-normal break-words">{w.department || resolvedDept}</td>
+                    <td className="p-3 sm:p-4 text-center font-mono font-bold text-cyan-300">
+                      <span className="px-2 py-0.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[10.5px]">
+                        Sec {w.section || 'A'}
+                      </span>
+                    </td>
                     <td className={`p-3 sm:p-4 text-center font-black ${att < 75 ? 'text-rose-400' : 'text-emerald-400'}`}>{att}%</td>
                     <td className="p-3 sm:p-4 text-center">
                       <span className={`px-2.5 py-0.5 rounded-full text-[9.5px] font-black inline-block ${status === 'Improving' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : status === 'Declining' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'}`}>
@@ -864,41 +1016,6 @@ const CounsellorReports = ({ counsellor }) => {
   );
 };
 
-// 4. PARENT MEETINGS MANAGER
-const ParentMeetingsManager = ({ counsellor }) => {
-  const [meetings, setMeetings] = useState([]);
-  useEffect(() => {
-    const fetchMeetings = async () => {
-      const res = await mockDB.getCounsellingMeetings('counsellor', counsellor.uid);
-      setMeetings(res);
-    };
-    fetchMeetings();
-  }, [counsellor]);
-
-  return (
-    <div className="space-y-6 text-xs font-semibold">
-      <div className="p-6 bg-black/40 backdrop-blur-md rounded-3xl border border-white/10 shadow-lg space-y-4">
-        <h2 className="text-lg font-black text-white">Parent & Student Meeting Schedule</h2>
-        <div className="space-y-3">
-          {meetings.length === 0 ? (
-            <p className="text-gray-400 p-4 text-center">No meetings currently scheduled.</p>
-          ) : meetings.map((m) => (
-            <div key={m.id} className="p-4 bg-white/5 rounded-2xl flex items-center justify-between border border-white/10">
-              <div>
-                <h4 className="text-xs font-black text-white">{m.studentName || 'Student'}</h4>
-                <p className="text-[11px] text-gray-300 mt-0.5">{m.title || 'Discussion on academic progress'}</p>
-                <span className="text-[9.5px] text-purple-300 font-bold block mt-0.5">{m.date} at {m.time}</span>
-              </div>
-              <span className="px-3 py-1 bg-purple-500/20 text-purple-300 border border-purple-500/30 font-black text-[10px] rounded-full uppercase">
-                {m.status}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // 5. COUNSELLOR LEAVES (STUDENT LEAVE APPROVALS FOR ASSIGNED BRANCH)
 const CounsellorLeaves = ({ counsellor }) => {
