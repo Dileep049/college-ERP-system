@@ -294,6 +294,13 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
         await mockDB.reviewLeave(leaveId, 'Approved', 'Approved by Ward Counsellor', counsellor);
       } catch (_) {}
 
+      if (typeof window !== 'undefined') {
+        try {
+          window.dispatchEvent(new Event('storage'));
+          window.dispatchEvent(new CustomEvent('acad_leave_updated', { detail: { leaveId, status: 'Approved' } }));
+        } catch (_) {}
+      }
+
       // Instant optimistic UI update
       setPendingLeaves(prev => prev.filter(l => (l.id || l.leaveId) !== leaveId));
       setProcessedLeaves(prev => [
@@ -334,6 +341,7 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
             await updateDoc(leaveRef, {
               status: 'Rejected',
               rejectionReason: rejectionReason.trim(),
+              remarks: rejectionReason.trim(),
               actionBy: counsellorName,
               rejectedBy: counsellorName,
               rejectedByName: counsellorName,
@@ -352,6 +360,7 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
           if (idx !== -1) {
             localItems[idx].status = 'Rejected';
             localItems[idx].rejectionReason = rejectionReason.trim();
+            localItems[idx].remarks = rejectionReason.trim();
             localItems[idx].actionBy = counsellorName;
             localItems[idx].rejectedBy = counsellorName;
             localItems[idx].rejectedByName = counsellorName;
@@ -365,10 +374,17 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
         await mockDB.reviewLeave(leaveId, 'Rejected', rejectionReason.trim(), counsellor);
       } catch (_) {}
 
+      if (typeof window !== 'undefined') {
+        try {
+          window.dispatchEvent(new Event('storage'));
+          window.dispatchEvent(new CustomEvent('acad_leave_updated', { detail: { leaveId, status: 'Rejected' } }));
+        } catch (_) {}
+      }
+
       // Instant optimistic UI update
       setPendingLeaves(prev => prev.filter(l => (l.id || l.leaveId) !== leaveId));
       setProcessedLeaves(prev => [
-        { ...leave, status: 'Rejected', rejectionReason: rejectionReason.trim(), actionBy: counsellorName, rejectedBy: counsellorName, rejectedByName: counsellorName, actionAt: new Date().toISOString() },
+        { ...leave, status: 'Rejected', rejectionReason: rejectionReason.trim(), remarks: rejectionReason.trim(), actionBy: counsellorName, rejectedBy: counsellorName, rejectedByName: counsellorName, actionAt: new Date().toISOString() },
         ...prev
       ]);
 

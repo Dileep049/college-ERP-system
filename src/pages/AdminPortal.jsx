@@ -22,7 +22,9 @@ import {
   AlertCircle,
   Download,
   Upload,
-  CalendarDays
+  CalendarDays,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { StudentBulkImport } from '../components/StudentBulkImport';
 
@@ -57,6 +59,7 @@ export const AdminPortal = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [formEmail, setFormEmail] = useState('');
   const [formPassword, setFormPassword] = useState('');
+  const [showFormPassword, setShowFormPassword] = useState(false);
   const [formFullName, setFormFullName] = useState('');
   const [formRole, setFormRole] = useState('student');
   const [formDepartment, setFormDepartment] = useState(KBN_BRANCHES[0]);
@@ -93,10 +96,24 @@ export const AdminPortal = () => {
     return () => clearInterval(timer);
   }, [resendCountdown]);
 
+  // Escape key listener to close modals
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (isModalOpen) setIsModalOpen(false);
+        if (isResetModalOpen) setIsResetModalOpen(false);
+        if (isCalModalOpen) setIsCalModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isModalOpen, isResetModalOpen, isCalModalOpen]);
+
   // Password Reset Modal States
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [resettingUser, setResettingUser] = useState(null);
   const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   // Workload / Subject Allocation States
   const [allocations, setAllocations] = useState([]);
@@ -1391,309 +1408,289 @@ export const AdminPortal = () => {
 
       {/* CREATE / EDIT USER MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
-          <div className="w-full max-w-lg bg-black/80 backdrop-blur-xl border border-white/20 p-6 rounded-3xl shadow-2xl relative overflow-y-auto max-h-[90vh] text-white">
-            <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 p-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl transition-all cursor-pointer">
-              <X size={16} className="text-gray-300" />
-            </button>
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-3 sm:p-4 cursor-pointer"
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div 
+            className="w-full max-w-lg bg-black/90 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl relative flex flex-col max-h-[90vh] sm:max-h-[85vh] text-white cursor-default overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Pinned Modal Header */}
+            <div className="flex items-center justify-between p-5 sm:p-6 pb-4 border-b border-white/10 shrink-0">
+              <h3 className="text-lg font-black text-white drop-shadow-sm">
+                {editingUser ? 'Modify User Profile' : 'Provision User Account'}
+              </h3>
+              <button 
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsModalOpen(false);
+                }} 
+                aria-label="Close modal"
+                className="p-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl transition-all cursor-pointer text-gray-300 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+            </div>
 
-            <h3 className="text-lg font-black text-white drop-shadow-sm mb-6">
-              {editingUser ? 'Modify User Profile' : 'Provision User Account'}
-            </h3>
-
-            <form onSubmit={handleSaveUser} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Account Role</label>
-                  <select
-                    value={formRole}
-                    onChange={(e) => setFormRole(e.target.value)}
-                    disabled={!!editingUser}
-                    className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
-                  >
-                    <option value="student" className="bg-slate-900 text-white">Student</option>
-                    <option value="faculty" className="bg-slate-900 text-white">Faculty</option>
-                    <option value="hod" className="bg-slate-900 text-white">HOD</option>
-                    <option value="counsellor" className="bg-slate-900 text-white">Ward Counsellor</option>
-                    <option value="principal" className="bg-slate-900 text-white">Principal</option>
-                    <option value="librarian" className="bg-slate-900 text-white">Librarian</option>
-                    <option value="placement" className="bg-slate-900 text-white">Placement Officer</option>
-                    <option value="admin" className="bg-slate-900 text-white">Super Admin</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Academic Department</label>
-                  <select
-                    value={formDepartment}
-                    onChange={(e) => setFormDepartment(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
-                  >
-                    <option value="N/A" className="bg-slate-900 text-white">N/A</option>
-                    <option value="All" className="bg-slate-900 text-white">All</option>
-                    {COLLEGE_DEPARTMENTS.map((b, idx) => <option key={`${b}-${idx}`} value={b} className="bg-slate-900 text-white">{b}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Full Name</label>
-                <input type="text" placeholder="Prof. Jane Doe" value={formFullName} onChange={(e) => setFormFullName(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
-              </div>
-
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Email Address</label>
-                <input type="email" placeholder="jane.doe@kbn.edu" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} required disabled={!!editingUser} className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400 disabled:opacity-50" />
-              </div>
-
-              {!editingUser && (
-                <div>
-                  <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Initial Password</label>
-                  <input type="password" placeholder="••••••••" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
-                </div>
-              )}
-
-              {formRole === 'student' && (
-                <div className="space-y-4 border-t border-white/10 pt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Semester</label>
-                      <select
-                        value={formSemester}
-                        onChange={(e) => setFormSemester(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
-                      >
-                        {KBN_SEMESTERS.map(s => <option key={s} value={s} className="bg-slate-900 text-white">{s}</option>)}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Roll Number (Student ID)</label>
-                      <input type="text" placeholder="CSE-2023-010" value={formRollNumber} onChange={(e) => setFormRollNumber(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Hall Ticket No</label>
-                      <input type="text" placeholder="HT2026001" value={formHallTicketNumber} onChange={(e) => setFormHallTicketNumber(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Section</label>
-                      <select
-                        value={formSection}
-                        onChange={(e) => setFormSection(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
-                      >
-                        <option value="A" className="bg-slate-900 text-white">A</option>
-                        <option value="B" className="bg-slate-900 text-white">B</option>
-                        <option value="C" className="bg-slate-900 text-white">C</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Academic Year</label>
-                      <input type="text" placeholder="2026-2027" value={formAcademicYear} onChange={(e) => setFormAcademicYear(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Parent Name</label>
-                      <input type="text" placeholder="Richard Doe" value={formParentName} onChange={(e) => setFormParentName(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Parent Mobile (Mandatory)</label>
-                      <input type="text" placeholder="9988776655" value={formParentMobile} onChange={(e) => setFormParentMobile(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
-                    </div>
+            {/* Form wrapper */}
+            <form onSubmit={handleSaveUser} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              {/* Scrollable Form Body */}
+              <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Account Role</label>
+                    <select
+                      value={formRole}
+                      onChange={(e) => setFormRole(e.target.value)}
+                      disabled={!!editingUser}
+                      className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
+                    >
+                      <option value="student" className="bg-slate-900 text-white">Student</option>
+                      <option value="faculty" className="bg-slate-900 text-white">Faculty</option>
+                      <option value="hod" className="bg-slate-900 text-white">HOD</option>
+                      <option value="counsellor" className="bg-slate-900 text-white">Ward Counsellor</option>
+                      <option value="principal" className="bg-slate-900 text-white">Principal</option>
+                      <option value="librarian" className="bg-slate-900 text-white">Librarian</option>
+                      <option value="placement" className="bg-slate-900 text-white">Placement Officer</option>
+                      <option value="admin" className="bg-slate-900 text-white">Super Admin</option>
+                    </select>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Parent Email (Optional)</label>
-                    <input type="email" placeholder="parent@example.com" value={formParentEmail} onChange={(e) => setFormParentEmail(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
-                  </div>
-                </div>
-              )}
-
-              {formRole === 'faculty' && (
-                <div className="space-y-4 border-t border-white/10 pt-4">
-                  <div className="border-b border-white/10 pb-2">
-                    <span className="text-[10px] font-black text-purple-300 uppercase tracking-wider">Faculty Academic Scope Config</span>
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Semester *</label>
-                      <select
-                        value={formSemester}
-                        onChange={(e) => setFormSemester(e.target.value)}
-                        required
-                        className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
-                      >
-                        <option value="Semester 1" className="bg-slate-900 text-white">Semester 1</option>
-                        <option value="Semester 2" className="bg-slate-900 text-white">Semester 2</option>
-                        <option value="Semester 3" className="bg-slate-900 text-white">Semester 3</option>
-                        <option value="Semester 4" className="bg-slate-900 text-white">Semester 4</option>
-                        <option value="Semester 5" className="bg-slate-900 text-white">Semester 5</option>
-                        <option value="Semester 6" className="bg-slate-900 text-white">Semester 6</option>
-                        <option value="Semester 7" className="bg-slate-900 text-white">Semester 7</option>
-                        <option value="Semester 8" className="bg-slate-900 text-white">Semester 8</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Section *</label>
-                      <select
-                        value={formSection}
-                        onChange={(e) => setFormSection(e.target.value)}
-                        required
-                        className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
-                      >
-                        <option value="Section A" className="bg-slate-900 text-white">Section A</option>
-                        <option value="Section B" className="bg-slate-900 text-white">Section B</option>
-                        <option value="Section C" className="bg-slate-900 text-white">Section C</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Academic Year *</label>
-                      <input
-                        type="text"
-                        placeholder="2026-2027"
-                        value={formAcademicYear}
-                        onChange={(e) => setFormAcademicYear(e.target.value)}
-                        required
-                        className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {formRole !== 'student' && formRole !== 'admin' && (
-                <div className="border-t border-white/10 pt-4">
-                  <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Employee ID *</label>
-                  <input type="text" placeholder="FAC-CSE-012" value={formEmployeeId} onChange={(e) => setFormEmployeeId(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
-                </div>
-              )}
-
-              {/* TWILIO SMS OTP 2FA SECTION */}
-              <div className="border-t border-white/10 pt-4 space-y-3">
-                <label className="block text-[10px] uppercase font-bold text-gray-400">
-                  User Phone Number (Twilio SMS OTP 2FA)
-                </label>
-                
-                <div className="flex gap-2">
-                  <select
-                    value={formCountryCode}
-                    onChange={(e) => setFormCountryCode(e.target.value)}
-                    disabled={isPhoneVerified || otpLoading}
-                    className="px-2.5 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
-                  >
-                    <option value="+91" className="bg-slate-900 text-white">🇮🇳 +91</option>
-                    <option value="+1" className="bg-slate-900 text-white">🇺🇸 +1</option>
-                    <option value="+44" className="bg-slate-900 text-white">🇬🇧 +44</option>
-                    <option value="+61" className="bg-slate-900 text-white">🇦🇺 +61</option>
-                    <option value="+971" className="bg-slate-900 text-white">🇦🇪 +971</option>
-                  </select>
-
-                  <input
-                    type="tel"
-                    placeholder="9876543210"
-                    value={formMobile}
-                    onChange={(e) => {
-                      setFormMobile(e.target.value);
-                      if (isPhoneVerified && !editingUser) setIsPhoneVerified(false);
-                    }}
-                    required
-                    disabled={isPhoneVerified || otpLoading}
-                    className="flex-1 px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400"
-                  />
-
-                  {!isPhoneVerified && (
-                    <button
-                      type="button"
-                      onClick={handleSendOtp}
-                      disabled={otpLoading || !formMobile || formMobile.trim().length < 10}
-                      className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all shadow-md shrink-0 cursor-pointer"
+                    <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Academic Department</label>
+                    <select
+                      value={formDepartment}
+                      onChange={(e) => setFormDepartment(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
                     >
-                      {otpLoading && !otpSent ? 'Sending...' : otpSent ? 'Resend OTP' : 'Send OTP'}
-                    </button>
-                  )}
+                      <option value="N/A" className="bg-slate-900 text-white">N/A</option>
+                      <option value="All" className="bg-slate-900 text-white">All</option>
+                      {COLLEGE_DEPARTMENTS.map((b, idx) => <option key={`${b}-${idx}`} value={b} className="bg-slate-900 text-white">{b}</option>)}
+                    </select>
+                  </div>
                 </div>
 
-                {/* Verification Success Badge */}
-                {isPhoneVerified && (
-                  <div className="flex items-center gap-2 p-2.5 bg-emerald-500/20 border border-emerald-400/30 rounded-xl text-emerald-300 font-extrabold text-xs">
-                    <Check size={16} className="shrink-0" />
-                    <span>Phone Verified via Twilio 2FA</span>
-                  </div>
-                )}
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Full Name</label>
+                  <input type="text" placeholder="Prof. Jane Doe" value={formFullName} onChange={(e) => setFormFullName(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
+                </div>
 
-                {/* Error Banner */}
-                {otpError && (
-                  <div className="p-2.5 bg-rose-500/20 border border-rose-400/30 rounded-xl text-rose-300 font-bold text-xs flex items-center gap-2">
-                    <AlertCircle size={14} className="shrink-0" />
-                    <span>{otpError}</span>
-                  </div>
-                )}
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Email Address</label>
+                  <input type="email" placeholder="jane.doe@kbn.edu" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} required disabled={!!editingUser} className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400 disabled:opacity-50" />
+                </div>
 
-                {/* OTP Input Field & Verification Step */}
-                {otpSent && !isPhoneVerified && (
-                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
-                    <label className="block text-[10px] uppercase font-black text-gray-300">
-                      Enter 6-digit SMS OTP Code
-                    </label>
-                    <div className="flex gap-2">
+                {!editingUser && (
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Initial Password</label>
+                    <div className="relative">
                       <input
-                        type="text"
-                        maxLength={6}
-                        placeholder="••••••"
-                        value={otpCode}
-                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                        className="flex-1 px-3 py-2 text-center tracking-widest font-mono text-base font-black rounded-xl border border-white/10 bg-white/5 focus:outline-none text-white placeholder-gray-500"
+                        type={showFormPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={formPassword}
+                        onChange={(e) => setFormPassword(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 pr-9 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400"
                       />
                       <button
                         type="button"
-                        onClick={handleVerifyOtp}
-                        disabled={otpLoading || otpCode.length !== 6}
-                        className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all shadow cursor-pointer"
+                        onClick={() => setShowFormPassword(!showFormPassword)}
+                        className="absolute right-2.5 top-2.5 text-gray-400 hover:text-white transition-colors focus:outline-none cursor-pointer"
+                        aria-label={showFormPassword ? "Hide password" : "Show password"}
                       >
-                        {otpLoading ? 'Verifying...' : 'Verify OTP'}
+                        {showFormPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                       </button>
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] font-bold text-gray-400">
-                      <span>Didn't receive SMS OTP?</span>
-                      {resendCountdown > 0 ? (
-                        <span className="text-cyan-300 font-extrabold">Resend in {resendCountdown}s</span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={handleResendOtp}
-                          className="text-cyan-400 underline hover:text-cyan-300 font-extrabold cursor-pointer"
-                        >
-                          Resend OTP
-                        </button>
-                      )}
                     </div>
                   </div>
                 )}
+
+                {formRole === 'student' && (
+                  <div className="space-y-4 border-t border-white/10 pt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Semester</label>
+                        <select
+                          value={formSemester}
+                          onChange={(e) => setFormSemester(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
+                        >
+                          {KBN_SEMESTERS.map(s => <option key={s} value={s} className="bg-slate-900 text-white">{s}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Section</label>
+                        <select
+                          value={formSection}
+                          onChange={(e) => setFormSection(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
+                        >
+                          <option value="A" className="bg-slate-900 text-white">Section A</option>
+                          <option value="B" className="bg-slate-900 text-white">Section B</option>
+                          <option value="C" className="bg-slate-900 text-white">Section C</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Roll / Admission No.</label>
+                        <input type="text" placeholder="e.g. 3KB21CS045" value={formRollNumber} onChange={(e) => setFormRollNumber(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Academic Year</label>
+                        <select
+                          value={formAcademicYear}
+                          onChange={(e) => setFormAcademicYear(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
+                        >
+                          <option value="2026-2027" className="bg-slate-900 text-white">2026-2027</option>
+                          <option value="2025-2026" className="bg-slate-900 text-white">2025-2026</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Parent Name</label>
+                        <input type="text" placeholder="Guardian / Parent Name" value={formParentName} onChange={(e) => setFormParentName(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Parent Email</label>
+                        <input type="email" placeholder="parent@gmail.com" value={formParentEmail} onChange={(e) => setFormParentEmail(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {(formRole === 'faculty' || formRole === 'hod' || formRole === 'counsellor' || formRole === 'librarian' || formRole === 'placement') && (
+                  <div className="space-y-4 border-t border-white/10 pt-4">
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">Employee ID</label>
+                      <input type="text" placeholder="e.g. KBN-FAC-042" value={formEmployeeId} onChange={(e) => setFormEmployeeId(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Phone & OTP Verification Section */}
+                <div className="space-y-3 border-t border-white/10 pt-4">
+                  <label className="block text-[10px] uppercase font-bold text-gray-300">
+                    Mobile Phone Number <span className="text-rose-400">*</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <select
+                      value={formCountryCode}
+                      onChange={(e) => setFormCountryCode(e.target.value)}
+                      disabled={isPhoneVerified}
+                      className="w-24 px-2 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer disabled:opacity-50"
+                    >
+                      <option value="+91" className="bg-slate-900 text-white">🇮🇳 +91</option>
+                      <option value="+1" className="bg-slate-900 text-white">🇺🇸 +1</option>
+                      <option value="+44" className="bg-slate-900 text-white">🇬🇧 +44</option>
+                      <option value="+971" className="bg-slate-900 text-white">🇦🇪 +971</option>
+                    </select>
+
+                    <input
+                      type="tel"
+                      placeholder="9876543210"
+                      value={formMobile}
+                      onChange={(e) => {
+                        setFormMobile(e.target.value);
+                        setIsPhoneVerified(false);
+                        setOtpSent(false);
+                      }}
+                      required
+                      disabled={isPhoneVerified}
+                      className="flex-1 px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400 disabled:opacity-50"
+                    />
+
+                    {!isPhoneVerified && (
+                      <button
+                        type="button"
+                        onClick={handleSendOtp}
+                        disabled={otpLoading || !formMobile || formMobile.length < 10}
+                        className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all shadow cursor-pointer whitespace-nowrap"
+                      >
+                        {otpLoading ? 'Sending...' : otpSent ? 'Resend' : 'Send OTP'}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* reCAPTCHA container */}
+                  <div id="recaptcha-container"></div>
+
+                  {isPhoneVerified && (
+                    <div className="p-3 bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-emerald-300 text-xs font-bold flex items-center gap-2">
+                      <Check size={16} />
+                      <span>Phone Number Verified Successfully (SMS OTP)</span>
+                    </div>
+                  )}
+
+                  {otpSent && !isPhoneVerified && (
+                    <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
+                      <label className="block text-[10px] uppercase font-bold text-cyan-300">
+                        Enter 6-Digit SMS Verification Code
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          maxLength={6}
+                          placeholder="123456"
+                          value={otpCode}
+                          onChange={(e) => setOtpCode(e.target.value)}
+                          className="flex-1 px-3 py-2 rounded-xl border border-cyan-400/40 bg-black/40 text-center tracking-[6px] text-sm focus:outline-none text-white font-black placeholder-gray-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleVerifyOtp}
+                          disabled={otpLoading || otpCode.length < 6}
+                          className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all shadow cursor-pointer"
+                        >
+                          {otpLoading ? 'Verifying...' : 'Verify OTP'}
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] font-bold text-gray-400">
+                        <span>Didn't receive SMS OTP?</span>
+                        {resendCountdown > 0 ? (
+                          <span className="text-cyan-300 font-extrabold">Resend in {resendCountdown}s</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleResendOtp}
+                            className="text-cyan-400 underline hover:text-cyan-300 font-extrabold cursor-pointer"
+                          >
+                            Resend OTP
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={!editingUser && !isPhoneVerified}
-                className={`w-full py-3 text-white rounded-xl text-xs font-black shadow-lg transition-all mt-6 cursor-pointer ${
-                  !editingUser && !isPhoneVerified
-                    ? 'bg-slate-700 cursor-not-allowed opacity-60'
-                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:scale-[1.02]'
-                }`}
-              >
-                {editingUser ? 'Update Account' : isPhoneVerified ? 'Create Account' : 'Verify Phone OTP to Create Account'}
-              </button>
+              {/* Pinned Action Footer */}
+              <div className="p-4 sm:p-5 border-t border-white/10 bg-slate-950/80 backdrop-blur-md shrink-0 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="w-1/3 py-3 bg-white/10 hover:bg-white/15 border border-white/15 text-white rounded-xl text-xs font-bold transition-all cursor-pointer text-center"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!editingUser && !isPhoneVerified}
+                  className={`w-2/3 py-3 text-white rounded-xl text-xs font-black shadow-lg transition-all cursor-pointer ${
+                    !editingUser && !isPhoneVerified
+                      ? 'bg-slate-700 cursor-not-allowed opacity-60'
+                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:scale-[1.02]'
+                  }`}
+                >
+                  {editingUser ? 'Update Account' : isPhoneVerified ? 'Create Account' : 'Verify Phone OTP to Create Account'}
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -1701,10 +1698,24 @@ export const AdminPortal = () => {
 
       {/* --- CALENDAR MODAL --- */}
       {isCalModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
-          <div className="w-full max-w-md bg-black/80 backdrop-blur-xl border border-white/20 p-6 rounded-3xl shadow-2xl relative text-white">
-            <button onClick={() => setIsCalModalOpen(false)} className="absolute top-4 right-4 p-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl cursor-pointer">
-              <X size={16} className="text-gray-300" />
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 cursor-pointer"
+          onClick={() => setIsCalModalOpen(false)}
+        >
+          <div 
+            className="w-full max-w-md bg-black/80 backdrop-blur-xl border border-white/20 p-6 rounded-3xl shadow-2xl relative text-white cursor-default"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsCalModalOpen(false);
+              }} 
+              aria-label="Close modal"
+              className="absolute top-4 right-4 z-20 p-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl transition-all cursor-pointer text-gray-300 hover:text-white"
+            >
+              <X size={16} />
             </button>
 
             <h3 className="text-lg font-black text-white drop-shadow-sm mb-6">
@@ -1779,16 +1790,47 @@ export const AdminPortal = () => {
 
       {/* PASSWORD RESET MODAL */}
       {isResetModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
-          <div className="w-full max-w-sm bg-black/80 backdrop-blur-xl border border-white/20 p-6 rounded-3xl shadow-2xl relative text-white">
-            <button onClick={() => setIsResetModalOpen(false)} className="absolute top-4 right-4 p-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl transition-all cursor-pointer">
-              <X size={16} className="text-gray-300" />
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 cursor-pointer"
+          onClick={() => setIsResetModalOpen(false)}
+        >
+          <div 
+            className="w-full max-w-sm bg-black/80 backdrop-blur-xl border border-white/20 p-6 rounded-3xl shadow-2xl relative text-white cursor-default"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsResetModalOpen(false);
+              }} 
+              aria-label="Close modal"
+              className="absolute top-4 right-4 z-20 p-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl transition-all cursor-pointer text-gray-300 hover:text-white"
+            >
+              <X size={16} />
             </button>
             <h3 className="text-lg font-black text-white drop-shadow-sm mb-6">Reset Account Password</h3>
             <form onSubmit={handleSaveReset} className="space-y-4">
               <div>
                 <label className="block text-[10px] uppercase font-bold text-gray-300 mb-1">New Password</label>
-                <input type="password" placeholder="••••••••" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400" />
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 pr-9 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold placeholder-gray-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-2.5 top-2.5 text-gray-400 hover:text-white transition-colors focus:outline-none cursor-pointer"
+                    aria-label={showNewPassword ? "Hide password" : "Show password"}
+                  >
+                    {showNewPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
               </div>
               <button type="submit" className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl text-xs font-black shadow-md transition-all mt-4 cursor-pointer hover:scale-[1.02]">
                 Reset Password Ledger

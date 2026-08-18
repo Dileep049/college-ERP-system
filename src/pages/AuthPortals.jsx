@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { mockDB } from '../services/firebase';
-import { Building2, Mail, Lock, Award, AlertCircle, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { Building2, Mail, Lock, Award, AlertCircle, ArrowLeft, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 
 // Unified Futuristic Glass Auth Form Layout
@@ -51,6 +51,7 @@ const AuthContainer = ({ title, subtitle, children }) => {
 const CommonPortalLogin = ({ roleLabel, roleFilter, prefillEmail, dashboardPath }) => {
   const [email, setEmail] = useState(prefillEmail || '');
   const [password, setPassword] = useState('password123');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login, showToast } = useAuth();
@@ -130,13 +131,21 @@ const CommonPortalLogin = ({ roleLabel, roleFilter, prefillEmail, dashboardPath 
           <div className="relative">
             <Lock size={16} className="absolute left-3.5 top-3.5 text-white/50" />
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
-              className="w-full bg-black/10 border border-white/20 rounded-xl pl-10 pr-4 py-3 text-white placeholder-white/70 focus:outline-none focus:border-cyan-400 focus:bg-black/20 focus:ring-1 focus:ring-cyan-400 transition-all text-sm shadow-inner"
+              className="w-full bg-black/10 border border-white/20 rounded-xl pl-10 pr-10 py-3 text-white placeholder-white/70 focus:outline-none focus:border-cyan-400 focus:bg-black/20 focus:ring-1 focus:ring-cyan-400 transition-all text-sm shadow-inner"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3.5 top-3.5 text-white/50 hover:text-white transition-colors focus:outline-none cursor-pointer"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
           </div>
         </div>
 

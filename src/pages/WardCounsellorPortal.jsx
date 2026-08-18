@@ -663,6 +663,7 @@ const CounsellorDashboard = ({ counsellor }) => {
 // 2. COUNSELLING WARDS DIRECTORY & COMPLETE PROFILE VIEW
 const WardsDirectory = ({ counsellor }) => {
   const [wards, setWards] = useState([]);
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [riskFilter, setRiskFilter] = useState('All');
@@ -673,8 +674,10 @@ const WardsDirectory = ({ counsellor }) => {
   const [riskHistory, setRiskHistory] = useState([]);
   const [activeAssign, setActiveAssign] = useState(null);
 
-  useEffect(() => {
-    const fetchWards = async () => {
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const fetchWardsAndAttendance = async () => {
+    try {
       setLoading(true);
       const assign = await mockDB.getFacultyWardAssignment(counsellor?.uid || counsellor?.id || counsellor?.email);
       setActiveAssign(assign || null);
@@ -682,11 +685,55 @@ const WardsDirectory = ({ counsellor }) => {
       const resolvedDept = assign?.department || counsellor?.wardCounsellorDepartment || counsellor?.assignedBranch || counsellor?.department || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)';
       const resolvedSem = assign?.semester || counsellor?.semester || 'Semester 6';
 
-      const res = await mockDB.getWardsForCounsellor(counsellor.uid, resolvedDept, resolvedSem);
+      const res = await mockDB.getWardsForCounsellor(counsellor?.uid, resolvedDept, resolvedSem);
       setWards(res);
+
+      const localAtt = JSON.parse(localStorage.getItem('acad_attendance') || '[]');
+      setAttendanceRecords(localAtt);
+    } catch (e) {
+      console.error("Error loading wards directory:", e);
+    } finally {
       setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchWardsAndAttendance();
+
+    // 1. Live Firestore Listener for Real-Time Daily Attendance
+    let unsubscribe = () => {};
+    if (isFirebaseConfigured && db) {
+      try {
+        const qAtt = query(collection(db, 'attendance'));
+        unsubscribe = onSnapshot(qAtt, (snapshot) => {
+          const liveAtt = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          const localAtt = JSON.parse(localStorage.getItem('acad_attendance') || '[]');
+          const combined = new Map();
+          [...localAtt, ...liveAtt].forEach(item => {
+            const key = item.id || `${item.studentId}_${item.date}_${item.subject}`;
+            combined.set(key, item);
+          });
+          setAttendanceRecords(Array.from(combined.values()));
+        }, (err) => console.warn("Live attendance onSnapshot error:", err));
+      } catch (err) {
+        console.warn("Attendance listener init error:", err);
+      }
+    }
+
+    // 2. Window event listener for cross-tab updates
+    const handleAttUpdated = () => {
+      const localAtt = JSON.parse(localStorage.getItem('acad_attendance') || '[]');
+      setAttendanceRecords(localAtt);
     };
-    fetchWards();
+
+    window.addEventListener('acad_attendance_updated', handleAttUpdated);
+    window.addEventListener('storage', handleAttUpdated);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('acad_attendance_updated', handleAttUpdated);
+      window.removeEventListener('storage', handleAttUpdated);
+    };
   }, [counsellor]);
 
   const handleOpenStudentModal = async (student) => {
@@ -698,11 +745,45 @@ const WardsDirectory = ({ counsellor }) => {
     setRiskHistory(riskHist);
   };
 
+  const computeStudentAttendance = (student) => {
+    const sId = student.uid || student.id || student.studentId;
+    const sRoll = (student.rollNumber || '').toUpperCase().trim();
+
+    const studentRecords = attendanceRecords.filter(a => {
+      const idMatch = a.studentId === sId || a.studentUid === sId;
+      const rollMatch = sRoll && a.rollNumber && a.rollNumber.toUpperCase().trim() === sRoll;
+      return idMatch || rollMatch;
+    });
+
+    // Today's Status
+    const todayEntries = studentRecords.filter(a => (a.date || '').replace(/\//g, '-').startsWith(todayStr));
+    let todayStatus = 'Not Logged';
+    if (todayEntries.length > 0) {
+      const isAbsent = todayEntries.some(a => (a.status || '').toLowerCase() === 'absent');
+      const isLate = todayEntries.some(a => (a.status || '').toLowerCase() === 'late');
+      const isLeave = todayEntries.some(a => ['leave', 'on leave', 'leave_approved'].includes((a.status || '').toLowerCase()));
+      todayStatus = isAbsent ? 'Absent' : isLeave ? 'On Leave' : isLate ? 'Late' : 'Present';
+    }
+
+    // Overall Attendance Percentage
+    let overallPct = 0;
+    if (studentRecords.length > 0) {
+      const presentCount = studentRecords.filter(a => ['present', 'late', 'leave', 'leave_approved'].includes((a.status || '').toLowerCase())).length;
+      overallPct = parseFloat(((presentCount / studentRecords.length) * 100).toFixed(1));
+    } else {
+      overallPct = parseFloat(student.attendancePercentage || student.attendance || 84.5);
+    }
+
+    const riskLevel = overallPct < 65 ? 'High Risk' : overallPct < 75 ? 'Warning' : 'Good';
+    const status = overallPct > 82 ? 'Improving' : overallPct < 70 ? 'Declining' : 'Stable';
+
+    return { todayStatus, overallPct, riskLevel, status };
+  };
+
   const filteredWards = wards.filter(w => {
     const query = search.toLowerCase();
     const nameMatch = (w.fullName || w.name || '').toLowerCase().includes(query) || (w.rollNumber || '').toLowerCase().includes(query);
-    const att = w.attendancePercentage || w.attendance || 80;
-    const riskLevel = att < 65 ? 'High Risk' : att < 75 ? 'Warning' : 'Good';
+    const { riskLevel } = computeStudentAttendance(w);
     const riskMatch = riskFilter === 'All' || riskLevel === riskFilter;
     const sectionMatch = sectionFilter === 'All' || (w.section || 'A').toUpperCase() === sectionFilter.toUpperCase();
     return nameMatch && riskMatch && sectionMatch;
@@ -719,21 +800,26 @@ const WardsDirectory = ({ counsellor }) => {
       <div className="p-6 bg-black/40 backdrop-blur-md rounded-3xl border border-white/10 shadow-lg space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-black text-white">Counselling Wards Roster</h2>
-            <p className="text-xs text-gray-400">{resolvedDept} • {resolvedSem} (Cross-Section Access)</p>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-black text-white">Counselling Wards Roster</h2>
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Live Sync
+              </span>
+            </div>
+            <p className="text-xs text-gray-400">{resolvedDept} • {resolvedSem} (Cross-Section Access across A, B, C)</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
               <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
               <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name or roll..." className="pl-9 pr-4 py-2 rounded-xl border border-white/10 bg-white/5 text-white text-xs font-bold placeholder-gray-400 focus:bg-white/10 focus:ring-1 focus:ring-blue-400 outline-none transition-all" />
             </div>
-            <select value={sectionFilter} onChange={e => setSectionFilter(e.target.value)} className="p-2 rounded-xl border border-white/10 bg-white/5 text-white text-xs font-bold focus:bg-white/10 focus:ring-1 focus:ring-blue-400 outline-none transition-all">
+            <select value={sectionFilter} onChange={e => setSectionFilter(e.target.value)} className="p-2 rounded-xl border border-white/10 bg-white/5 text-white text-xs font-bold focus:bg-white/10 focus:ring-1 focus:ring-blue-400 outline-none transition-all cursor-pointer">
               <option value="All" className="bg-slate-900 text-white">All Sections (A, B, C)</option>
               <option value="A" className="bg-slate-900 text-white">Section A</option>
               <option value="B" className="bg-slate-900 text-white">Section B</option>
               <option value="C" className="bg-slate-900 text-white">Section C</option>
             </select>
-            <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)} className="p-2 rounded-xl border border-white/10 bg-white/5 text-white text-xs font-bold focus:bg-white/10 focus:ring-1 focus:ring-blue-400 outline-none transition-all">
+            <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)} className="p-2 rounded-xl border border-white/10 bg-white/5 text-white text-xs font-bold focus:bg-white/10 focus:ring-1 focus:ring-blue-400 outline-none transition-all cursor-pointer">
               <option value="All" className="bg-slate-900 text-white">All Risk Levels</option>
               <option value="Good" className="bg-slate-900 text-white">🟢 Good (&gt;=75%)</option>
               <option value="Warning" className="bg-slate-900 text-white">🟡 Warning (65-74.99%)</option>
@@ -747,20 +833,18 @@ const WardsDirectory = ({ counsellor }) => {
           <table className="w-full text-left text-xs font-semibold text-gray-200 border-collapse table-fixed">
             <thead className="bg-white/5 uppercase text-[10px] text-gray-400 tracking-wider border-b border-white/10">
               <tr>
-                <th className="w-[16%] p-3 sm:p-4">Roll Number</th>
-                <th className="w-[26%] p-3 sm:p-4">Student Name</th>
+                <th className="w-[15%] p-3 sm:p-4">Roll Number</th>
+                <th className="w-[24%] p-3 sm:p-4">Student Name</th>
                 <th className="w-[16%] p-3 sm:p-4">Branch</th>
-                <th className="w-[10%] p-3 sm:p-4 text-center">Section</th>
-                <th className="w-[11%] p-3 sm:p-4 text-center">Attendance</th>
-                <th className="w-[10%] p-3 sm:p-4 text-center">Status</th>
-                <th className="w-[11%] p-3 sm:p-4 text-center">Risk Level</th>
+                <th className="w-[9%] p-3 sm:p-4 text-center">Section</th>
+                <th className="w-[12%] p-3 sm:p-4 text-center">Today's Status</th>
+                <th className="w-[12%] p-3 sm:p-4 text-center">Overall Att.</th>
+                <th className="w-[12%] p-3 sm:p-4 text-center">Risk Level</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {filteredWards.map((w) => {
-                const att = w.attendancePercentage || w.attendance || 80;
-                const riskLevel = att < 65 ? 'High Risk' : att < 75 ? 'Warning' : 'Good';
-                const status = att > 82 ? 'Improving' : att < 70 ? 'Declining' : 'Stable';
+                const { todayStatus, overallPct, riskLevel, status } = computeStudentAttendance(w);
                 return (
                   <tr key={w.uid} onClick={() => handleOpenStudentModal(w)} className="hover:bg-white/5 transition-colors cursor-pointer">
                     <td className="p-3 sm:p-4 font-mono font-bold text-cyan-300 whitespace-normal break-words">{w.rollNumber || '22KBN-CS001'}</td>
@@ -782,12 +866,18 @@ const WardsDirectory = ({ counsellor }) => {
                         Sec {w.section || 'A'}
                       </span>
                     </td>
-                    <td className={`p-3 sm:p-4 text-center font-black ${att < 75 ? 'text-rose-400' : 'text-emerald-400'}`}>{att}%</td>
                     <td className="p-3 sm:p-4 text-center">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[9.5px] font-black inline-block ${status === 'Improving' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : status === 'Declining' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'}`}>
-                        {status === 'Improving' ? '🟢 Improving' : status === 'Declining' ? '🔴 Declining' : '🔵 Stable'}
+                      <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase inline-block ${
+                        todayStatus === 'Present' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                        todayStatus === 'Absent' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse' :
+                        todayStatus === 'Late' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                        todayStatus === 'On Leave' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
+                        'bg-white/5 text-gray-400 border border-white/10'
+                      }`}>
+                        {todayStatus}
                       </span>
                     </td>
+                    <td className={`p-3 sm:p-4 text-center font-black ${overallPct < 75 ? 'text-rose-400' : 'text-emerald-400'}`}>{overallPct}%</td>
                     <td className="p-3 sm:p-4 text-center">
                       <span className={`px-2.5 py-0.5 rounded-full text-[9.5px] font-black inline-block ${riskLevel === 'High Risk' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : riskLevel === 'Warning' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}`}>
                         {riskLevel === 'High Risk' ? '🔴 High Risk' : riskLevel === 'Warning' ? '🟡 Warning' : '🟢 Good'}
@@ -857,12 +947,12 @@ const WardsDirectory = ({ counsellor }) => {
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div className="p-3 bg-white/5 border border-white/10 rounded-xl">
-                    <span className="text-[10px] text-gray-400 uppercase font-bold block">Attendance %</span>
-                    <span className="text-lg font-black text-emerald-400">{selectedStudent.attendancePercentage || selectedStudent.attendance || 80}%</span>
+                    <span className="text-[10px] text-gray-400 uppercase font-bold block">Live Attendance %</span>
+                    <span className="text-lg font-black text-emerald-400">{computeStudentAttendance(selectedStudent).overallPct}%</span>
                   </div>
                   <div className="p-3 bg-white/5 border border-white/10 rounded-xl">
-                    <span className="text-[10px] text-gray-400 uppercase font-bold block">Internal Marks</span>
-                    <span className="text-lg font-black text-purple-300">{academicProgress.internalMarks}</span>
+                    <span className="text-[10px] text-gray-400 uppercase font-bold block">Today's Status</span>
+                    <span className="text-sm font-black text-cyan-300 block mt-1">{computeStudentAttendance(selectedStudent).todayStatus}</span>
                   </div>
                   <div className="p-3 bg-white/5 border border-white/10 rounded-xl">
                     <span className="text-[10px] text-gray-400 uppercase font-bold block">Backlogs</span>

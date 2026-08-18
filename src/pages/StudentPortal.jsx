@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { db, isFirebaseConfigured, mockDB, KBN_BRANCHES, KBN_SEMESTERS, BRANCH_SUBJECT_MAP, isDepartmentMatch, normalizeSemester, normalizeSection } from '../services/firebase';
+import { db, isFirebaseConfigured, mockDB, KBN_BRANCHES, KBN_SEMESTERS, BRANCH_SUBJECT_MAP, getSubjectsForBranch, isDepartmentMatch, normalizeSemester, normalizeSection } from '../services/firebase';
 import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { StudentDashboard } from '../components/StudentDashboard';
 import { StudentMarks } from '../components/StudentMarks';
@@ -324,8 +324,8 @@ const StudentProfile = ({ student, isParent }) => {
 // 2. ACADEMIC OVERVIEW
 // ==========================================
 const StudentAcademicOverview = ({ student, isParent }) => {
-  const dept = student?.department || student?.branch || 'Computer Science & Engineering';
-  const subjects = BRANCH_SUBJECT_MAP[dept] || ['Neural Networks & Deep Learning', 'Cloud Computing & DevOps', 'AI & Robotics Lab', 'Web Frameworks & Microservices'];
+  const dept = student?.department || student?.branch || student?.assignedBranch || 'B.Sc. Computer Science (CS)';
+  const subjects = getSubjectsForBranch(dept);
 
   return (
     <div className="bg-transparent min-h-screen text-white space-y-6 font-sans">
@@ -337,7 +337,7 @@ const StudentAcademicOverview = ({ student, isParent }) => {
           </div>
           <div>
             <h2 className="text-xl font-black font-display text-white drop-shadow">Academic Overview & Curriculum Matrix</h2>
-            <p className="text-xs text-blue-200 mt-0.5">{student?.fullName || 'Student'} • {dept} ({student?.semester || 'Semester 6'})</p>
+            <p className="text-xs text-blue-200 mt-0.5">{student?.fullName || student?.name || 'Student'} • {dept} ({student?.semester || 'Semester 6'})</p>
           </div>
         </div>
         <span className="px-3.5 py-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-2xl font-black text-xs shadow-md self-start sm:self-auto">
@@ -358,7 +358,7 @@ const StudentAcademicOverview = ({ student, isParent }) => {
         <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white p-5 flex items-center justify-between">
           <div>
             <span className="text-[10px] uppercase font-bold text-white/50 tracking-wider block">Cumulative CGPA</span>
-            <span className="text-2xl font-black text-emerald-300 mt-1 block">{student?.cgpa || '8.5'} / 10.0</span>
+            <span className="text-2xl font-black text-emerald-300 mt-1 block">{student?.cgpa || student?.gpa || '8.5'} / 10.0</span>
           </div>
           <Award className="text-emerald-400 opacity-80" size={28} />
         </div>
@@ -384,7 +384,7 @@ const StudentAcademicOverview = ({ student, isParent }) => {
             <div key={idx} className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
               <div className="flex items-center justify-between">
                 <span className="px-2.5 py-0.5 bg-blue-500/20 text-cyan-300 border border-blue-400/30 rounded text-[10px] font-black uppercase">
-                  CS-60{idx + 1}
+                  SUB-60{idx + 1}
                 </span>
                 <span className="text-[10px] font-bold text-emerald-400">4 Credits</span>
               </div>
@@ -405,6 +405,48 @@ const StudentAttendance = ({ student, isParent }) => {
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState([]);
 
+  const studentDept = student?.department || student?.branch || student?.assignedBranch || 'B.Sc. Computer Science (CS)';
+  const curriculumSubjects = getSubjectsForBranch(studentDept);
+
+  const loadOfflineAttendance = async () => {
+    try {
+      setLoading(true);
+      const stUid = student?.uid || student?.id;
+      const stRoll = student?.rollNumber || student?.studentId;
+
+      let allRecords = [];
+      try {
+        const data = await mockDB.getAttendance(studentDept, student?.semester, stUid);
+        if (data && Array.isArray(data)) allRecords.push(...data);
+      } catch (_) {}
+
+      try {
+        const local = JSON.parse(localStorage.getItem('acad_attendance') || '[]');
+        local.forEach(item => {
+          const match = (stUid && (item.studentId === stUid || item.studentUid === stUid || item.uid === stUid || item.applicantId === stUid)) || 
+                        (stRoll && (item.rollNumber === stRoll || item.studentId === stRoll || item.studentRoll === stRoll));
+          if (match) {
+            allRecords.push(item);
+          }
+        });
+      } catch (_) {}
+
+      // Deduplicate
+      const recMap = new Map();
+      allRecords.forEach(r => {
+        const key = r.id || r.docId || `${r.studentId || r.rollNumber}-${r.date}-${r.subject}-${r.period || r.lecturePeriod}`;
+        if (key) recMap.set(key, r);
+      });
+      const unique = Array.from(recMap.values());
+      unique.sort((a, b) => new Date(b.date || b.createdAt || 0) - new Date(a.date || a.createdAt || 0));
+      setRecords(unique);
+    } catch (e) {
+      console.error("Error loading offline student attendance:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     let unsubscribe = null;
     const stUid = student?.uid || student?.id;
@@ -412,18 +454,18 @@ const StudentAttendance = ({ student, isParent }) => {
 
     const processAttendance = (rawList) => {
       const myRecords = rawList.filter(a => 
-        (stUid && (a.studentId === stUid || a.uid === stUid || a.applicantId === stUid)) ||
-        (stRoll && (a.rollNumber === stRoll || a.studentId === stRoll))
+        (stUid && (a.studentId === stUid || a.studentUid === stUid || a.uid === stUid || a.applicantId === stUid)) ||
+        (stRoll && (a.rollNumber === stRoll || a.studentId === stRoll || a.studentRoll === stRoll))
       );
 
       // Merge localStorage fallback
       try {
         const local = JSON.parse(localStorage.getItem('acad_attendance') || '[]');
         local.forEach(item => {
-          const key = item.id || `${item.studentId}-${item.date}-${item.subject}-${item.lecturePeriod}`;
-          const match = (stUid && (item.studentId === stUid || item.uid === stUid || item.applicantId === stUid)) || 
-                        (stRoll && (item.rollNumber === stRoll || item.studentId === stRoll));
-          if (match && !myRecords.some(r => (r.id && r.id === item.id) || `${r.studentId}-${r.date}-${r.subject}-${r.lecturePeriod}` === key)) {
+          const key = item.id || item.docId || `${item.studentId}-${item.date}-${item.subject}-${item.period || item.lecturePeriod}`;
+          const match = (stUid && (item.studentId === stUid || item.studentUid === stUid || item.uid === stUid || item.applicantId === stUid)) || 
+                        (stRoll && (item.rollNumber === stRoll || item.studentId === stRoll || item.studentRoll === stRoll));
+          if (match && !myRecords.some(r => (r.id && r.id === item.id) || `${r.studentId}-${r.date}-${r.subject}-${r.period || r.lecturePeriod}` === key)) {
             myRecords.push(item);
           }
         });
@@ -454,46 +496,47 @@ const StudentAttendance = ({ student, isParent }) => {
       loadOfflineAttendance();
     }
 
+    const handleAttendanceUpdate = () => {
+      loadOfflineAttendance();
+    };
+    window.addEventListener('storage', handleAttendanceUpdate);
+    window.addEventListener('acad_attendance_updated', handleAttendanceUpdate);
+
     return () => {
       if (unsubscribe) {
         try { unsubscribe(); } catch (_) {}
       }
+      window.removeEventListener('storage', handleAttendanceUpdate);
+      window.removeEventListener('acad_attendance_updated', handleAttendanceUpdate);
     };
-  }, [student]);
+  }, [student, studentDept]);
 
-  const loadOfflineAttendance = async () => {
-    try {
-      setLoading(true);
-      const data = await mockDB.getAttendance(student?.department, student?.semester, student?.uid);
-      setRecords(data || []);
-    } catch (e) {
-      console.error("Error loading offline student attendance:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Dynamic Subject Attendance Aggregation
   const subjectMap = {};
-  const defaultSubjects = ['Neural Networks & Deep Learning', 'Cloud Computing & DevOps', 'AI Lab', 'Web Frameworks'];
-  defaultSubjects.forEach(sub => {
-    subjectMap[sub] = { subject: sub, total: 24, present: 21, absent: 2, leave: 1 };
+  
+  // 1. Initialize all curriculum subjects for student's branch
+  curriculumSubjects.forEach(sub => {
+    subjectMap[sub] = { subject: sub, total: 0, present: 0, absent: 0, leave: 0 };
   });
 
+  // 2. Dynamically aggregate from faculty records
   records.forEach(r => {
     const sub = r.subject || 'General Subject';
     if (!subjectMap[sub]) {
       subjectMap[sub] = { subject: sub, total: 0, present: 0, absent: 0, leave: 0 };
     }
     subjectMap[sub].total += 1;
-    if (r.status === 'Present' || r.status === 'present') subjectMap[sub].present += 1;
-    else if (r.status === 'Absent' || r.status === 'absent') subjectMap[sub].absent += 1;
-    else if (r.status === 'Leave' || r.status === 'leave') subjectMap[sub].leave += 1;
+    const st = (r.status || 'present').toLowerCase();
+    if (st === 'present') subjectMap[sub].present += 1;
+    else if (st === 'absent') subjectMap[sub].absent += 1;
+    else if (st === 'leave' || st === 'leave_approved') subjectMap[sub].leave += 1;
+    else subjectMap[sub].present += 1;
   });
 
   const subjectList = Object.values(subjectMap);
   const totalClasses = subjectList.reduce((acc, s) => acc + s.total, 0);
-  const totalPresent = subjectList.reduce((acc, s) => acc + s.present, 0);
-  const overallPercentage = totalClasses > 0 ? ((totalPresent / totalClasses) * 100).toFixed(1) : '87.5';
+  const totalPresent = subjectList.reduce((acc, s) => acc + s.present + s.leave, 0);
+  const overallPercentage = totalClasses > 0 ? ((totalPresent / totalClasses) * 100).toFixed(1) : (records.length > 0 ? '85.0' : '100.0');
 
   return (
     <div className="bg-transparent min-h-screen text-white space-y-6 font-sans">
@@ -505,12 +548,12 @@ const StudentAttendance = ({ student, isParent }) => {
           </div>
           <div>
             <h2 className="text-xl font-black font-display text-white drop-shadow">My Attendance Record & Lecture Ledger</h2>
-            <p className="text-xs text-blue-200 mt-0.5">Biometric & faculty classroom logs verified daily by HOD</p>
+            <p className="text-xs text-blue-200 mt-0.5">Live classroom logs recorded by course faculty & authenticated by HOD</p>
           </div>
         </div>
         <div className="text-right self-start sm:self-auto">
           <span className="text-3xl font-black text-emerald-400 drop-shadow">{overallPercentage}%</span>
-          <span className="block text-[10px] text-blue-200 font-bold uppercase tracking-wider">Overall Average</span>
+          <span className="block text-[10px] text-blue-200 font-bold uppercase tracking-wider">Overall Average ({totalClasses} Lectures)</span>
         </div>
       </div>
 
@@ -539,7 +582,7 @@ const StudentAttendance = ({ student, isParent }) => {
               </thead>
               <tbody className="divide-y divide-white/5 font-semibold">
                 {subjectList.map((s, idx) => {
-                  const pct = s.total > 0 ? ((s.present / s.total) * 100).toFixed(1) : '0.0';
+                  const pct = s.total > 0 ? (((s.present + s.leave) / s.total) * 100).toFixed(1) : '100.0';
                   const isEligible = parseFloat(pct) >= 75;
                   return (
                     <tr key={idx} className="hover:bg-white/5 transition-colors">
@@ -911,48 +954,105 @@ const StudentLeaves = ({ student, isParent }) => {
 
   const studentUid = student?.uid || student?.id;
   const studentRoll = student?.rollNumber || student?.studentId;
+  const studentEmail = student?.email;
 
-  // Real-time synchronization for student's leave status updates
-  useEffect(() => {
-    if (!studentUid && !studentRoll) return;
+  const loadOfflineLeaves = async () => {
+    try {
+      let data = [];
+      try {
+        data = await mockDB.getStudentLeaves(studentUid);
+      } catch (_) {}
 
-    let unsubscribes = [];
-
-    const processLeavesList = (rawList) => {
-      const seenIds = new Set();
-      const unique = [];
-
-      rawList.forEach(item => {
+      const localMap = new Map();
+      (data || []).forEach(item => {
         const id = item.id || item.leaveId;
-        const matchesStudent = 
-          (studentUid && (item.studentId === studentUid || item.applicantId === studentUid || item.uid === studentUid)) ||
-          (studentRoll && item.rollNumber === studentRoll);
-
-        if (matchesStudent && id && !seenIds.has(id)) {
-          seenIds.add(id);
-          unique.push(item);
-        }
+        if (id) localMap.set(id, item);
       });
 
-      // Merge local storage items as fallback
-      ['acad_student_leaves', 'acad_leave_requests'].forEach(key => {
+      ['acad_leave_requests', 'acad_student_leaves'].forEach(key => {
         try {
           const localItems = JSON.parse(localStorage.getItem(key) || '[]');
           localItems.forEach(item => {
             const id = item.id || item.leaveId;
             const matchesStudent = 
-              (studentUid && (item.studentId === studentUid || item.applicantId === studentUid || item.uid === studentUid)) ||
-              (studentRoll && item.rollNumber === studentRoll);
+              (studentUid && (item.studentId === studentUid || item.applicantId === studentUid || item.uid === studentUid || item.id === studentUid)) ||
+              (studentRoll && (item.rollNumber === studentRoll || item.studentRoll === studentRoll)) ||
+              (studentEmail && (item.email === studentEmail || item.studentEmail === studentEmail));
 
-            if (matchesStudent && id && !seenIds.has(id)) {
-              seenIds.add(id);
-              unique.push(item);
+            if (matchesStudent && id) {
+              const existing = localMap.get(id);
+              if (!existing) {
+                localMap.set(id, item);
+              } else {
+                const existingPending = (existing.status || '').toLowerCase() === 'pending';
+                const itemProcessed = (item.status || '').toLowerCase() === 'approved' || (item.status || '').toLowerCase() === 'rejected';
+                if (existingPending && itemProcessed) {
+                  localMap.set(id, { ...existing, ...item });
+                } else {
+                  localMap.set(id, { ...existing, ...item });
+                }
+              }
             }
           });
         } catch (_) {}
       });
 
-      unique.sort((a, b) => new Date(b.submittedAt || b.appliedAt || b.createdAt || 0) - new Date(a.submittedAt || a.appliedAt || a.createdAt || 0));
+      const list = Array.from(localMap.values());
+      list.sort((a, b) => new Date(b.submittedAt || b.appliedAt || b.createdAt || b.actionAt || 0) - new Date(a.submittedAt || a.appliedAt || a.createdAt || a.actionAt || 0));
+      setLeaves(list);
+    } catch (e) {
+      console.error("Error loading offline student leaves:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Real-time synchronization for student's leave status updates
+  useEffect(() => {
+    if (!studentUid && !studentRoll && !studentEmail) return;
+
+    let unsubscribes = [];
+
+    const processLeavesList = (rawList) => {
+      const mergedMap = new Map();
+
+      rawList.forEach(item => {
+        const id = item.id || item.leaveId;
+        const matchesStudent = 
+          (studentUid && (item.studentId === studentUid || item.applicantId === studentUid || item.uid === studentUid || item.id === studentUid)) ||
+          (studentRoll && (item.rollNumber === studentRoll || item.studentRoll === studentRoll)) ||
+          (studentEmail && (item.email === studentEmail || item.studentEmail === studentEmail));
+
+        if (matchesStudent && id) {
+          mergedMap.set(id, item);
+        }
+      });
+
+      // Merge local storage items as fallback/supplement
+      ['acad_leave_requests', 'acad_student_leaves'].forEach(key => {
+        try {
+          const localItems = JSON.parse(localStorage.getItem(key) || '[]');
+          localItems.forEach(item => {
+            const id = item.id || item.leaveId;
+            const matchesStudent = 
+              (studentUid && (item.studentId === studentUid || item.applicantId === studentUid || item.uid === studentUid || item.id === studentUid)) ||
+              (studentRoll && (item.rollNumber === studentRoll || item.studentRoll === studentRoll)) ||
+              (studentEmail && (item.email === studentEmail || item.studentEmail === studentEmail));
+
+            if (matchesStudent && id) {
+              const existing = mergedMap.get(id);
+              if (!existing) {
+                mergedMap.set(id, item);
+              } else {
+                mergedMap.set(id, { ...existing, ...item });
+              }
+            }
+          });
+        } catch (_) {}
+      });
+
+      const unique = Array.from(mergedMap.values());
+      unique.sort((a, b) => new Date(b.submittedAt || b.appliedAt || b.createdAt || b.actionAt || 0) - new Date(a.submittedAt || a.appliedAt || a.createdAt || a.actionAt || 0));
       setLeaves(unique);
       setLoading(false);
     };
@@ -960,7 +1060,7 @@ const StudentLeaves = ({ student, isParent }) => {
     if (isFirebaseConfigured && db) {
       setLoading(true);
       const realTimeMap = {};
-      const collectionsToListen = ['leaves', 'student_leaves', 'leave_requests'];
+      const collectionsToListen = ['leave_requests', 'student_leaves', 'leaves'];
 
       collectionsToListen.forEach(colName => {
         try {
@@ -985,23 +1085,21 @@ const StudentLeaves = ({ student, isParent }) => {
 
     loadOfflineLeaves();
 
+    // Listen for local browser update events
+    const handleLocalUpdate = () => {
+      loadOfflineLeaves();
+    };
+    window.addEventListener('storage', handleLocalUpdate);
+    window.addEventListener('acad_leave_updated', handleLocalUpdate);
+
     return () => {
       unsubscribes.forEach(unsub => {
         try { unsub(); } catch (_) {}
       });
+      window.removeEventListener('storage', handleLocalUpdate);
+      window.removeEventListener('acad_leave_updated', handleLocalUpdate);
     };
-  }, [studentUid, studentRoll]);
-
-  const loadOfflineLeaves = async () => {
-    try {
-      const data = await mockDB.getStudentLeaves(studentUid);
-      setLeaves(data || []);
-    } catch (e) {
-      console.error("Error loading offline student leaves:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [studentUid, studentRoll, studentEmail]);
 
   const handleApplyLeave = async (e) => {
     e.preventDefault();
@@ -1140,35 +1238,57 @@ const StudentLeaves = ({ student, isParent }) => {
                   <th className="px-3 py-3 text-center">Duration</th>
                   <th className="px-4 py-3">Reason</th>
                   <th className="px-3 py-3 text-center">Status</th>
-                  <th className="px-4 py-3 text-right">Counsellor Action</th>
+                  <th className="px-4 py-3 text-right">Counsellor Action & Remarks</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 font-semibold">
-                {leaves.map(l => (
-                  <tr key={l.id || l.leaveId} className="hover:bg-white/5 transition-colors">
-                    <td className="px-4 py-3.5 font-bold text-white">{l.leaveType}</td>
-                    <td className="px-3 py-3.5 text-center font-mono text-cyan-300">{l.fromDate} to {l.toDate}</td>
-                    <td className="px-4 py-3.5 text-white/70 max-w-xs truncate">{l.reason}</td>
-                    <td className="px-3 py-3.5 text-center">
-                      <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold uppercase inline-block ${
-                        l.status === 'Approved' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
-                        l.status === 'Rejected' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' :
-                        'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                      }`}>
-                        {l.status || 'Pending'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3.5 text-right">
-                      {l.status === 'Approved' ? (
-                        <span className="text-emerald-400 font-bold">Approved by {l.approvedByName || 'Ward Counsellor'}</span>
-                      ) : l.status === 'Rejected' ? (
-                        <span className="text-rose-400 font-bold">Rejected: {l.rejectionReason || 'No reason specified'}</span>
-                      ) : (
-                        <span className="text-amber-400 italic">Under Review</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {leaves.map(l => {
+                  const rawStatus = (l.status || 'Pending').toLowerCase();
+                  const isApproved = rawStatus === 'approved';
+                  const isRejected = rawStatus === 'rejected';
+                  const reviewer = l.approvedByName || l.rejectedByName || l.actionByName || l.actionBy || l.approvedBy || 'Ward Counsellor';
+                  const remarkText = l.remarks || l.rejectionReason || l.actionRemarks;
+
+                  return (
+                    <tr key={l.id || l.leaveId} className="hover:bg-white/5 transition-colors">
+                      <td className="px-4 py-3.5 font-bold text-white">{l.leaveType || 'Casual Leave'}</td>
+                      <td className="px-3 py-3.5 text-center font-mono text-cyan-300">{l.startDate || l.fromDate} to {l.endDate || l.toDate}</td>
+                      <td className="px-4 py-3.5 text-white/70 max-w-xs truncate">{l.reason}</td>
+                      <td className="px-3 py-3.5 text-center">
+                        <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold uppercase inline-block ${
+                          isApproved ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                          isRejected ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' :
+                          'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                        }`}>
+                          {isApproved ? 'Approved' : isRejected ? 'Rejected' : 'Pending'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 text-right">
+                        {isApproved ? (
+                          <div className="flex flex-col items-end">
+                            <span className="text-emerald-400 font-bold">Approved by {reviewer}</span>
+                            {remarkText && remarkText !== 'Approved by Ward Counsellor' && remarkText !== 'Approved' && (
+                              <span className="text-[11px] text-emerald-300/80 font-medium italic mt-0.5 max-w-xs break-words">
+                                "{remarkText}"
+                              </span>
+                            )}
+                          </div>
+                        ) : isRejected ? (
+                          <div className="flex flex-col items-end">
+                            <span className="text-rose-400 font-bold">Rejected by {reviewer}</span>
+                            {remarkText && (
+                              <span className="text-[11px] text-rose-300/80 font-medium italic mt-0.5 max-w-xs break-words">
+                                Reason: {remarkText}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-amber-400 italic">Under Review by Ward Counsellor</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -1355,7 +1475,7 @@ const StudentPlacements = ({ student, isParent }) => {
   const [submitting, setSubmitting] = useState(false);
   const { showToast } = useAuth();
 
-  const studentBranch = student?.department || student?.branch || 'Computer Science & Engineering';
+  const studentBranch = student?.department || student?.branch || student?.assignedBranch || 'Computer Science & Engineering';
   const studentCgpa = parseFloat(student?.cgpa || student?.gpa || 8.5);
   const studentBacklogs = parseInt(student?.backlogs || 0);
 
@@ -1363,9 +1483,10 @@ const StudentPlacements = ({ student, isParent }) => {
     try {
       setLoading(true);
       const stId = student?.uid || student?.id;
+      const stRoll = student?.rollNumber || student?.studentId;
       const [drivesData, appsData, intsData, trData] = await Promise.all([
         mockDB.getPlacementDrives('student'),
-        mockDB.getPlacementApplications(null, stId),
+        mockDB.getPlacementApplications(null, stId || stRoll),
         mockDB.getPlacementInterviews ? mockDB.getPlacementInterviews(stId) : [],
         mockDB.getPlacementTrainings ? mockDB.getPlacementTrainings() : []
       ]);
@@ -1374,7 +1495,7 @@ const StudentPlacements = ({ student, isParent }) => {
       setInterviews(intsData || []);
       setTrainings(trData || []);
     } catch (e) {
-      console.error(e);
+      console.error("[loadPlacements Error]:", e);
     } finally {
       setLoading(false);
     }
@@ -1383,7 +1504,7 @@ const StudentPlacements = ({ student, isParent }) => {
   useEffect(() => {
     let unsubs = [];
     const stId = student?.uid || student?.id;
-    const stRoll = student?.rollNumber;
+    const stRoll = student?.rollNumber || student?.studentId;
 
     loadPlacements();
 
@@ -1392,23 +1513,36 @@ const StudentPlacements = ({ student, isParent }) => {
         const uDrives = onSnapshot(collection(db, 'placement_drives'), (snap) => {
           const list = snap.docs.map(d => ({ id: d.id, driveId: d.id, ...d.data() }));
           if (list.length > 0) setDrives(list);
-        });
+        }, (err) => console.warn("[placement_drives onSnapshot]:", err));
         unsubs.push(uDrives);
 
         const uApps = onSnapshot(collection(db, 'placement_applications'), (snap) => {
           const myApps = snap.docs
             .map(d => ({ id: d.id, applicationId: d.id, ...d.data() }))
-            .filter(a => (stId && a.studentId === stId) || (stRoll && a.rollNumber === stRoll));
+            .filter(a => 
+              (stId && (a.studentId === stId || a.studentUid === stId || a.applicantId === stId || a.uid === stId)) || 
+              (stRoll && a.rollNumber === stRoll)
+            );
           if (myApps.length > 0) setApplications(myApps);
-        });
+        }, (err) => console.warn("[placement_applications onSnapshot]:", err));
         unsubs.push(uApps);
-      } catch (_) {}
+      } catch (err) {
+        console.warn("[Placements Firebase Snapshot Listener Error]:", err);
+      }
     }
+
+    const handleLocalPlacementUpdate = () => {
+      loadPlacements();
+    };
+    window.addEventListener('storage', handleLocalPlacementUpdate);
+    window.addEventListener('acad_placement_updated', handleLocalPlacementUpdate);
 
     return () => {
       unsubs.forEach(u => {
         try { u(); } catch (_) {}
       });
+      window.removeEventListener('storage', handleLocalPlacementUpdate);
+      window.removeEventListener('acad_placement_updated', handleLocalPlacementUpdate);
     };
   }, [student]);
 
@@ -1437,17 +1571,22 @@ const StudentPlacements = ({ student, isParent }) => {
 
     try {
       setSubmitting(true);
-      const res = await mockDB.applyForDrive(selectedDrive.id || selectedDrive.driveId, student);
-      if (res && !res.success) {
+      console.log(`[Placement Apply] Submitting application for drive ${selectedDrive.companyName}...`, { drive: selectedDrive, student });
+      const driveId = selectedDrive.id || selectedDrive.driveId;
+      const res = await mockDB.applyForDrive(driveId, student);
+      
+      if (res && res.success === false) {
+        console.warn("[Placement Apply Rejected]:", res.reason);
         showToast(res.reason || 'Could not submit application.', 'error');
         return;
       }
 
       showToast(`Application submitted successfully for ${selectedDrive.companyName}!`, 'success');
       setShowApplyModal(false);
-      loadPlacements();
+      await loadPlacements();
     } catch (err) {
-      showToast(err.message || 'Could not submit application.', 'error');
+      console.error("[Placement Apply Exception]:", err);
+      showToast(err.message || 'Could not submit application due to an unexpected error.', 'error');
     } finally {
       setSubmitting(false);
     }

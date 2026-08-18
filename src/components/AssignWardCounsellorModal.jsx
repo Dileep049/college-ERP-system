@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { auth, db, isFirebaseConfigured, mockDB } from '../services/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { collection, doc, setDoc, addDoc, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
-import { X, UserCheck, Mail, Lock } from 'lucide-react';
+import { X, UserCheck, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 export const AssignWardCounsellorModal = ({
   isOpen,
@@ -24,6 +24,7 @@ export const AssignWardCounsellorModal = ({
   });
 
   const [facultyUsers, setFacultyUsers] = useState([]);
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -35,6 +36,18 @@ export const AssignWardCounsellorModal = ({
       }));
     }
   }, [hod]);
+
+  // Escape key listener to close modal
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose?.();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   // 1. Dynamic Fetching: Triggered whenever formData.department (selected branch) changes
   useEffect(() => {
@@ -312,9 +325,9 @@ export const AssignWardCounsellorModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-3d-backdrop">
-      <form onSubmit={handleSubmit} className="modal-3d-content max-w-lg p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
+    <div className="modal-3d-backdrop cursor-pointer" onClick={onClose}>
+      <div className="modal-3d-content max-w-lg p-0 cursor-default flex flex-col max-h-[90vh] sm:max-h-[85vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] p-5 pb-3 shrink-0">
           <div>
             <h3 className="text-base font-black font-display text-[var(--text-primary)] flex items-center gap-2">
               <UserCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -327,174 +340,186 @@ export const AssignWardCounsellorModal = ({
           <button type="button" onClick={onClose} className="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"><X size={18} /></button>
         </div>
 
-        <div className="space-y-3.5 text-xs">
-          {/* Field 1: Primary Trigger — Select Branch / Department */}
-          <div>
-            <label className="block font-bold text-[var(--text-secondary)] mb-1">
-              1. Select Branch / Department <span className="text-rose-500">*</span>
-            </label>
-            <select
-              value={formData.department}
-              onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-              className="select-3d"
-              required
-            >
-              <option value="">[ Select Department First ]</option>
-              {deptList && deptList.length > 0 ? (
-                deptList.map((d) => (
-                  <option key={d} value={d}>{d}</option>
-                ))
-              ) : (
-                <>
-                  <option value="B.Sc. Computer Science (CS)">B.Sc. Computer Science (CS)</option>
-                  <option value="B.Sc. Artificial Intelligence & Machine Learning (AI & ML)">B.Sc. Artificial Intelligence & Machine Learning (AI & ML)</option>
-                  <option value="B.Sc. Electronics & Communication (ECE)">B.Sc. Electronics & Communication (ECE)</option>
-                </>
-              )}
-            </select>
-          </div>
-
-          {/* Field 2: Dynamically Filtered — Select Ward Counsellor */}
-          <div>
-            <label className="block font-bold text-[var(--text-secondary)] mb-1">
-              2. Select Ward Counsellor ({formData.department ? formData.department : 'Select Branch First'}) <span className="text-rose-500">*</span>
-            </label>
-            <select
-              value={formData.wardCounsellorId}
-              onChange={handleUserSelect}
-              className="select-3d"
-              required
-              disabled={!formData.department || loading || facultyUsers.length === 0}
-            >
-              {!formData.department ? (
-                <option value="" disabled>Select branch first</option>
-              ) : loading ? (
-                <option value="" disabled>Loading faculty for {formData.department}...</option>
-              ) : facultyUsers.length === 0 ? (
-                <option value="" disabled>No faculty found for {formData.department}</option>
-              ) : (
-                <>
-                  <option value="">[ Select Faculty Member ]</option>
-                  {facultyUsers.map((u) => (
-                    <option key={u.uid} value={u.uid}>
-                      {u.name || u.fullName}
-                    </option>
-                  ))}
-                </>
-              )}
-            </select>
-          </div>
-
-          {/* 3. STYLING & UI FIELDS: Email Address & Password Inputs */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label className="block font-bold text-[var(--text-secondary)] mb-1 flex items-center gap-1">
-                <Mail size={13} className="text-purple-500" />
-                3. Email Address <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="email"
-                required
-                placeholder="counsellor@kbn.edu"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="input-3d"
-              />
-            </div>
-
-            <div>
-              <label className="block font-bold text-[var(--text-secondary)] mb-1 flex items-center gap-1">
-                <Lock size={13} className="text-purple-500" />
-                4. Login Password <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="password"
-                required
-                minLength={6}
-                placeholder="•••••••• (Min 6 chars)"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="input-3d"
-              />
-            </div>
-          </div>
-
-          {/* Field 5 & 6: Select Semester & Select Section */}
-          <div className="grid grid-cols-2 gap-3">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="p-5 space-y-3.5 text-xs overflow-y-auto flex-1">
+            {/* Field 1: Primary Trigger — Select Branch / Department */}
             <div>
               <label className="block font-bold text-[var(--text-secondary)] mb-1">
-                5. Select Semester <span className="text-rose-500">*</span>
+                1. Select Branch / Department <span className="text-rose-500">*</span>
               </label>
               <select
-                value={formData.semester}
-                onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
+                value={formData.department}
+                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                 className="select-3d"
                 required
               >
-                <option value="Semester 1">Semester 1</option>
-                <option value="Semester 2">Semester 2</option>
-                <option value="Semester 3">Semester 3</option>
-                <option value="Semester 4">Semester 4</option>
-                <option value="Semester 5">Semester 5</option>
-                <option value="Semester 6">Semester 6</option>
-                <option value="Semester 7">Semester 7</option>
-                <option value="Semester 8">Semester 8</option>
+                <option value="">[ Select Department First ]</option>
+                {deptList && deptList.length > 0 ? (
+                  deptList.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))
+                ) : (
+                  <>
+                    <option value="B.Sc. Computer Science (CS)">B.Sc. Computer Science (CS)</option>
+                    <option value="B.Sc. Artificial Intelligence & Machine Learning (AI & ML)">B.Sc. Artificial Intelligence & Machine Learning (AI & ML)</option>
+                    <option value="B.Sc. Electronics & Communication (ECE)">B.Sc. Electronics & Communication (ECE)</option>
+                  </>
+                )}
               </select>
             </div>
 
+            {/* Field 2: Dynamically Filtered — Select Ward Counsellor */}
             <div>
               <label className="block font-bold text-[var(--text-secondary)] mb-1">
-                6. Select Section <span className="text-rose-500">*</span>
+                2. Select Ward Counsellor ({formData.department ? formData.department : 'Select Branch First'}) <span className="text-rose-500">*</span>
               </label>
               <select
-                value={formData.section}
-                onChange={(e) => setFormData({ ...formData, section: e.target.value })}
+                value={formData.wardCounsellorId}
+                onChange={handleUserSelect}
+                className="select-3d"
+                required
+                disabled={!formData.department || loading || facultyUsers.length === 0}
+              >
+                {!formData.department ? (
+                  <option value="">Select Branch First</option>
+                ) : loading ? (
+                  <option value="">Loading department faculty members...</option>
+                ) : facultyUsers.length === 0 ? (
+                  <option value="">No faculty found in this department</option>
+                ) : (
+                  <>
+                    <option value="">[ Choose Faculty Member ]</option>
+                    {facultyUsers.map((fac) => (
+                      <option key={fac.id || fac.uid} value={fac.id || fac.uid}>
+                        {fac.fullName || fac.name || fac.email} ({fac.department || fac.branch || 'Faculty'})
+                      </option>
+                    ))}
+                  </>
+                )}
+              </select>
+            </div>
+
+            {/* 3. STYLING & UI FIELDS: Email Address & Password Inputs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-[var(--text-secondary)] mb-1 flex items-center gap-1">
+                  <Mail size={13} className="text-purple-500" />
+                  3. Login Email <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="counsellor@kbn.edu"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="input-3d"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-[var(--text-secondary)] mb-1 flex items-center gap-1">
+                  <Lock size={13} className="text-purple-500" />
+                  4. Login Password <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    minLength={6}
+                    placeholder="•••••••• (Min 6 chars)"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="input-3d pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors focus:outline-none cursor-pointer"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Field 5 & 6: Select Semester & Select Section */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-[var(--text-secondary)] mb-1">
+                  5. Select Semester <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={formData.semester}
+                  onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
+                  className="select-3d"
+                  required
+                >
+                  <option value="Semester 1">Semester 1</option>
+                  <option value="Semester 2">Semester 2</option>
+                  <option value="Semester 3">Semester 3</option>
+                  <option value="Semester 4">Semester 4</option>
+                  <option value="Semester 5">Semester 5</option>
+                  <option value="Semester 6">Semester 6</option>
+                  <option value="Semester 7">Semester 7</option>
+                  <option value="Semester 8">Semester 8</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-[var(--text-secondary)] mb-1">
+                  6. Select Section <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={formData.section}
+                  onChange={(e) => setFormData({ ...formData, section: e.target.value })}
+                  className="select-3d"
+                  required
+                >
+                  <option value="Section A">Section A</option>
+                  <option value="Section B">Section B</option>
+                  <option value="Section C">Section C</option>
+                  <option value="Section D">Section D</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Field 7: Select Academic Year */}
+            <div>
+              <label className="block font-bold text-[var(--text-secondary)] mb-1">
+                7. Select Academic Year <span className="text-rose-500">*</span>
+              </label>
+              <select
+                value={formData.academicYear}
+                onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })}
                 className="select-3d"
                 required
               >
-                <option value="Section A">Section A</option>
-                <option value="Section B">Section B</option>
-                <option value="Section C">Section C</option>
-                <option value="Section D">Section D</option>
+                <option value="2026-2027">2026-2027</option>
+                <option value="2025-2026">2025-2026</option>
+                <option value="2024-2025">2024-2025</option>
               </select>
             </div>
           </div>
 
-          {/* Field 7: Select Academic Year */}
-          <div>
-            <label className="block font-bold text-[var(--text-secondary)] mb-1">
-              7. Select Academic Year <span className="text-rose-500">*</span>
-            </label>
-            <select
-              value={formData.academicYear}
-              onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })}
-              className="select-3d"
-              required
+          <div className="flex items-center justify-end gap-3 p-4 border-t border-[var(--border-subtle)] shrink-0">
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn-3d btn-3d-secondary py-2 px-4 text-xs font-bold"
             >
-              <option value="2026-2027">2026-2027</option>
-              <option value="2025-2026">2025-2026</option>
-              <option value="2024-2025">2024-2025</option>
-            </select>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting || !formData.department || facultyUsers.length === 0}
+              className="btn-3d btn-3d-primary py-2 px-5 text-xs font-bold"
+            >
+              {submitting ? 'Creating Credential...' : 'Save Assignment & Credentials'}
+            </button>
           </div>
-        </div>
-
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[var(--border-subtle)]">
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn-3d btn-3d-secondary py-2 px-4 text-xs font-bold"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={submitting || !formData.department || facultyUsers.length === 0}
-            className="btn-3d btn-3d-primary py-2 px-5 text-xs font-bold"
-          >
-            {submitting ? 'Creating Credential...' : 'Save Assignment & Credentials'}
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 };

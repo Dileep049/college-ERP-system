@@ -16,6 +16,7 @@ import {
   onSnapshot,
   serverTimestamp
 } from 'firebase/firestore';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { uploadFileToCloudinary } from './cloudinary';
 
 // Check if Firebase is configured in env variables
@@ -37,10 +38,15 @@ if (isFirebaseConfigured) {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
     db = getFirestore(app);
-    storage = null;
+    try {
+      storage = getStorage(app);
+    } catch (stErr) {
+      console.warn("[Firebase Storage] Storage init error:", stErr);
+      storage = null;
+    }
 
     console.log("[Firebase] Project configured:", isFirebaseConfigured);
-    console.log("[Cloudinary] Storage enabled via Cloudinary Unsigned Uploads");
+    console.log("[Storage] Cloudinary & Firebase Storage enabled");
 
     // Initialize secondary app for creating users without logging out current Admin session
     const secondaryApp = getApps().find(a => a.name === 'SecondaryApp') || initializeApp(firebaseConfig, 'SecondaryApp');
@@ -49,6 +55,8 @@ if (isFirebaseConfigured) {
     console.error("Firebase init error:", error);
   }
 }
+
+export { storageRef, uploadBytes, getDownloadURL };
 
 export const normalizeDepartment = (dept) => {
   if (!dept) return 'CSE';
@@ -173,7 +181,32 @@ export const BRANCH_SUBJECT_MAP = {
 };
 
 export const getSubjectsForBranch = (branch) => {
-  return BRANCH_SUBJECT_MAP[branch] || [];
+  if (!branch) return BRANCH_SUBJECT_MAP['B.Sc. Computer Science (CS)'];
+  if (BRANCH_SUBJECT_MAP[branch]) return BRANCH_SUBJECT_MAP[branch];
+  const normalized = normalizeDepartment ? normalizeDepartment(branch) : branch;
+  if (BRANCH_SUBJECT_MAP[normalized]) return BRANCH_SUBJECT_MAP[normalized];
+
+  const lower = String(branch).toLowerCase().trim();
+  if (lower.includes('aiml') || lower.includes('artificial intelligence') || lower.includes('machine learning')) {
+    return BRANCH_SUBJECT_MAP['B.Sc. Artificial Intelligence & Machine Learning (AI & ML)'];
+  }
+  if (lower.includes('data science') || lower.includes('data analytics') || lower.includes('analysis')) {
+    return BRANCH_SUBJECT_MAP['B.Sc. Data Science / Data Analysis'];
+  }
+  if (lower.includes('bca') || lower.includes('application')) {
+    return BRANCH_SUBJECT_MAP['Bachelor of Computer Applications (BCA)'];
+  }
+  if (lower.includes('commerce') || lower.includes('b.com') || lower.includes('bcom')) {
+    return BRANCH_SUBJECT_MAP['B.Com. (Computers)'];
+  }
+  if (lower.includes('cs') || lower.includes('cse') || lower.includes('computer')) {
+    return BRANCH_SUBJECT_MAP['B.Sc. Computer Science (CS)'];
+  }
+
+  for (const [k, v] of Object.entries(BRANCH_SUBJECT_MAP)) {
+    if (k.toLowerCase().includes(lower) || lower.includes(k.toLowerCase())) return v;
+  }
+  return BRANCH_SUBJECT_MAP['B.Sc. Computer Science (CS)'];
 };
 
 export const KBN_SEMESTERS = [
@@ -751,14 +784,23 @@ export const mockDB = {
   },
 
   getWardsForCounsellor: async (counsellorId, department, semester) => {
-    await mockDB.delay(80);
+    await mockDB.delay(40);
     const activeAssign = await mockDB.getFacultyWardAssignment(counsellorId);
     let students = [];
 
     if (isFirebaseConfigured && db) {
       try {
-        const snap = await getDocs(collection(db, 'profiles'));
-        students = snap.docs.map(doc => ({ id: doc.id, uid: doc.id, ...doc.data() })).filter(u => u.role === 'student');
+        const snapProfiles = await getDocs(collection(db, 'profiles'));
+        const snapStudents = await getDocs(collection(db, 'students'));
+        const snapUsers = await getDocs(query(collection(db, 'users'), where('role', '==', 'student')));
+        
+        const fbList = [
+          ...snapProfiles.docs.map(doc => ({ id: doc.id, uid: doc.id, ...doc.data() })),
+          ...snapStudents.docs.map(doc => ({ id: doc.id, uid: doc.id, ...doc.data() })),
+          ...snapUsers.docs.map(doc => ({ id: doc.id, uid: doc.id, ...doc.data() }))
+        ].filter(u => u.role === 'student' || !u.role);
+        
+        students.push(...fbList);
       } catch (err) {
         console.warn("Firestore getDocs for wards fallback:", err.message);
       }
@@ -781,12 +823,13 @@ export const mockDB = {
     const targetDept = activeAssign?.department || department || '';
     const targetSem = activeAssign?.semester || semester || '';
 
+    let matched = students;
     if (targetDept || targetSem) {
-      return students.filter(s => {
+      matched = students.filter(s => {
         const sDept = s.department || s.branch || '';
         const sSem = s.semester || '';
 
-        const matchDept = !targetDept || isDepartmentMatch(sDept, targetDept);
+        const matchDept = !targetDept || isDepartmentMatch(sDept, targetDept) || isDepartmentMatch(targetDept, sDept);
         const matchSem = !targetSem || !sSem || targetSem.toLowerCase() === 'all' || normalizeSemester(sSem) === normalizeSemester(targetSem);
 
         // Allow cross-section access for same Branch + Semester across Sections A, B, C
@@ -794,7 +837,11 @@ export const mockDB = {
       });
     }
 
-    return students;
+    if (matched.length === 0 && targetDept) {
+      matched = students.filter(s => isDepartmentMatch(s.department || s.branch || '', targetDept) || isDepartmentMatch(targetDept, s.department || s.branch || ''));
+    }
+
+    return matched.length > 0 ? matched : students;
   },
 
   // --- PRINCIPAL GLOBAL ACADEMIC AUDIT SERVICES ---
@@ -1549,6 +1596,11 @@ export const mockDB = {
       console.warn("Notification send error for assignment:", e);
     }
 
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('acad_assignments_updated', { detail: newAss }));
+      window.dispatchEvent(new Event('storage'));
+    }
+
     return newAss;
   },
 
@@ -1564,6 +1616,11 @@ export const mockDB = {
     const local = JSON.parse(localStorage.getItem('acad_assignments') || '[]');
     const filtered = local.filter(a => a.id !== assignmentId && a.assignmentId !== assignmentId);
     localStorage.setItem('acad_assignments', JSON.stringify(filtered));
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('acad_assignments_updated', { detail: { assignmentId, deleted: true } }));
+      window.dispatchEvent(new Event('storage'));
+    }
     return true;
   },
 
@@ -1719,9 +1776,10 @@ export const mockDB = {
         console.error("[Firestore] getDocs for placement_applications failed:", err);
       }
     }
-    const localList = JSON.parse(localStorage.getItem('acad_placement_apps') || '[]');
+    const localList1 = JSON.parse(localStorage.getItem('acad_placement_apps') || '[]');
+    const localList2 = JSON.parse(localStorage.getItem('acad_placement_applications') || '[]');
     const combinedMap = new Map();
-    [...list, ...localList].forEach(item => {
+    [...list, ...localList1, ...localList2].forEach(item => {
       const key = item.id || item.applicationId;
       if (key) combinedMap.set(key, item);
     });
@@ -1731,7 +1789,13 @@ export const mockDB = {
       results = results.filter(a => a.driveId === driveId);
     }
     if (studentId) {
-      results = results.filter(a => a.studentId === studentId);
+      results = results.filter(a => 
+        a.studentId === studentId || 
+        a.studentUid === studentId || 
+        a.applicantId === studentId || 
+        a.uid === studentId ||
+        a.rollNumber === studentId
+      );
     }
     return results;
   },
@@ -1745,17 +1809,20 @@ export const mockDB = {
       resumeUrl = uploadRes.url;
     }
 
-    const normDept = normalizeDepartment(appData.department);
+    const normDept = normalizeDepartment(appData.department || appData.branch);
+    const studentUid = appData.studentUid || appData.studentId || appData.uid || 'stud-1';
     const payload = {
       driveId: appData.driveId,
       driveName: appData.driveName || `${appData.companyName} - ${appData.jobRole}`,
       companyName: appData.companyName || 'Company',
-      jobRole: appData.jobRole || 'Role',
-      package: appData.package || 'Package',
-      studentId: appData.studentId,
-      studentName: appData.studentName || appData.fullName || 'Student',
-      fullName: appData.studentName || appData.fullName || 'Student',
-      rollNumber: appData.rollNumber || 'STU-2026',
+      jobRole: appData.jobRole || appData.role || 'Role',
+      package: appData.package || appData.salaryPackage || 'Package',
+      studentId: studentUid,
+      studentUid: studentUid,
+      applicantId: studentUid,
+      studentName: appData.studentName || appData.fullName || appData.name || 'Student',
+      fullName: appData.studentName || appData.fullName || appData.name || 'Student',
+      rollNumber: appData.rollNumber || appData.studentRoll || 'STU-2026',
       email: appData.email || '',
       phone: appData.phone || appData.mobile || '',
       department: normDept,
@@ -1784,10 +1851,22 @@ export const mockDB = {
       }
     }
 
-    const localApps = JSON.parse(localStorage.getItem('acad_placement_apps') || '[]');
     const newApp = { id: appId, applicationId: appId, ...payload };
-    localApps.unshift(newApp);
-    localStorage.setItem('acad_placement_apps', JSON.stringify(localApps));
+
+    const localApps1 = JSON.parse(localStorage.getItem('acad_placement_apps') || '[]');
+    localApps1.unshift(newApp);
+    localStorage.setItem('acad_placement_apps', JSON.stringify(localApps1));
+
+    const localApps2 = JSON.parse(localStorage.getItem('acad_placement_applications') || '[]');
+    localApps2.unshift(newApp);
+    localStorage.setItem('acad_placement_applications', JSON.stringify(localApps2));
+
+    if (typeof window !== 'undefined') {
+      try {
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new CustomEvent('acad_placement_updated', { detail: newApp }));
+      } catch (_) {}
+    }
 
     return newApp;
   },
@@ -2320,6 +2399,29 @@ export const mockDB = {
     return list;
   },
 
+  markAttendance: async (records, date, subject, department, semester, section, facultyId, lecturePeriod) => {
+    const periodNum = typeof lecturePeriod === 'string' ? (parseInt(lecturePeriod.match(/\d+/)?.[0] || '1', 10)) : (lecturePeriod || 1);
+    const formattedRecords = records.map(r => ({
+      ...r,
+      subject: subject || r.subject || 'General Subject',
+      department: department || r.department || 'B.Sc. Computer Science (CS)',
+      branch: department || r.branch || 'B.Sc. Computer Science (CS)',
+      semester: semester || r.semester || 'Semester 6',
+      section: section || r.section || 'Section A',
+      date: date || new Date().toISOString().split('T')[0],
+      lecturePeriod: periodNum,
+      period: periodNum
+    }));
+    const res = await mockDB.saveAttendanceBatch(formattedRecords, facultyId);
+    if (typeof window !== 'undefined') {
+      try {
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new CustomEvent('acad_attendance_updated', { detail: { date, subject, department, count: records.length } }));
+      } catch (_) {}
+    }
+    return res;
+  },
+
   saveAttendanceBatch: async (records, facultyId, facultyName) => {
     await mockDB.delay(150);
     const savedRecords = [];
@@ -2640,28 +2742,32 @@ export const mockDB = {
     const isApproved = normalizedStatus === 'Approved';
     const isRejected = normalizedStatus === 'Rejected';
     const nowIso = new Date().toISOString();
+    const reviewerName = reviewerUser?.fullName || reviewerUser?.name || (typeof reviewerUser === 'string' ? reviewerUser : 'Ward Counsellor');
+    const reviewerUid = reviewerUser?.uid || reviewerUser?.id || '';
 
     const updateFields = {
       status: normalizedStatus,
       counsellorStatus: normalizedStatus,
-      hodStatus: normalizedStatus
+      hodStatus: normalizedStatus,
+      actionBy: reviewerName,
+      actionByName: reviewerName,
+      actionAt: nowIso,
+      updatedAt: nowIso
     };
 
     if (isApproved) {
-      if (reviewerUser) {
-        updateFields.approvedBy = reviewerUser.uid || reviewerUser.id || '';
-        updateFields.approvedByName = reviewerUser.fullName || reviewerUser.name || 'Ward Counsellor';
-      }
+      updateFields.approvedBy = reviewerUid || reviewerName;
+      updateFields.approvedByName = reviewerName;
       updateFields.approvedAt = nowIso;
       updateFields.remarks = remarksOrReason || 'Approved by Ward Counsellor';
+      updateFields.actionRemarks = remarksOrReason || 'Approved by Ward Counsellor';
     } else if (isRejected) {
-      if (reviewerUser) {
-        updateFields.rejectedBy = reviewerUser.uid || reviewerUser.id || '';
-        updateFields.rejectedByName = reviewerUser.fullName || reviewerUser.name || 'Ward Counsellor';
-      }
+      updateFields.rejectedBy = reviewerUid || reviewerName;
+      updateFields.rejectedByName = reviewerName;
       updateFields.rejectedAt = nowIso;
       updateFields.rejectionReason = remarksOrReason || 'Rejected by approver';
-      updateFields.remarks = remarksOrReason || 'Rejected';
+      updateFields.remarks = remarksOrReason || 'Rejected by approver';
+      updateFields.actionRemarks = remarksOrReason || 'Rejected by approver';
     }
 
     let targetStudentId = null;
@@ -2669,42 +2775,63 @@ export const mockDB = {
     let startDate = '';
     let endDate = '';
 
-    // 1. Update Firestore
-    if (isFirebaseConfigured && db) {
-      try {
-        const docRef = doc(db, 'leave_requests', leaveId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const d = docSnap.data();
-          targetStudentId = d.studentId || d.applicantId || d.uid;
-          leaveType = d.leaveType || 'Leave';
-          startDate = d.startDate || d.fromDate || '';
-          endDate = d.endDate || d.toDate || '';
+    // 1. Update Firestore across possible collections
+    if (isFirebaseConfigured && db && leaveId) {
+      const collectionsToTry = ['leave_requests', 'student_leaves', 'leaves'];
+      for (const colName of collectionsToTry) {
+        try {
+          const docRef = doc(db, colName, leaveId);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const d = docSnap.data();
+            targetStudentId = targetStudentId || d.studentId || d.applicantId || d.uid;
+            leaveType = d.leaveType || leaveType;
+            startDate = d.startDate || d.fromDate || startDate;
+            endDate = d.endDate || d.toDate || endDate;
+            await setDoc(docRef, updateFields, { merge: true });
+          }
+        } catch (err) {
+          console.warn(`Firestore update for ${colName} error:`, err);
         }
-        await updateDoc(docRef, updateFields);
-      } catch (err) {
-        console.error("Firestore updateDoc for leave_requests failed:", err);
       }
     }
 
-    // 2. Update Local Storage Fallback
-    const leaves = JSON.parse(localStorage.getItem('acad_leave_requests') || '[]');
-    const idx = leaves.findIndex(l => l.leaveId === leaveId || l.id === leaveId);
-    if (idx !== -1) {
-      leaves[idx] = { ...leaves[idx], ...updateFields };
-      localStorage.setItem('acad_leave_requests', JSON.stringify(leaves));
-      if (!targetStudentId) {
-        targetStudentId = leaves[idx].studentId || leaves[idx].applicantId || leaves[idx].uid;
-        leaveType = leaves[idx].leaveType || 'Leave';
-        startDate = leaves[idx].startDate || leaves[idx].fromDate || '';
-        endDate = leaves[idx].endDate || leaves[idx].toDate || '';
-      }
+    // 2. Update Local Storage Fallbacks (both keys)
+    ['acad_leave_requests', 'acad_student_leaves'].forEach(key => {
+      try {
+        const leaves = JSON.parse(localStorage.getItem(key) || '[]');
+        let modified = false;
+        const updated = leaves.map(l => {
+          if (l.leaveId === leaveId || l.id === leaveId) {
+            modified = true;
+            targetStudentId = targetStudentId || l.studentId || l.applicantId || l.uid;
+            leaveType = l.leaveType || leaveType;
+            startDate = l.startDate || l.fromDate || startDate;
+            endDate = l.endDate || l.toDate || endDate;
+            return { ...l, ...updateFields };
+          }
+          return l;
+        });
+        if (modified) {
+          localStorage.setItem(key, JSON.stringify(updated));
+        }
+      } catch (_) {}
+    });
+
+    // 3. Dispatch global events for instant reactive sync
+    if (typeof window !== 'undefined') {
+      try {
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new CustomEvent('acad_leave_updated', {
+          detail: { leaveId, ...updateFields }
+        }));
+      } catch (_) {}
     }
 
-    // 3. Send Notification to Student
+    // 4. Send Notification to Student
     if (targetStudentId) {
       const msg = isApproved
-        ? `Your leave application (${leaveType}) from ${startDate} to ${endDate} has been Approved by your Ward Counsellor (${reviewerUser?.fullName || 'Ward Counsellor'}).`
+        ? `Your leave application (${leaveType}) from ${startDate} to ${endDate} has been Approved by your Ward Counsellor (${reviewerName}).`
         : `Your leave application (${leaveType}) from ${startDate} to ${endDate} was Rejected by your Ward Counsellor. Reason: ${remarksOrReason}`;
       
       try {
@@ -3316,81 +3443,111 @@ export const mockDB = {
 
   applyForDrive: async (driveId, studentUser) => {
     await mockDB.delay(150);
-    const drives = await mockDB.getPlacementDrives();
-    const drive = drives.find(d => d.id === driveId || d.driveId === driveId);
-    if (!drive) {
-      return { success: false, reason: 'Placement Drive not found.' };
-    }
+    try {
+      const drives = await mockDB.getPlacementDrives();
+      const drive = drives.find(d => d.id === driveId || d.driveId === driveId);
+      if (!drive) {
+        return { success: false, reason: 'Placement Drive not found.' };
+      }
 
-    const existingApps = await mockDB.getPlacementApplications(driveId, studentUser.uid || studentUser.id);
-    if (existingApps.length > 0) {
-      return { success: false, reason: 'You have already submitted an application for this placement drive.' };
-    }
+      const stUid = studentUser?.uid || studentUser?.id || studentUser?.studentId || 'stud-1';
+      const existingApps = await mockDB.getPlacementApplications(driveId, stUid);
+      if (existingApps && existingApps.length > 0) {
+        return { success: false, reason: 'You have already submitted an application for this placement drive.' };
+      }
 
-    const studentBranch = (studentUser.department || studentUser.branch || '').toUpperCase().trim();
-    const studentCgpa = parseFloat(studentUser.cgpa || studentUser.gpa || 7.5);
-    const studentBacklogs = parseInt(studentUser.backlogs || 0);
+      const studentBranch = (studentUser.assignedBranch || studentUser.department || studentUser.branch || '').toUpperCase().trim();
+      const studentCgpa = parseFloat(studentUser.cgpa || studentUser.gpa || 7.5);
+      const studentBacklogs = parseInt(studentUser.backlogs || 0);
 
-    if (drive.minCgpa && studentCgpa < parseFloat(drive.minCgpa)) {
-      return {
-        success: false,
-        reason: `Minimum CGPA required: ${drive.minCgpa}\nYour CGPA: ${studentCgpa.toFixed(1)}`
-      };
-    }
-
-    if (drive.maxBacklogs !== undefined && studentBacklogs > parseInt(drive.maxBacklogs)) {
-      return {
-        success: false,
-        reason: `Maximum active backlogs allowed: ${drive.maxBacklogs}\nYour active backlogs: ${studentBacklogs}`
-      };
-    }
-
-    if (drive.eligibleBranches && drive.eligibleBranches.length > 0) {
-      const branchMatch = isDepartmentMatch(studentUser.department || studentUser.branch, drive.eligibleBranches);
-      if (!branchMatch) {
+      if (drive.minCgpa && studentCgpa < parseFloat(drive.minCgpa)) {
         return {
           success: false,
-          reason: `Eligible Branches: ${drive.eligibleBranches.join(', ')}\nYour Branch: ${studentUser.department || studentUser.branch}`
+          reason: `Minimum CGPA required: ${drive.minCgpa}\nYour CGPA: ${studentCgpa.toFixed(1)}`
         };
       }
-    }
 
-    const payload = {
-      driveId: drive.id,
-      studentId: studentUser.uid || studentUser.id || 'stud-1',
-      studentName: studentUser.fullName || studentUser.studentName || 'Student',
-      rollNumber: studentUser.rollNumber || '245901',
-      branch: studentUser.department || studentUser.branch || 'CSE',
-      section: studentUser.section || 'A',
-      cgpa: studentCgpa,
-      backlogs: studentBacklogs,
-      skills: studentUser.skills || 'C++, Java, Web Development',
-      resumeUrl: studentUser.resumeUrl || '#mock-resume',
-      appliedDate: new Date().toISOString().split('T')[0],
-      companyName: drive.companyName,
-      companyLogo: drive.companyLogo,
-      jobRole: drive.jobRole,
-      package: drive.package,
-      status: 'Applied',
-      createdAt: new Date().toISOString()
-    };
-
-    let appId = 'app-' + Date.now();
-    if (isFirebaseConfigured && db) {
-      try {
-        const ref = await addDoc(collection(db, 'placement_applications'), payload);
-        appId = ref.id;
-      } catch (err) {
-        console.error("Firestore addDoc placement_applications failed:", err);
+      if (drive.maxBacklogs !== undefined && studentBacklogs > parseInt(drive.maxBacklogs)) {
+        return {
+          success: false,
+          reason: `Maximum active backlogs allowed: ${drive.maxBacklogs}\nYour active backlogs: ${studentBacklogs}`
+        };
       }
+
+      if (drive.eligibleBranches && drive.eligibleBranches.length > 0) {
+        const branchMatch = isDepartmentMatch(studentUser.department || studentUser.branch, drive.eligibleBranches);
+        if (!branchMatch) {
+          return {
+            success: false,
+            reason: `Eligible Branches: ${drive.eligibleBranches.join(', ')}\nYour Branch: ${studentUser.department || studentUser.branch}`
+          };
+        }
+      }
+
+      const resolvedDriveId = drive.id || drive.driveId || driveId;
+      const normDept = normalizeDepartment(studentUser.assignedBranch || studentUser.department || studentUser.branch);
+      const payload = {
+        driveId: resolvedDriveId,
+        driveName: drive.driveName || `${drive.companyName} - ${drive.jobRole || drive.role || 'Drive'}`,
+        companyName: drive.companyName || 'Company',
+        companyLogo: drive.companyLogo || '',
+        jobRole: drive.jobRole || drive.role || 'Job Role',
+        package: drive.package || drive.salaryPackage || 'Not Specified',
+        studentId: stUid,
+        studentUid: stUid,
+        applicantId: stUid,
+        studentName: studentUser.fullName || studentUser.name || studentUser.studentName || 'Student',
+        fullName: studentUser.fullName || studentUser.name || studentUser.studentName || 'Student',
+        rollNumber: studentUser.rollNumber || studentUser.studentId || '245901',
+        email: studentUser.email || '',
+        phone: studentUser.phone || studentUser.mobile || studentUser.phoneNumber || '',
+        branch: normDept,
+        department: normDept,
+        semester: studentUser.assignedSemester || studentUser.semester || 'Semester 6',
+        section: studentUser.assignedSection || studentUser.section || 'Section A',
+        cgpa: studentCgpa,
+        backlogs: studentBacklogs,
+        skills: studentUser.skills || 'Technical, Analytical, Communication',
+        resumeUrl: studentUser.resumeUrl || '#mock-resume',
+        appliedAt: new Date().toISOString(),
+        appliedDate: new Date().toISOString().split('T')[0],
+        status: 'Applied',
+        createdAt: new Date().toISOString()
+      };
+
+      let appId = 'app-' + Date.now();
+      if (isFirebaseConfigured && db) {
+        try {
+          const ref = await addDoc(collection(db, 'placement_applications'), payload);
+          appId = ref.id;
+          console.log('[Firestore] Placement drive application added:', appId);
+        } catch (err) {
+          console.error("Firestore addDoc placement_applications failed:", err);
+        }
+      }
+
+      const newApp = { id: appId, applicationId: appId, ...payload };
+
+      const apps1 = JSON.parse(localStorage.getItem('acad_placement_applications') || '[]');
+      apps1.unshift(newApp);
+      localStorage.setItem('acad_placement_applications', JSON.stringify(apps1));
+
+      const apps2 = JSON.parse(localStorage.getItem('acad_placement_apps') || '[]');
+      apps2.unshift(newApp);
+      localStorage.setItem('acad_placement_apps', JSON.stringify(apps2));
+
+      if (typeof window !== 'undefined') {
+        try {
+          window.dispatchEvent(new Event('storage'));
+          window.dispatchEvent(new CustomEvent('acad_placement_updated', { detail: newApp }));
+        } catch (_) {}
+      }
+
+      return { success: true, application: newApp };
+    } catch (err) {
+      console.error("[mockDB.applyForDrive Error]:", err);
+      return { success: false, reason: err.message || 'An unexpected error occurred while submitting placement application.' };
     }
-
-    const apps = JSON.parse(localStorage.getItem('acad_placement_applications') || '[]');
-    const newApp = { id: appId, applicationId: appId, ...payload };
-    apps.unshift(newApp);
-    localStorage.setItem('acad_placement_applications', JSON.stringify(apps));
-
-    return { success: true, application: newApp };
   },
 
   updateApplicationStatus: async (applicationId, newStatus, remarks = '') => {
@@ -3916,6 +4073,11 @@ export const mockDB = {
       console.warn("Notification send error for note:", e);
     }
 
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('acad_notes_updated', { detail: newNote }));
+      window.dispatchEvent(new Event('storage'));
+    }
+
     return newNote;
   },
 
@@ -3931,6 +4093,11 @@ export const mockDB = {
     const notes = JSON.parse(localStorage.getItem('acad_notes') || '[]');
     const filtered = notes.filter(n => n.id !== noteId && n.noteId !== noteId);
     localStorage.setItem('acad_notes', JSON.stringify(filtered));
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('acad_notes_updated', { detail: { noteId, deleted: true } }));
+      window.dispatchEvent(new Event('storage'));
+    }
     return true;
   },
 
@@ -3990,6 +4157,13 @@ export const mockDB = {
       }
     });
     localStorage.setItem('acad_internal_marks', JSON.stringify(local));
+
+    if (typeof window !== 'undefined') {
+      try {
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new CustomEvent('acad_internal_marks_updated', { detail: { count: marksList.length } }));
+      } catch (_) {}
+    }
 
     try {
       marksList.forEach(m => {
@@ -6700,20 +6874,7 @@ export const mockDB = {
   },
 
   getStudentLeaves: async (studentId) => {
-    await mockDB.delay(50);
-    if (isFirebaseConfigured && db) {
-      try {
-        const snap = await getDocs(collection(db, 'student_leaves'));
-        const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        if (studentId) return list.filter(l => l.studentId === studentId);
-        return list;
-      } catch (e) {
-        console.error("Firestore getStudentLeaves error:", e);
-      }
-    }
-    const local = JSON.parse(localStorage.getItem('acad_student_leaves') || '[]');
-    if (studentId) return local.filter(l => l.studentId === studentId);
-    return local;
+    return await mockDB.getLeaves('student', studentId);
   },
 
   applyStudentLeave: async (studentId, leaveData) => {
@@ -6771,22 +6932,15 @@ export const mockDB = {
     };
 
     if (isFirebaseConfigured && db) {
-      try {
-        const ref1 = await addDoc(collection(db, 'leaves'), newLeave);
-        newLeave.id = ref1.id;
-        newLeave.leaveId = ref1.id;
-      } catch (e) {
-        console.error("FIREBASE ERROR (collection leaves):", e);
-      }
-      try {
-        await addDoc(collection(db, 'student_leaves'), newLeave);
-      } catch (e) {
-        console.error("FIREBASE ERROR (collection student_leaves):", e);
-      }
-      try {
-        await addDoc(collection(db, 'leave_requests'), newLeave);
-      } catch (e) {
-        console.error("FIREBASE ERROR (collection leave_requests):", e);
+      const collectionsToPush = ['leave_requests', 'student_leaves', 'leaves'];
+      for (const colName of collectionsToPush) {
+        try {
+          const ref = await addDoc(collection(db, colName), newLeave);
+          newLeave.id = ref.id;
+          newLeave.leaveId = ref.id;
+        } catch (e) {
+          console.warn(`Firestore addDoc error for ${colName}:`, e);
+        }
       }
     }
 
@@ -6797,6 +6951,13 @@ export const mockDB = {
     const local2 = JSON.parse(localStorage.getItem('acad_leave_requests') || '[]');
     local2.unshift(newLeave);
     localStorage.setItem('acad_leave_requests', JSON.stringify(local2));
+
+    if (typeof window !== 'undefined') {
+      try {
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new CustomEvent('acad_leave_updated', { detail: newLeave }));
+      } catch (_) {}
+    }
 
     return newLeave;
   },
@@ -6850,29 +7011,7 @@ export const mockDB = {
   },
 
   updateStudentLeaveStatus: async (leaveId, status, approverName, rejectionReason = '') => {
-    await mockDB.delay(50);
-    const local = JSON.parse(localStorage.getItem('acad_student_leaves') || '[]');
-    const idx = local.findIndex(l => l.id === leaveId || l.leaveId === leaveId);
-    if (idx !== -1) {
-      local[idx].status = status;
-      local[idx].approvedBy = approverName;
-      if (rejectionReason) local[idx].rejectionReason = rejectionReason;
-      localStorage.setItem('acad_student_leaves', JSON.stringify(local));
-
-      try {
-        const studentId = local[idx].studentId || local[idx].uid;
-        if (studentId) {
-          await mockDB.addNotification(
-            studentId,
-            `Leave Application ${status}`,
-            `Your leave application (${local[idx].fromDate} to ${local[idx].toDate}) was ${status} by ${approverName || 'Ward Counsellor'}.`
-          );
-        }
-      } catch (e) {
-        console.warn("Student leave status notification error:", e.message);
-      }
-    }
-    return { success: true };
+    return await mockDB.reviewLeave(leaveId, status, rejectionReason, approverName);
   },
 
   updateFacultyLeaveStatus: async (leaveId, status, approverName, rejectionReason = '') => {

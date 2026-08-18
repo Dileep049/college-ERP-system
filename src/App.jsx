@@ -174,28 +174,25 @@ const LandingPage = () => {
               <Link
                 key={portal.title}
                 to={portal.link}
-                className="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.4)] hover:bg-white/20 hover:border-white/50 hover:shadow-[0_12px_40px_0_rgba(0,0,0,0.35),inset_0_1px_2px_rgba(255,255,255,0.6)] transition-all duration-300 p-3.5 flex flex-col justify-between group w-full"
+                className="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.4)] hover:bg-white/20 hover:border-white/50 hover:shadow-[0_12px_40px_0_rgba(0,0,0,0.35),inset_0_1px_2px_rgba(255,255,255,0.6)] transition-all duration-300 p-4 flex flex-col justify-between group w-full"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-tr ${portal.gradient} text-white flex items-center justify-center shadow-md border border-white/30 group-hover:scale-105 transition-transform duration-300 shrink-0`}>
-                      <Icon size={15} className="text-white drop-shadow" />
+                  <div className="flex items-center justify-between mb-3">
+                    <div className={`w-9 h-9 rounded-xl bg-gradient-to-tr ${portal.gradient} text-white flex items-center justify-center shadow-md border border-white/30 group-hover:scale-105 transition-transform duration-300 shrink-0`}>
+                      <Icon size={18} className="text-white drop-shadow" />
                     </div>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-black/25 text-white border border-white/30 backdrop-blur-md shadow-sm">
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-black/25 text-white border border-white/30 backdrop-blur-md shadow-sm">
                       {portal.badge}
                     </span>
                   </div>
-                  <h3 className="text-sm font-bold font-display text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] group-hover:text-cyan-200 transition-colors mt-2">
+                  <h3 className="text-base font-bold font-display text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] group-hover:text-cyan-200 transition-colors">
                     {portal.title}
                   </h3>
-                  <p className="text-[11px] leading-tight text-white/80 mt-1.5 line-clamp-2 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
-                    {portal.description}
-                  </p>
                 </div>
 
-                <div className="text-[10px] mt-2.5 pt-2 border-t border-white/25 flex items-center justify-between font-bold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] group-hover:text-cyan-200">
-                  <span className="flex items-center gap-1">Enter {portal.title}</span>
-                  <span className="transform group-hover:translate-x-1 transition-transform text-[10px] text-cyan-200">→</span>
+                <div className="text-xs mt-4 pt-2.5 border-t border-white/25 flex items-center justify-between font-bold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] group-hover:text-cyan-200">
+                  <span className="flex items-center gap-1.5">Enter {portal.title}</span>
+                  <span className="transform group-hover:translate-x-1.5 transition-transform text-xs text-cyan-200 font-black">→</span>
                 </div>
               </Link>
             );

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { db, isFirebaseConfigured, mockDB, KBN_BRANCHES, KBN_SEMESTERS, BRANCH_SUBJECT_MAP, getSubjectsForBranch } from '../services/firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db, isFirebaseConfigured, mockDB, KBN_BRANCHES, KBN_SEMESTERS, BRANCH_SUBJECT_MAP, getSubjectsForBranch, isDepartmentMatch, normalizeSemester, normalizeSection } from '../services/firebase';
+import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { FacultyDashboard } from '../components/FacultyDashboard';
 import { 
   LayoutDashboard,
@@ -191,16 +191,28 @@ const FacultyClasses = ({ faculty }) => {
             </div>
 
             <div className="pt-2 flex flex-wrap gap-2 border-t border-white/10">
-              <a href="/faculty/students" className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-[10.5px] font-extrabold transition-all flex items-center gap-1">
+              <a 
+                href={`/faculty/students?department=${encodeURIComponent(c.department || facultyDept)}&semester=${encodeURIComponent(c.semester || 'Semester 6')}&section=${encodeURIComponent(c.section || 'Section A')}`} 
+                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-[10.5px] font-extrabold transition-all flex items-center gap-1"
+              >
                 <Users size={13} /> Students
               </a>
-              <a href="/faculty/attendance" className="px-3 py-1.5 bg-blue-600 text-white rounded-xl text-[10.5px] font-extrabold hover:bg-blue-700 transition-all flex items-center gap-1">
+              <a 
+                href={`/faculty/attendance?department=${encodeURIComponent(c.department || facultyDept)}&semester=${encodeURIComponent(c.semester || 'Semester 6')}&section=${encodeURIComponent(c.section || 'Section A')}&subject=${encodeURIComponent(c.subject || c.subjectName || '')}`} 
+                className="px-3 py-1.5 bg-blue-600 text-white rounded-xl text-[10.5px] font-extrabold hover:bg-blue-700 transition-all flex items-center gap-1"
+              >
                 <CheckSquare size={13} /> Attendance
               </a>
-              <a href="/faculty/marks" className="px-3 py-1.5 bg-purple-600 text-white rounded-xl text-[10.5px] font-extrabold hover:bg-purple-700 transition-all flex items-center gap-1">
+              <a 
+                href={`/faculty/marks?department=${encodeURIComponent(c.department || facultyDept)}&semester=${encodeURIComponent(c.semester || 'Semester 6')}&section=${encodeURIComponent(c.section || 'Section A')}&subject=${encodeURIComponent(c.subject || c.subjectName || '')}`} 
+                className="px-3 py-1.5 bg-purple-600 text-white rounded-xl text-[10.5px] font-extrabold hover:bg-purple-700 transition-all flex items-center gap-1"
+              >
                 <FileText size={13} /> Marks
               </a>
-              <a href="/faculty/assignments" className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-[10.5px] font-extrabold hover:bg-emerald-700 transition-all flex items-center gap-1">
+              <a 
+                href={`/faculty/assignments?department=${encodeURIComponent(c.department || facultyDept)}&semester=${encodeURIComponent(c.semester || 'Semester 6')}&section=${encodeURIComponent(c.section || 'Section A')}&subject=${encodeURIComponent(c.subject || c.subjectName || '')}`} 
+                className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-[10.5px] font-extrabold hover:bg-emerald-700 transition-all flex items-center gap-1"
+              >
                 <Briefcase size={13} /> Tasks
               </a>
             </div>
@@ -216,8 +228,13 @@ const FacultyStudents = ({ faculty }) => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [selectedSem, setSelectedSem] = useState('All');
-  const [selectedSec, setSelectedSec] = useState('All');
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const urlSem = searchParams.get('semester');
+  const urlSec = searchParams.get('section');
+
+  const [selectedSem, setSelectedSem] = useState(urlSem || 'All');
+  const [selectedSec, setSelectedSec] = useState(urlSec ? urlSec.replace(/Section\s*/i, '').trim() : 'All');
   const [selectedStudent, setSelectedStudent] = useState(null);
 
   const facultyDept = getFacultyDept(faculty);
@@ -241,7 +258,7 @@ const FacultyStudents = ({ faculty }) => {
     const nameMatch = (s.fullName || s.studentName || '').toLowerCase().includes(search.toLowerCase()) ||
                       (s.rollNumber || '').toLowerCase().includes(search.toLowerCase());
     const semMatch = selectedSem === 'All' || s.semester === selectedSem;
-    const secMatch = selectedSec === 'All' || s.section === selectedSec || (selectedSec === 'A' && (!s.section || s.section === 'A'));
+    const secMatch = selectedSec === 'All' || s.section === selectedSec || (selectedSec === 'A' && (!s.section || s.section === 'A' || s.section === 'Section A'));
     return nameMatch && semMatch && secMatch;
   });
 
@@ -395,14 +412,18 @@ const FacultyStudents = ({ faculty }) => {
 // 4. ATTENDANCE & ATTENDANCE MARKING (AUTOMATIC FACULTY TEACHING SCOPE LOCK)
 const FacultyAttendance = ({ faculty }) => {
   const facultyDept = getFacultyDept(faculty);
-  const [teachingAssignments, setTeachingAssignments] = useState([]);
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const deptSubjects = getSubjectsForBranch(facultyDept);
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const urlSem = searchParams.get('semester');
+  const urlSec = searchParams.get('section');
+  const urlSubj = searchParams.get('subject');
+
+  const [semester, setSemester] = useState(urlSem || 'Semester 6');
+  const [section, setSection] = useState(urlSec || 'Section A');
+  const [subject, setSubject] = useState(urlSubj || deptSubjects[0] || 'Data Structures');
   const [lecturePeriod, setLecturePeriod] = useState('Period 2 (10:00 - 11:00 AM)');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-
-  const [semester, setSemester] = useState('Semester 6');
-  const [section, setSection] = useState('Section A');
-  const [subject, setSubject] = useState('Neural Networks & Deep Learning');
 
   const [students, setStudents] = useState([]);
   const [attendanceMap, setAttendanceMap] = useState({});
@@ -410,62 +431,77 @@ const FacultyAttendance = ({ faculty }) => {
   const [saving, setSaving] = useState(false);
   const { showToast } = useAuth();
 
-  const availableSubjects = Array.from(new Set([subject, 'Data Structures', 'Operating Systems', 'Machine Learning'].filter(Boolean)));
-
-  useEffect(() => {
-    const fetchAssigns = async () => {
-      setLoading(true);
-      const assigns = await mockDB.getFacultyAssignments(faculty?.uid || faculty?.id || faculty?.email);
-      const activeOnly = assigns.filter(a => a.status === 'active' || a.status === 'Active');
-      setTeachingAssignments(activeOnly);
-      setLoading(false);
-    };
-    fetchAssigns();
-  }, [faculty]);
-
-  const currentScope = teachingAssignments[selectedIndex] || null;
+  const availableSubjects = deptSubjects.length > 0 ? (
+    urlSubj && !deptSubjects.includes(urlSubj) ? [urlSubj, ...deptSubjects] : deptSubjects
+  ) : ['Data Structures', 'Operating Systems', 'Database Management Systems (DBMS)', 'Computer Networks', 'Software Engineering'];
 
   const loadStudentsForAttendance = async () => {
-    if (!currentScope) return;
     try {
       setLoading(true);
-      const data = await mockDB.getStudentsByBranchAndSemester(currentScope.department, currentScope.semester, currentScope.section);
-      setStudents(data);
+      let realStudents = [];
+      if (isFirebaseConfigured && db) {
+        try {
+          const qUsers = query(collection(db, 'users'), where('role', '==', 'student'));
+          const snapUsers = await getDocs(qUsers);
+          const usersList = snapUsers.docs.map(doc => ({ uid: doc.id, id: doc.id, ...doc.data() }));
+
+          const qProf = query(collection(db, 'profiles'), where('role', '==', 'student'));
+          const snapProf = await getDocs(qProf);
+          const profList = snapProf.docs.map(doc => ({ uid: doc.id, id: doc.id, ...doc.data() }));
+
+          const sMap = new Map();
+          [...usersList, ...profList].forEach(s => {
+            if (s.uid) sMap.set(s.uid, s);
+          });
+          realStudents = Array.from(sMap.values());
+        } catch (err) {
+          console.warn("Firestore student roster query in FacultyAttendance:", err);
+        }
+      }
+
+      const mockData = await mockDB.getStudentsByBranchAndSemester(facultyDept, semester, section);
+
+      const combinedMap = new Map();
+      realStudents.forEach(st => {
+        const stDept = (st.department || st.branch || '').trim();
+        const stSem = (st.semester || '').trim();
+        const stSec = (st.section || '').trim();
+
+        const bMatch = !stDept || isDepartmentMatch(facultyDept, stDept) || isDepartmentMatch(stDept, facultyDept);
+        const sMatch = !stSem || stSem === 'All' || normalizeSemester(stSem) === normalizeSemester(semester);
+        const secMatch = !section || section === 'All' || !stSec || normalizeSection(stSec) === normalizeSection(section);
+
+        if (bMatch && sMatch && secMatch) {
+          const key = st.uid || st.id || st.rollNumber;
+          if (key) combinedMap.set(key, st);
+        }
+      });
+
+      if (combinedMap.size === 0) {
+        mockData.forEach(st => {
+          const key = st.uid || st.id || st.rollNumber;
+          if (key) combinedMap.set(key, st);
+        });
+      }
+
+      const finalStudentList = Array.from(combinedMap.values());
+      setStudents(finalStudentList);
 
       const initialMap = {};
-      data.forEach(s => {
+      finalStudentList.forEach(s => {
         initialMap[s.uid || s.studentId || s.rollNumber] = 'Present';
       });
       setAttendanceMap(initialMap);
     } catch (e) {
-      console.error(e);
+      console.error("Error loading students in FacultyAttendance:", e);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (currentScope) {
-      loadStudentsForAttendance();
-    }
-  }, [selectedIndex, teachingAssignments]);
-
-  if (!loading && teachingAssignments.length === 0) {
-    return (
-      <div className="p-8 max-w-xl mx-auto my-12 bg-white dark:bg-slate-900 rounded-3xl border border-rose-500/30 shadow-2xl text-center space-y-4">
-        <div className="w-16 h-16 rounded-full bg-rose-500/10 text-rose-600 flex items-center justify-center mx-auto font-black text-2xl border border-rose-500/20">
-          🔒
-        </div>
-        <h2 className="text-xl font-black text-slate-900 dark:text-white">Scope Access Restricted</h2>
-        <p className="text-sm font-bold text-rose-600 dark:text-rose-400">
-          You are not authorized to access this academic scope.
-        </p>
-        <p className="text-xs text-slate-400 leading-relaxed">
-          No active teaching assignment has been provided by your Head of Department for your account ({faculty?.email}).
-        </p>
-      </div>
-    );
-  }
+    loadStudentsForAttendance();
+  }, [facultyDept, semester, section]);
 
   const handleStatusToggle = (studentId, status) => {
     setAttendanceMap(prev => ({ ...prev, [studentId]: status }));
@@ -478,14 +514,21 @@ const FacultyAttendance = ({ faculty }) => {
         const stud = students.find(s => (s.uid || s.studentId || s.rollNumber) === uid);
         return {
           studentId: uid,
-          rollNumber: stud?.rollNumber || stud?.roll || stud?.usn || '',
+          studentUid: uid,
+          rollNumber: stud?.rollNumber || stud?.roll || stud?.usn || uid,
+          studentRollNumber: stud?.rollNumber || stud?.roll || stud?.usn || uid,
           studentName: stud?.fullName || stud?.studentName || stud?.name || 'Student',
+          department: facultyDept,
+          branch: facultyDept,
+          semester: semester,
+          section: section,
+          subject: subject,
           status: attendanceMap[uid]
         };
       });
 
       await mockDB.markAttendance(records, date, subject, facultyDept, semester, section, faculty?.uid, lecturePeriod);
-      showToast(`Attendance for ${subject} logged & saved for ${facultyDept}!`, 'success');
+      showToast(`Attendance for ${subject} (${semester}, ${section}) logged & saved for ${records.length} students!`, 'success');
     } catch (e) {
       console.error(e);
       showToast(e.message || 'Could not save attendance.', 'error');
@@ -504,7 +547,7 @@ const FacultyAttendance = ({ faculty }) => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/10 pb-4 gap-3">
           <div>
             <h3 className="text-sm font-bold text-white drop-shadow-sm">Mark Class Lecture Attendance</h3>
-            <p className="text-xs text-gray-300">Faculty Department → Semester → Section → Subject → Mark Attendance</p>
+            <p className="text-xs text-gray-300">Filtered for {facultyDept} → {semester} ({section}) → {subject}</p>
           </div>
 
           {/* Locked Read-Only Department Badge */}
@@ -566,7 +609,7 @@ const FacultyAttendance = ({ faculty }) => {
         <div className="flex flex-wrap items-center justify-between border-b border-white/10 pb-4 gap-3">
           <div>
             <h3 className="text-sm font-bold text-white drop-shadow-sm">Student Roster Attendance Marking</h3>
-            <p className="text-xs text-gray-300">Recording attendance for {subject} • {semester} ({section})</p>
+            <p className="text-xs text-gray-300">Recording attendance for {subject} • {semester} ({section}) — {students.length} Enrolled</p>
           </div>
 
           <button
@@ -579,31 +622,37 @@ const FacultyAttendance = ({ faculty }) => {
         </div>
 
         {loading ? (
-          <div className="py-16 text-center animate-pulse text-gray-400 font-medium">Loading student roster for {facultyDept}...</div>
+          <div className="py-8 text-center text-gray-400">Loading student roster for {facultyDept} {semester} ({section})...</div>
+        ) : students.length === 0 ? (
+          <div className="py-8 text-center text-gray-400">No students enrolled in {facultyDept} {semester} ({section})</div>
         ) : (
-          <div className="w-full max-w-full overflow-x-hidden">
-            <table className="w-full table-fixed text-left border-collapse">
-              <thead className="bg-black/40 border-b border-white/10">
-                <tr>
-                  <th className="w-[20%] px-2 sm:px-3 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Roll Number</th>
-                  <th className="w-[45%] px-2 sm:px-3 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Student Name</th>
-                  <th className="w-[35%] px-2 sm:px-3 py-3 text-center text-xs font-bold text-gray-400 uppercase tracking-wider">Status Toggle</th>
+          <div className="w-full max-w-full overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-white/10 text-gray-300 font-bold uppercase text-[10px]">
+                  <th className="py-2.5 px-3">Roll No.</th>
+                  <th className="py-2.5 px-3">Student Name</th>
+                  <th className="py-2.5 px-3 text-center">Status</th>
+                  <th className="py-2.5 px-3 text-center">Action</th>
                 </tr>
               </thead>
-              <tbody className="text-white font-medium">
-                {students.map(s => {
+              <tbody className="divide-y divide-white/5">
+                {students.map((s) => {
                   const uid = s.uid || s.studentId || s.rollNumber;
                   const currentStatus = attendanceMap[uid] || 'Present';
+                  const isPresent = currentStatus === 'Present' || currentStatus === 'present';
                   return (
-                    <tr key={uid} className="border-b border-white/5 hover:bg-white/10 transition-colors">
-                      <td className="px-2 sm:px-3 py-3 whitespace-normal break-words font-mono text-xs sm:text-sm font-medium text-cyan-300 align-middle">{s.rollNumber}</td>
-                      <td className="px-2 sm:px-3 py-3 whitespace-normal break-words align-middle">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <img src={s.photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'} alt="" className="w-7 h-7 rounded-full object-cover border border-white/20 shadow-sm shrink-0 hidden sm:block" />
-                          <span className="text-xs sm:text-sm font-semibold text-white tracking-wide drop-shadow-sm break-words">{s.fullName || s.studentName}</span>
-                        </div>
+                    <tr key={uid} className="hover:bg-white/5 transition-colors">
+                      <td className="py-2.5 px-3 font-mono font-bold text-cyan-300">{s.rollNumber || s.studentId || s.uid}</td>
+                      <td className="py-2.5 px-3 text-white font-medium">{s.fullName || s.studentName || s.name}</td>
+                      <td className="py-2.5 px-3 text-center">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase inline-block ${
+                          isPresent ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                        }`}>
+                          {currentStatus}
+                        </span>
                       </td>
-                      <td className="px-2 sm:px-3 py-3 whitespace-normal text-center align-middle">
+                      <td className="py-2.5 px-3 text-center align-middle">
                         <div className="inline-flex rounded-xl bg-white/5 p-0.5 sm:p-1 border border-white/10 max-w-full">
                           <button
                             type="button"
@@ -644,13 +693,19 @@ const FacultyAttendance = ({ faculty }) => {
 // 5. INTERNAL MARKS (AUTOMATIC FACULTY TEACHING SCOPE LOCK)
 const FacultyMarks = ({ faculty }) => {
   const facultyDept = getFacultyDept(faculty);
-  const [teachingAssignments, setTeachingAssignments] = useState([]);
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const deptSubjects = getSubjectsForBranch(facultyDept);
 
-  const [semester, setSemester] = useState('Semester 6');
-  const [section, setSection] = useState('Section A');
-  const [subject, setSubject] = useState('Neural Networks & Deep Learning');
-  const availableSubjects = Array.from(new Set([subject, 'Data Structures', 'Operating Systems', 'Machine Learning'].filter(Boolean)));
+  const searchParams = new URLSearchParams(window.location.search);
+  const urlSem = searchParams.get('semester');
+  const urlSec = searchParams.get('section');
+  const urlSubj = searchParams.get('subject');
+
+  const [semester, setSemester] = useState(urlSem || 'Semester 6');
+  const [section, setSection] = useState(urlSec || 'Section A');
+  const [subject, setSubject] = useState(urlSubj || deptSubjects[0] || 'Data Structures');
+  const availableSubjects = deptSubjects.length > 0 ? (
+    urlSubj && !deptSubjects.includes(urlSubj) ? [urlSubj, ...deptSubjects] : deptSubjects
+  ) : ['Data Structures', 'Operating Systems', 'Database Management Systems (DBMS)', 'Computer Networks', 'Software Engineering'];
 
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -658,116 +713,87 @@ const FacultyMarks = ({ faculty }) => {
   const [marksMap, setMarksMap] = useState({});
   const { showToast } = useAuth();
 
-  useEffect(() => {
-    const fetchAssigns = async () => {
+  const loadMarks = async () => {
+    try {
       setLoading(true);
-      const assigns = await mockDB.getFacultyAssignments(faculty?.uid || faculty?.id || faculty?.email);
-      const activeOnly = assigns.filter(a => a.status === 'active' || a.status === 'Active');
-      setTeachingAssignments(activeOnly);
-      setLoading(false);
-    };
-    fetchAssigns();
-  }, [faculty]);
+      let realStudents = [];
+      if (isFirebaseConfigured && db) {
+        try {
+          const qUsers = query(collection(db, 'users'), where('role', '==', 'student'));
+          const snapUsers = await getDocs(qUsers);
+          const usersList = snapUsers.docs.map(doc => ({ uid: doc.id, id: doc.id, ...doc.data() }));
 
-  const currentScope = teachingAssignments[selectedIndex] || null;
+          const qProf = query(collection(db, 'profiles'), where('role', '==', 'student'));
+          const snapProf = await getDocs(qProf);
+          const profList = snapProf.docs.map(doc => ({ uid: doc.id, id: doc.id, ...doc.data() }));
+
+          const sMap = new Map();
+          [...usersList, ...profList].forEach(s => {
+            if (s.uid) sMap.set(s.uid, s);
+          });
+          realStudents = Array.from(sMap.values());
+        } catch (err) {
+          console.warn("Firestore student roster query failed in FacultyMarks:", err);
+        }
+      }
+
+      const mockData = await mockDB.getStudentsByBranchAndSemester(facultyDept, semester, section);
+
+      // Filter students for current scope
+      const combinedMap = new Map();
+      
+      // 1. Primary: Real Firestore student user documents
+      realStudents.forEach(st => {
+        const stDept = (st.department || st.branch || '').trim();
+        const stSem = (st.semester || '').trim();
+        const stSec = (st.section || '').trim();
+
+        const bMatch = !stDept || isDepartmentMatch(facultyDept, stDept) || isDepartmentMatch(stDept, facultyDept);
+        const sMatch = !stSem || stSem === 'All' || normalizeSemester(stSem) === normalizeSemester(semester);
+        const secMatch = !section || section === 'All' || !stSec || normalizeSection(stSec) === normalizeSection(section);
+
+        if (bMatch && sMatch && secMatch) {
+          const key = st.uid || st.id || st.rollNumber;
+          if (key) combinedMap.set(key, st);
+        }
+      });
+
+      // 2. Secondary: Mock data ONLY if no Firestore students match
+      if (combinedMap.size === 0) {
+        mockData.forEach(st => {
+          const key = st.uid || st.id || st.rollNumber;
+          if (key) combinedMap.set(key, st);
+        });
+      }
+
+      const finalStudentList = Array.from(combinedMap.values());
+      setStudents(finalStudentList);
+
+      // Load existing published/saved marks
+      const existingMarks = await mockDB.getBranchMarks(facultyDept, semester, subject);
+      const map = {};
+      finalStudentList.forEach(s => {
+        const uid = s.uid || s.studentId || s.rollNumber;
+        const roll = s.rollNumber || s.hallTicketNumber || s.studentRollNumber;
+        const matchedMark = existingMarks.find(m => (roll && (m.rollNumber === roll || m.studentRollNumber === roll)) || (uid && (m.studentId === uid || m.studentUid === uid)));
+
+        map[uid] = {
+          mid1: matchedMark ? matchedMark.mid1 : (s.mid1 || 16),
+          mid2: matchedMark ? matchedMark.mid2 : (s.mid2 || 17),
+          assignments: matchedMark ? matchedMark.assignments : (s.assignmentMarks || s.assignments || 8)
+        };
+      });
+      setMarksMap(map);
+    } catch (e) {
+      console.error("Error loading student roster in FacultyMarks:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadMarks = async () => {
-      if (!currentScope) return;
-      try {
-        setLoading(true);
-        let realStudents = [];
-        if (isFirebaseConfigured && db) {
-          try {
-            const qUsers = query(collection(db, 'users'), where('role', '==', 'student'));
-            const snapUsers = await getDocs(qUsers);
-            const usersList = snapUsers.docs.map(doc => ({ uid: doc.id, id: doc.id, ...doc.data() }));
-
-            const qProf = query(collection(db, 'profiles'), where('role', '==', 'student'));
-            const snapProf = await getDocs(qProf);
-            const profList = snapProf.docs.map(doc => ({ uid: doc.id, id: doc.id, ...doc.data() }));
-
-            const sMap = new Map();
-            [...usersList, ...profList].forEach(s => {
-              if (s.uid) sMap.set(s.uid, s);
-            });
-            realStudents = Array.from(sMap.values());
-          } catch (err) {
-            console.warn("Firestore student roster query failed in FacultyMarks:", err);
-          }
-        }
-
-        const mockData = await mockDB.getStudentsByBranchAndSemester(currentScope.department, currentScope.semester, currentScope.section);
-
-        // Filter students for current scope
-        const combinedMap = new Map();
-        
-        // 1. Primary: Real Firestore student user documents
-        realStudents.forEach(st => {
-          const stDept = (st.department || st.branch || '').trim();
-          const stSem = (st.semester || '').trim();
-          const stSec = (st.section || '').trim();
-
-          const bMatch = !stDept || isDepartmentMatch(currentScope.department, stDept) || isDepartmentMatch(stDept, currentScope.department);
-          const sMatch = !stSem || stSem === 'All' || normalizeSemester(stSem) === normalizeSemester(currentScope.semester);
-
-          if (bMatch && sMatch) {
-            const key = st.uid || st.id || st.rollNumber;
-            if (key) combinedMap.set(key, st);
-          }
-        });
-
-        // 2. Secondary: Mock data ONLY if no Firestore students match
-        if (combinedMap.size === 0) {
-          mockData.forEach(st => {
-            const key = st.uid || st.id || st.rollNumber;
-            if (key) combinedMap.set(key, st);
-          });
-        }
-
-        const finalStudentList = Array.from(combinedMap.values());
-        setStudents(finalStudentList);
-
-        // Load existing published/saved marks
-        const existingMarks = await mockDB.getBranchMarks(currentScope.department, currentScope.semester, subject);
-        const map = {};
-        finalStudentList.forEach(s => {
-          const uid = s.uid || s.studentId || s.rollNumber;
-          const roll = s.rollNumber || s.hallTicketNumber || s.studentRollNumber;
-          const matchedMark = existingMarks.find(m => (roll && (m.rollNumber === roll || m.studentRollNumber === roll)) || (uid && (m.studentId === uid || m.studentUid === uid)));
-
-          map[uid] = {
-            mid1: matchedMark ? matchedMark.mid1 : (s.mid1 || 16),
-            mid2: matchedMark ? matchedMark.mid2 : (s.mid2 || 17),
-            assignments: matchedMark ? matchedMark.assignments : (s.assignmentMarks || s.assignments || 8)
-          };
-        });
-        setMarksMap(map);
-      } catch (e) {
-        console.error("Error loading student roster in FacultyMarks:", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (currentScope) loadMarks();
-  }, [selectedIndex, teachingAssignments, subject]);
-
-  if (!loading && teachingAssignments.length === 0) {
-    return (
-      <div className="p-8 max-w-xl mx-auto my-12 bg-white dark:bg-slate-900 rounded-3xl border border-rose-500/30 shadow-2xl text-center space-y-4">
-        <div className="w-16 h-16 rounded-full bg-rose-500/10 text-rose-600 flex items-center justify-center mx-auto font-black text-2xl border border-rose-500/20">
-          🔒
-        </div>
-        <h2 className="text-xl font-black text-slate-900 dark:text-white">Scope Access Restricted</h2>
-        <p className="text-sm font-bold text-rose-600 dark:text-rose-400">
-          You are not authorized to access this academic scope.
-        </p>
-        <p className="text-xs text-slate-400 leading-relaxed">
-          No active teaching assignment has been provided by your Head of Department for your account ({faculty?.email}).
-        </p>
-      </div>
-    );
-  }
+    loadMarks();
+  }, [facultyDept, semester, section, subject]);
 
   const handleMarkChange = (uid, field, val) => {
     const num = Math.max(0, Math.min(field === 'assignments' ? 10 : 20, Number(val) || 0));
@@ -794,8 +820,8 @@ const FacultyMarks = ({ faculty }) => {
           studentName: s.fullName || s.name || s.studentName || 'Student',
           department: facultyDept,
           branch: facultyDept,
-          semester: currentScope?.semester || semester,
-          section: currentScope?.section || section,
+          semester: semester,
+          section: section,
           subject: subject,
           mid1: Number(m.mid1) || 0,
           mid2: Number(m.mid2) || 0,
@@ -808,7 +834,7 @@ const FacultyMarks = ({ faculty }) => {
       });
 
       await mockDB.saveInternalMarksBatch(records);
-      showToast(`Internal marks saved & published for ${records.length} students.`, 'success');
+      showToast(`Internal marks saved & published for ${records.length} students in ${subject} (${semester}, ${section}).`, 'success');
     } catch (e) {
       console.error("Error saving internal marks:", e);
       showToast('Could not save marks.', 'error');
@@ -845,23 +871,24 @@ const FacultyMarks = ({ faculty }) => {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-3 w-full">
-          <div className="flex-1 min-w-[140px]">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
+          <div>
             <label className="text-[10px] text-gray-300 uppercase font-bold block mb-1">Semester *</label>
             <select value={semester} onChange={(e) => setSemester(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 cursor-pointer">
               {KBN_SEMESTERS.map(s => <option key={s} value={s} className="bg-slate-900 text-white">{s}</option>)}
             </select>
           </div>
 
-          <div className="flex-1 min-w-[140px]">
+          <div>
             <label className="text-[10px] text-gray-300 uppercase font-bold block mb-1">Section *</label>
             <select value={section} onChange={(e) => setSection(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 cursor-pointer">
               <option value="Section A" className="bg-slate-900 text-white">Section A</option>
               <option value="Section B" className="bg-slate-900 text-white">Section B</option>
+              <option value="Section C" className="bg-slate-900 text-white">Section C</option>
             </select>
           </div>
 
-          <div className="flex-1 min-w-[180px]">
+          <div>
             <label className="text-[10px] text-gray-300 uppercase font-bold block mb-1">Subject *</label>
             <select value={subject} onChange={(e) => setSubject(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 cursor-pointer">
               {availableSubjects.map((subj, idx) => <option key={`${subj}-${idx}`} value={subj} className="bg-slate-900 text-white">{subj}</option>)}
@@ -982,6 +1009,35 @@ const FacultyAssignments = ({ faculty }) => {
 
   useEffect(() => {
     loadAssignments();
+
+    // 1. Live Firestore Listener for Assignments
+    let unsubscribe = () => {};
+    if (isFirebaseConfigured && db) {
+      try {
+        const qAss = query(collection(db, 'assignments'));
+        unsubscribe = onSnapshot(qAss, (snapshot) => {
+          const liveList = snapshot.docs.map(doc => ({ id: doc.id, assignmentId: doc.id, ...doc.data() }));
+          const matched = liveList.filter(a => isDepartmentMatch(a.branch || a.department, facultyDept));
+          setAssignments(matched.length > 0 ? matched : liveList);
+        }, (err) => console.warn("Assignments onSnapshot error:", err));
+      } catch (err) {
+        console.warn("Assignments listener error:", err);
+      }
+    }
+
+    // 2. Cross-tab storage & custom event listener
+    const handleAssignmentsUpdated = () => {
+      loadAssignments();
+    };
+
+    window.addEventListener('acad_assignments_updated', handleAssignmentsUpdated);
+    window.addEventListener('storage', handleAssignmentsUpdated);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('acad_assignments_updated', handleAssignmentsUpdated);
+      window.removeEventListener('storage', handleAssignmentsUpdated);
+    };
   }, [facultyDept]);
 
   const handleCreateAssignment = async (e) => {
@@ -991,14 +1047,11 @@ const FacultyAssignments = ({ faculty }) => {
       return;
     }
 
-    if (!file) {
-      showToast('Please select an assignment file to upload.', 'error');
-      return;
+    if (file) {
+      console.log("[Assignment] Selected file:", file?.name);
+      console.log("[Assignment] File type:", file?.type);
+      console.log("[Assignment] File size:", file?.size);
     }
-
-    console.log("[Assignment] Selected file:", file?.name);
-    console.log("[Assignment] File type:", file?.type);
-    console.log("[Assignment] File size:", file?.size);
 
     try {
       setUploading(true);
@@ -1208,6 +1261,35 @@ const FacultyNotes = ({ faculty }) => {
 
   useEffect(() => {
     loadNotes();
+
+    // 1. Live Firestore Listener for Notes
+    let unsubscribe = () => {};
+    if (isFirebaseConfigured && db) {
+      try {
+        const qNotes = query(collection(db, 'notes'));
+        unsubscribe = onSnapshot(qNotes, (snapshot) => {
+          const liveNotes = snapshot.docs.map(doc => ({ noteId: doc.id, id: doc.id, ...doc.data() }));
+          const matched = liveNotes.filter(n => isDepartmentMatch(n.department || n.branch, facultyDept));
+          setNotes(matched.length > 0 ? matched : liveNotes);
+        }, (err) => console.warn("Notes onSnapshot error:", err));
+      } catch (err) {
+        console.warn("Notes listener init failed:", err);
+      }
+    }
+
+    // 2. Window Event Listeners for Live Cross-tab updates
+    const handleNotesUpdated = () => {
+      loadNotes();
+    };
+
+    window.addEventListener('acad_notes_updated', handleNotesUpdated);
+    window.addEventListener('storage', handleNotesUpdated);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('acad_notes_updated', handleNotesUpdated);
+      window.removeEventListener('storage', handleNotesUpdated);
+    };
   }, [facultyDept]);
 
   const handleUploadNotes = async (e) => {
