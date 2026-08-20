@@ -422,74 +422,60 @@ const FacultyAttendance = ({ faculty }) => {
   const [semester, setSemester] = useState(urlSem || 'Semester 6');
   const [section, setSection] = useState(urlSec || 'Section A');
   const [subject, setSubject] = useState(urlSubj || deptSubjects[0] || 'Data Structures');
-  const [lecturePeriod, setLecturePeriod] = useState('Period 2 (10:00 - 11:00 AM)');
+  const [lecturePeriod, setLecturePeriod] = useState('Period 1 (09:00 - 10:00 AM)');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
   const [students, setStudents] = useState([]);
   const [attendanceMap, setAttendanceMap] = useState({});
+  const [dayAttendanceRecords, setDayAttendanceRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const { showToast } = useAuth();
+  const [editingRecord, setEditingRecord] = useState(null);
+  const [correctionReason, setCorrectionReason] = useState('');
+  const [newCorrectionStatus, setNewCorrectionStatus] = useState('Present');
+  const [allocatedSubjects, setAllocatedSubjects] = useState([]);
+  const selectedPeriodNum = parseInt(lecturePeriod.match(/\d+/)?.[0] || '1', 10);
 
-  const availableSubjects = deptSubjects.length > 0 ? (
-    urlSubj && !deptSubjects.includes(urlSubj) ? [urlSubj, ...deptSubjects] : deptSubjects
+  useEffect(() => {
+    const loadAllocs = async () => {
+      try {
+        const allocs = await mockDB.getSubjectAllocations(facultyDept, faculty?.uid);
+        if (allocs && allocs.length > 0) {
+          const names = allocs.map(a => a.subjectName).filter(Boolean);
+          setAllocatedSubjects(names);
+          if (names.length > 0 && !urlSubj) {
+            setSubject(names[0]);
+          }
+        }
+      } catch (_) {}
+    };
+    loadAllocs();
+  }, [facultyDept, faculty?.uid]);
+
+  const rawSubjects = allocatedSubjects.length > 0 ? allocatedSubjects : deptSubjects;
+  const availableSubjects = rawSubjects.length > 0 ? (
+    urlSubj && !rawSubjects.includes(urlSubj) ? [urlSubj, ...rawSubjects] : rawSubjects
   ) : ['Data Structures', 'Operating Systems', 'Database Management Systems (DBMS)', 'Computer Networks', 'Software Engineering'];
 
   const loadStudentsForAttendance = async () => {
     try {
       setLoading(true);
-      let realStudents = [];
-      if (isFirebaseConfigured && db) {
-        try {
-          const qUsers = query(collection(db, 'users'), where('role', '==', 'student'));
-          const snapUsers = await getDocs(qUsers);
-          const usersList = snapUsers.docs.map(doc => ({ uid: doc.id, id: doc.id, ...doc.data() }));
+      const studentRoster = await mockDB.getStudentsByBranchAndSemester(facultyDept, semester, section);
+      setStudents(studentRoster);
 
-          const qProf = query(collection(db, 'profiles'), where('role', '==', 'student'));
-          const snapProf = await getDocs(qProf);
-          const profList = snapProf.docs.map(doc => ({ uid: doc.id, id: doc.id, ...doc.data() }));
+      // Fetch all attendance for this class and date across all 5 periods
+      const dayRecords = await mockDB.getAttendanceByFilter(facultyDept, semester, date, section, subject);
+      setDayAttendanceRecords(dayRecords);
 
-          const sMap = new Map();
-          [...usersList, ...profList].forEach(s => {
-            if (s.uid) sMap.set(s.uid, s);
-          });
-          realStudents = Array.from(sMap.values());
-        } catch (err) {
-          console.warn("Firestore student roster query in FacultyAttendance:", err);
-        }
-      }
-
-      const mockData = await mockDB.getStudentsByBranchAndSemester(facultyDept, semester, section);
-
-      const combinedMap = new Map();
-      realStudents.forEach(st => {
-        const stDept = (st.department || st.branch || '').trim();
-        const stSem = (st.semester || '').trim();
-        const stSec = (st.section || '').trim();
-
-        const bMatch = !stDept || isDepartmentMatch(facultyDept, stDept) || isDepartmentMatch(stDept, facultyDept);
-        const sMatch = !stSem || stSem === 'All' || normalizeSemester(stSem) === normalizeSemester(semester);
-        const secMatch = !section || section === 'All' || !stSec || normalizeSection(stSec) === normalizeSection(section);
-
-        if (bMatch && sMatch && secMatch) {
-          const key = st.uid || st.id || st.rollNumber;
-          if (key) combinedMap.set(key, st);
-        }
-      });
-
-      if (combinedMap.size === 0) {
-        mockData.forEach(st => {
-          const key = st.uid || st.id || st.rollNumber;
-          if (key) combinedMap.set(key, st);
-        });
-      }
-
-      const finalStudentList = Array.from(combinedMap.values());
-      setStudents(finalStudentList);
-
+      // Initialize map for selected period
       const initialMap = {};
-      finalStudentList.forEach(s => {
-        initialMap[s.uid || s.studentId || s.rollNumber] = 'Present';
+      studentRoster.forEach(s => {
+        const uid = s.uid || s.studentId || s.rollNumber;
+        const existingForPeriod = dayRecords.find(r => 
+          (r.studentId === uid || r.rollNumber === s.rollNumber) && 
+          Number(r.period || r.lecturePeriod) === selectedPeriodNum
+        );
+        initialMap[uid] = existingForPeriod ? (existingForPeriod.status === 'present' ? 'Present' : (existingForPeriod.status === 'absent' ? 'Absent' : (existingForPeriod.status === 'leave' || existingForPeriod.status === 'leave_approved' ? 'Leave' : 'Present'))) : 'Present';
       });
       setAttendanceMap(initialMap);
     } catch (e) {
@@ -501,7 +487,7 @@ const FacultyAttendance = ({ faculty }) => {
 
   useEffect(() => {
     loadStudentsForAttendance();
-  }, [facultyDept, semester, section]);
+  }, [facultyDept, semester, section, subject, date, lecturePeriod]);
 
   const handleStatusToggle = (studentId, status) => {
     setAttendanceMap(prev => ({ ...prev, [studentId]: status }));
@@ -515,25 +501,58 @@ const FacultyAttendance = ({ faculty }) => {
         return {
           studentId: uid,
           studentUid: uid,
-          rollNumber: stud?.rollNumber || stud?.roll || stud?.usn || uid,
-          studentRollNumber: stud?.rollNumber || stud?.roll || stud?.usn || uid,
-          studentName: stud?.fullName || stud?.studentName || stud?.name || 'Student',
+          rollNumber: stud?.rollNumber || uid,
+          studentName: stud?.fullName || stud?.studentName || 'Student',
           department: facultyDept,
           branch: facultyDept,
           semester: semester,
           section: section,
           subject: subject,
-          status: attendanceMap[uid]
+          status: attendanceMap[uid],
+          period: selectedPeriodNum,
+          lecturePeriod: selectedPeriodNum
         };
       });
 
-      await mockDB.markAttendance(records, date, subject, facultyDept, semester, section, faculty?.uid, lecturePeriod);
-      showToast(`Attendance for ${subject} (${semester}, ${section}) logged & saved for ${records.length} students!`, 'success');
+      await mockDB.markAttendance(records, date, subject, facultyDept, semester, section, faculty?.uid, selectedPeriodNum);
+      showToast(`Period ${selectedPeriodNum} Attendance logged & saved for ${records.length} students!`, 'success');
+      loadStudentsForAttendance();
     } catch (e) {
       console.error(e);
       showToast(e.message || 'Could not save attendance.', 'error');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleCorrectionSubmit = async (e) => {
+    e.preventDefault();
+    if (!editingRecord || !correctionReason.trim()) {
+      showToast('Please provide a valid reason for correction.', 'error');
+      return;
+    }
+
+    try {
+      await mockDB.saveAttendanceCorrection({
+        studentId: editingRecord.studentId,
+        rollNumber: editingRecord.rollNumber,
+        studentName: editingRecord.studentName,
+        subject: subject,
+        date: date,
+        period: editingRecord.period,
+        oldStatus: editingRecord.status,
+        newStatus: newCorrectionStatus,
+        reason: correctionReason.trim(),
+        editedBy: faculty?.fullName || faculty?.name || 'Faculty',
+        facultyId: faculty?.uid || 'fac-1'
+      });
+
+      showToast(`Period ${editingRecord.period} attendance corrected to ${newCorrectionStatus} and logged in history.`, 'success');
+      setEditingRecord(null);
+      setCorrectionReason('');
+      loadStudentsForAttendance();
+    } catch (err) {
+      showToast('Failed to save correction.', 'error');
     }
   };
 
@@ -546,7 +565,7 @@ const FacultyAttendance = ({ faculty }) => {
         {/* Step Flow Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/10 pb-4 gap-3">
           <div>
-            <h3 className="text-sm font-bold text-white drop-shadow-sm">Mark Class Lecture Attendance</h3>
+            <h3 className="text-sm font-bold text-white drop-shadow-sm">Mark Class Lecture Attendance (5 Periods System)</h3>
             <p className="text-xs text-gray-300">Filtered for {facultyDept} → {semester} ({section}) → {subject}</p>
           </div>
 
@@ -587,12 +606,13 @@ const FacultyAttendance = ({ faculty }) => {
           </div>
 
           <div>
-            <label className="text-[10px] text-gray-300 uppercase font-bold block mb-1">Lecture Period *</label>
+            <label className="text-[10px] text-gray-300 uppercase font-bold block mb-1">Lecture Period (1 to 5) *</label>
             <select value={lecturePeriod} onChange={(e) => setLecturePeriod(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 cursor-pointer">
               <option value="Period 1 (09:00 - 10:00 AM)" className="bg-slate-900 text-white">Period 1 (09:00 - 10:00 AM)</option>
               <option value="Period 2 (10:00 - 11:00 AM)" className="bg-slate-900 text-white">Period 2 (10:00 - 11:00 AM)</option>
               <option value="Period 3 (11:15 - 12:15 PM)" className="bg-slate-900 text-white">Period 3 (11:15 - 12:15 PM)</option>
               <option value="Period 4 (01:30 - 02:30 PM)" className="bg-slate-900 text-white">Period 4 (01:30 - 02:30 PM)</option>
+              <option value="Period 5 (02:30 - 03:30 PM)" className="bg-slate-900 text-white">Period 5 (02:30 - 03:30 PM)</option>
             </select>
           </div>
 
@@ -604,11 +624,37 @@ const FacultyAttendance = ({ faculty }) => {
         </div>
       </div>
 
+      {/* Multi-Period Status Summary Card */}
+      <div className="bg-black/30 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-md flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-gray-300">Period Progress ({date}):</span>
+          {[1, 2, 3, 4, 5].map(p => {
+            const hasRecs = dayAttendanceRecords.some(r => Number(r.period || r.lecturePeriod) === p);
+            const isCurrent = p === selectedPeriodNum;
+            return (
+              <span 
+                key={p} 
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                  isCurrent ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-400/50 shadow-sm' : 
+                  hasRecs ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 
+                  'bg-white/5 text-gray-400 border border-white/5'
+                }`}
+              >
+                P{p}: {isCurrent ? 'Active Marking' : (hasRecs ? 'Saved' : 'Not Started')}
+              </span>
+            );
+          })}
+        </div>
+        <div className="text-[11px] text-cyan-300 font-mono">
+          Marking as: <span className="font-bold text-white">{faculty?.fullName || faculty?.name || 'Faculty'}</span>
+        </div>
+      </div>
+
       {/* Student List for Attendance */}
       <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden shadow-lg p-4 sm:p-5 space-y-4 w-full max-w-full">
         <div className="flex flex-wrap items-center justify-between border-b border-white/10 pb-4 gap-3">
           <div>
-            <h3 className="text-sm font-bold text-white drop-shadow-sm">Student Roster Attendance Marking</h3>
+            <h3 className="text-sm font-bold text-white drop-shadow-sm">Student Roster Attendance Marking (Period {selectedPeriodNum})</h3>
             <p className="text-xs text-gray-300">Recording attendance for {subject} • {semester} ({section}) — {students.length} Enrolled</p>
           </div>
 
@@ -617,7 +663,7 @@ const FacultyAttendance = ({ faculty }) => {
             disabled={saving || students.length === 0}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer hover:scale-[1.02] shrink-0"
           >
-            <CheckCircle2 size={15} /> {saving ? 'Saving...' : 'Submit & Lock Attendance'}
+            <CheckCircle2 size={15} /> {saving ? 'Saving...' : `Submit & Lock Period ${selectedPeriodNum}`}
           </button>
         </div>
 
@@ -632,26 +678,77 @@ const FacultyAttendance = ({ faculty }) => {
                 <tr className="border-b border-white/10 text-gray-300 font-bold uppercase text-[10px]">
                   <th className="py-2.5 px-3">Roll No.</th>
                   <th className="py-2.5 px-3">Student Name</th>
-                  <th className="py-2.5 px-3 text-center">Status</th>
-                  <th className="py-2.5 px-3 text-center">Action</th>
+                  <th className="py-2.5 px-2 text-center">P1</th>
+                  <th className="py-2.5 px-2 text-center">P2</th>
+                  <th className="py-2.5 px-2 text-center">P3</th>
+                  <th className="py-2.5 px-2 text-center">P4</th>
+                  <th className="py-2.5 px-2 text-center">P5</th>
+                  <th className="py-2.5 px-3 text-center">Active (P{selectedPeriodNum})</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {students.map((s) => {
                   const uid = s.uid || s.studentId || s.rollNumber;
                   const currentStatus = attendanceMap[uid] || 'Present';
-                  const isPresent = currentStatus === 'Present' || currentStatus === 'present';
+
+                  const getPeriodStatus = (pNum) => {
+                    const match = dayAttendanceRecords.find(r => 
+                      (r.studentId === uid || r.rollNumber === s.rollNumber) && 
+                      Number(r.period || r.lecturePeriod) === pNum
+                    );
+                    return match;
+                  };
+
                   return (
                     <tr key={uid} className="hover:bg-white/5 transition-colors">
                       <td className="py-2.5 px-3 font-mono font-bold text-cyan-300">{s.rollNumber || s.studentId || s.uid}</td>
                       <td className="py-2.5 px-3 text-white font-medium">{s.fullName || s.studentName || s.name}</td>
-                      <td className="py-2.5 px-3 text-center">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase inline-block ${
-                          isPresent ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                        }`}>
-                          {currentStatus}
-                        </span>
-                      </td>
+                      
+                      {/* Previous / Matrix Periods 1 to 5 */}
+                      {[1, 2, 3, 4, 5].map(p => {
+                        const rec = getPeriodStatus(p);
+                        const isCurrent = p === selectedPeriodNum;
+                        if (isCurrent) {
+                          return (
+                            <td key={p} className="py-2.5 px-2 text-center">
+                              <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 text-[9.5px] font-bold">
+                                Current
+                              </span>
+                            </td>
+                          );
+                        }
+                        if (!rec) {
+                          return (
+                            <td key={p} className="py-2.5 px-2 text-center text-gray-500 font-mono text-[10px]">
+                              —
+                            </td>
+                          );
+                        }
+                        const st = (rec.status || 'present').toLowerCase();
+                        const isP = st === 'present';
+                        const isA = st === 'absent';
+                        return (
+                          <td key={p} className="py-2.5 px-2 text-center">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingRecord({ ...rec, period: p });
+                                setNewCorrectionStatus(isP ? 'Absent' : 'Present');
+                              }}
+                              title={`Marked by: ${rec.facultyName || 'Faculty'}. Click to correct.`}
+                              className={`px-2 py-0.5 rounded text-[9.5px] font-bold uppercase transition-all cursor-pointer hover:scale-105 ${
+                                isP ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                                isA ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' :
+                                'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              }`}
+                            >
+                              {st}
+                            </button>
+                          </td>
+                        );
+                      })}
+
+                      {/* Active Period Toggle */}
                       <td className="py-2.5 px-3 text-center align-middle">
                         <div className="inline-flex rounded-xl bg-white/5 p-0.5 sm:p-1 border border-white/10 max-w-full">
                           <button
@@ -670,10 +767,10 @@ const FacultyAttendance = ({ faculty }) => {
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleStatusToggle(uid, 'Late')}
-                            className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] font-semibold rounded-lg transition-all cursor-pointer ${currentStatus === 'Late' ? 'bg-amber-500 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                            onClick={() => handleStatusToggle(uid, 'Leave')}
+                            className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] font-semibold rounded-lg transition-all cursor-pointer ${currentStatus === 'Leave' ? 'bg-amber-500 text-white shadow' : 'text-gray-400 hover:text-white'}`}
                           >
-                            Late
+                            Leave
                           </button>
                         </div>
                       </td>
@@ -685,6 +782,68 @@ const FacultyAttendance = ({ faculty }) => {
           </div>
         )}
       </div>
+
+      {/* Attendance Correction Modal */}
+      {editingRecord && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-cyan-500/30 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-scale-up text-white">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h3 className="text-sm font-bold text-cyan-300">Attendance Correction (Period {editingRecord.period})</h3>
+              <button onClick={() => setEditingRecord(null)} className="text-gray-400 hover:text-white text-xs cursor-pointer">✕</button>
+            </div>
+
+            <div className="text-xs space-y-1 bg-white/5 p-3 rounded-xl border border-white/5">
+              <p><span className="text-gray-400">Student:</span> <span className="font-bold text-white">{editingRecord.studentName}</span> ({editingRecord.rollNumber})</p>
+              <p><span className="text-gray-400">Subject:</span> <span className="font-bold text-white">{subject}</span></p>
+              <p><span className="text-gray-400">Date:</span> <span className="font-bold text-white">{date}</span></p>
+              <p><span className="text-gray-400">Current Status:</span> <span className="font-bold text-rose-400 uppercase">{editingRecord.status}</span></p>
+            </div>
+
+            <form onSubmit={handleCorrectionSubmit} className="space-y-4">
+              <div>
+                <label className="text-[10px] text-gray-300 uppercase font-bold block mb-1">Corrected Status *</label>
+                <select
+                  value={newCorrectionStatus}
+                  onChange={(e) => setNewCorrectionStatus(e.target.value)}
+                  className="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
+                >
+                  <option value="Present">Present</option>
+                  <option value="Absent">Absent</option>
+                  <option value="Leave">Leave</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] text-gray-300 uppercase font-bold block mb-1">Reason for Historical Correction *</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={correctionReason}
+                  onChange={(e) => setCorrectionReason(e.target.value)}
+                  placeholder="e.g. Student was present but incorrectly marked absent in Period 1."
+                  className="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 placeholder:text-gray-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingRecord(null)}
+                  className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-xs font-bold text-white shadow-lg transition-all cursor-pointer"
+                >
+                  Log & Save Correction
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );
@@ -698,13 +857,27 @@ const FacultyMarks = ({ faculty }) => {
   const searchParams = new URLSearchParams(window.location.search);
   const urlSem = searchParams.get('semester');
   const urlSec = searchParams.get('section');
-  const urlSubj = searchParams.get('subject');
+  const [allocatedSubjects, setAllocatedSubjects] = useState([]);
 
-  const [semester, setSemester] = useState(urlSem || 'Semester 6');
-  const [section, setSection] = useState(urlSec || 'Section A');
-  const [subject, setSubject] = useState(urlSubj || deptSubjects[0] || 'Data Structures');
-  const availableSubjects = deptSubjects.length > 0 ? (
-    urlSubj && !deptSubjects.includes(urlSubj) ? [urlSubj, ...deptSubjects] : deptSubjects
+  useEffect(() => {
+    const loadAllocs = async () => {
+      try {
+        const allocs = await mockDB.getSubjectAllocations(facultyDept, faculty?.uid);
+        if (allocs && allocs.length > 0) {
+          const names = allocs.map(a => a.subjectName).filter(Boolean);
+          setAllocatedSubjects(names);
+          if (names.length > 0 && !urlSubj) {
+            setSubject(names[0]);
+          }
+        }
+      } catch (_) {}
+    };
+    loadAllocs();
+  }, [facultyDept, faculty?.uid]);
+
+  const rawSubjects = allocatedSubjects.length > 0 ? allocatedSubjects : deptSubjects;
+  const availableSubjects = rawSubjects.length > 0 ? (
+    urlSubj && !rawSubjects.includes(urlSubj) ? [urlSubj, ...rawSubjects] : rawSubjects
   ) : ['Data Structures', 'Operating Systems', 'Database Management Systems (DBMS)', 'Computer Networks', 'Software Engineering'];
 
   const [students, setStudents] = useState([]);

@@ -42,14 +42,27 @@ service cloud.firestore {
       return isRole('counsellor') || isHOD();
     }
 
-    // Profiles Collection
+    function isOwner(userId) {
+      return isAuthenticated() && (
+        request.auth.uid == userId ||
+        request.auth.token.email == userId
+      );
+    }
+
+    // Profiles Collection (all roles)
     match /profiles/{userId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin() || isPrincipal() || isHOD());
+      allow write: if isAuthenticated() && (isOwner(userId) || isAdmin() || isPrincipal() || isHOD());
     }
 
     // Students Collection
     match /students/{studentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (isAdmin() || isPrincipal() || isHOD() || isFaculty());
+    }
+
+    // Faculty Collection
+    match /faculty/{facultyId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated() && (isAdmin() || isPrincipal() || isHOD());
     }
@@ -66,14 +79,28 @@ service cloud.firestore {
       allow write: if isAuthenticated();
     }
 
-    // Study Notes
+    // Study Notes & Materials
     match /notes/{noteId} {
+      allow read: if isAuthenticated();
+      allow write: if isFaculty();
+    }
+    match /study_materials/{materialId} {
       allow read: if isAuthenticated();
       allow write: if isFaculty();
     }
 
     // Attendance Records
     match /attendance/{attendanceId} {
+      allow read: if isAuthenticated();
+      allow write: if isFaculty();
+    }
+
+    // Attendance History
+    match /attendanceHistory/{historyId} {
+      allow read: if isAuthenticated();
+      allow write: if isFaculty();
+    }
+    match /attendance_history/{historyId} {
       allow read: if isAuthenticated();
       allow write: if isFaculty();
     }
@@ -85,33 +112,53 @@ service cloud.firestore {
     }
 
     // Internal Marks
+    match /internalMarks/{markId} {
+      allow read: if isAuthenticated();
+      allow write: if isFaculty();
+    }
     match /internal_marks/{markId} {
       allow read: if isAuthenticated();
       allow write: if isFaculty();
     }
-
-    // Assignment Marks
+    match /marks/{markId} {
+      allow read: if isAuthenticated();
+      allow write: if isFaculty();
+    }
     match /assignment_marks/{markId} {
       allow read: if isAuthenticated();
       allow write: if isFaculty();
     }
 
-    // Placement Drives
+    // Placement Drives & Companies
+    match /placementDrives/{driveId} {
+      allow read: if isAuthenticated();
+      allow write: if isPlacementOfficer();
+    }
     match /placement_drives/{driveId} {
       allow read: if isAuthenticated();
       allow write: if isPlacementOfficer();
     }
+    match /companies/{companyId} {
+      allow read: if isAuthenticated();
+      allow write: if isPlacementOfficer();
+    }
+    match /placement_companies/{companyId} {
+      allow read: if isAuthenticated();
+      allow write: if isPlacementOfficer();
+    }
 
-    // Placement Applications
+    // Placement Applications & Resume Reviews
     match /placement_applications/{appId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated();
     }
-
-    // Placement Companies, Interviews, Trainings
-    match /placement_companies/{companyId} {
+    match /resumeReviews/{reviewId} {
       allow read: if isAuthenticated();
-      allow write: if isPlacementOfficer();
+      allow write: if isAuthenticated();
+    }
+    match /resumes/{resumeId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
     }
     match /placement_interviews/{interviewId} {
       allow read: if isAuthenticated();
@@ -127,11 +174,31 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated();
     }
+    match /student_leaves/{leaveId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    match /facultyLeaves/{leaveId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    match /faculty_leaves/{leaveId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
 
-    // Subject Allocations (HOD assignments)
+    // Subject Allocations
     match /subject_allocations/{allocId} {
       allow read: if isAuthenticated();
       allow write: if isHOD();
+    }
+    match /facultyAssignments/{assignmentId} {
+      allow read: if isAuthenticated();
+      allow write: if isHOD() || isAdmin() || isPrincipal();
+    }
+    match /wardCounsellorAssignments/{assignmentId} {
+      allow read: if isAuthenticated();
+      allow write: if isHOD() || isAdmin() || isPrincipal();
     }
 
     // Academic Calendar, Timetables, Classrooms
@@ -148,19 +215,21 @@ service cloud.firestore {
       allow write: if isHOD() || isPrincipal() || isAdmin();
     }
 
-    // Announcements
+    // Announcements & Notifications
     match /announcements/{annId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated();
     }
-
-    // Notifications
     match /notifications/{notifId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated();
     }
 
     // Audit & Backup Logs
+    match /auditLogs/{logId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
     match /audit_logs/{logId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated();
@@ -201,24 +270,5 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated();
     }
-
-    // Ward Counsellor Assignments
-    match /wardCounsellorAssignments/{assignmentId} {
-      allow read: if isAuthenticated();
-      allow write: if isHOD() || isAdmin() || isPrincipal();
-    }
-
-    // Faculty Teaching Assignments
-    match /facultyAssignments/{assignmentId} {
-      allow read: if isAuthenticated();
-      allow write: if isHOD() || isAdmin() || isPrincipal();
-    }
-
-    // Faculty Leaves
-    match /facultyLeaves/{leaveId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
-    }
   }
 }
-
