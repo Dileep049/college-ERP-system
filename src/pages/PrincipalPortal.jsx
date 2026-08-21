@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { mockDB, db, isFirebaseConfigured, isDepartmentMatch, normalizeSemester, KBN_BRANCHES, KBN_SEMESTERS } from '../services/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, onSnapshot } from 'firebase/firestore';
-import { COLLEGE_DEPARTMENTS } from '../utils/constants';
+import { COLLEGE_DEPARTMENTS } from '../utils/departments';
 import {
   ResponsiveContainer,
   BarChart,

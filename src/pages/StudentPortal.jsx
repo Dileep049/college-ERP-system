@@ -1515,17 +1515,14 @@ const StudentPlacements = ({ student, isParent }) => {
           if (list.length > 0) setDrives(list);
         }, (err) => console.warn("[placement_drives onSnapshot]:", err));
         unsubs.push(uDrives);
-
-        const uApps = onSnapshot(collection(db, 'placement_applications'), (snap) => {
-          const myApps = snap.docs
-            .map(d => ({ id: d.id, applicationId: d.id, ...d.data() }))
-            .filter(a => 
-              (stId && (a.studentId === stId || a.studentUid === stId || a.applicantId === stId || a.uid === stId)) || 
-              (stRoll && a.rollNumber === stRoll)
-            );
-          if (myApps.length > 0) setApplications(myApps);
-        }, (err) => console.warn("[placement_applications onSnapshot]:", err));
-        unsubs.push(uApps);
+        if (stId || stRoll) {
+          const appQuery = query(collection(db, 'placement_applications'), where('studentId', '==', stId || stRoll));
+          const uApps = onSnapshot(appQuery, (snap) => {
+            const myApps = snap.docs.map(d => ({ id: d.id, applicationId: d.id, ...d.data() }));
+            if (myApps.length > 0) setApplications(myApps);
+          }, (err) => console.warn("[placement_applications onSnapshot]:", err));
+          unsubs.push(uApps);
+        }
       } catch (err) {
         console.warn("[Placements Firebase Snapshot Listener Error]:", err);
       }

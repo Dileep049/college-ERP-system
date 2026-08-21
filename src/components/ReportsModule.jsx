@@ -3,11 +3,12 @@ import {
   FileText, Download, Printer, Filter, Calendar, Users, 
   BookOpen, Building, CheckCircle, AlertTriangle, Search, RefreshCw, BarChart2
 } from 'lucide-react';
-import { mockDB, KBN_BRANCHES, KBN_SEMESTERS } from '../services/firebase';
+import { mockDB, KBN_SEMESTERS } from '../services/firebase';
+import { COLLEGE_DEPARTMENTS } from '../utils/departments';
 
 export const ReportsModule = ({ userRole = 'admin', currentUser = null }) => {
   const [reportType, setReportType] = useState('daily'); // daily | weekly | monthly | semester | department | student | faculty | ward
-  const [department, setDepartment] = useState('AI & ML');
+  const [department, setDepartment] = useState(COLLEGE_DEPARTMENTS[0]);
   const [semester, setSemester] = useState('Semester 2');
   const [section, setSection] = useState('EM');
   const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -265,7 +266,7 @@ export const ReportsModule = ({ userRole = 'admin', currentUser = null }) => {
               onChange={(e) => setDepartment(e.target.value)}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-400 cursor-pointer"
             >
-              {KBN_BRANCHES.map(b => (
+              {COLLEGE_DEPARTMENTS.map(b => (
                 <option key={b} value={b} className="bg-slate-900 text-white">{b}</option>
               ))}
             </select>

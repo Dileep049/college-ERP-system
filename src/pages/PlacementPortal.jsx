@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { mockDB } from '../services/firebase';
+import { COLLEGE_DEPARTMENTS } from '../utils/departments';
 import { 
   Briefcase, 
   Building2, 
@@ -119,10 +120,10 @@ const PlacementDashboard = ({ officer }) => {
   const placementRate = Math.min(100, Math.round((selectedCount / totalFinalYearStudents) * 100));
 
   // Dynamic Branch breakdown
-  const branches = ['CSE', 'ECE', 'EEE', 'AI & ML', 'CIVIL', 'MECHANICAL', 'MCA', 'BCA'];
+  const branches = COLLEGE_DEPARTMENTS;
   const branchData = branches.map(b => {
-    const totalBranchStuds = students.filter(s => (s.department || s.branch || '').toUpperCase().includes(b)).length || 1;
-    const placedBranchStuds = applications.filter(a => a.status === 'Selected' && (a.branch || '').toUpperCase().includes(b)).length;
+    const totalBranchStuds = students.filter(s => (s.department || s.branch || '').toUpperCase().includes(b.toUpperCase()) || b.toUpperCase().includes((s.department || s.branch || '').toUpperCase())).length || 1;
+    const placedBranchStuds = applications.filter(a => a.status === 'Selected' && ((a.department || a.branch || '').toUpperCase().includes(b.toUpperCase()) || b.toUpperCase().includes((a.department || a.branch || '').toUpperCase()))).length;
     return {
       name: b,
       total: totalBranchStuds,
@@ -339,7 +340,7 @@ const PlacementDrives = ({ officer, subType }) => {
   const [packageVal, setPackageVal] = useState('12.0 LPA');
   const [minCgpa, setMinCgpa] = useState('7.0');
   const [maxBacklogs, setMaxBacklogs] = useState('0');
-  const [eligibleBranches, setEligibleBranches] = useState(['CSE', 'ECE', 'AI & ML']);
+  const [eligibleBranches, setEligibleBranches] = useState([COLLEGE_DEPARTMENTS[0], COLLEGE_DEPARTMENTS[1]]);
   const [eligibleSemester, setEligibleSemester] = useState('Semester 8');
   const [passingYear, setPassingYear] = useState('2026');
   const [requiredSkills, setRequiredSkills] = useState('Java, Data Structures, SQL');
@@ -378,7 +379,7 @@ const PlacementDrives = ({ officer, subType }) => {
     setPackageVal('12.0 LPA');
     setMinCgpa('7.0');
     setMaxBacklogs('0');
-    setEligibleBranches(['CSE', 'ECE', 'AI & ML']);
+    setEligibleBranches([COLLEGE_DEPARTMENTS[0], COLLEGE_DEPARTMENTS[1]]);
     setEligibleSemester('Semester 8');
     setPassingYear('2026');
     setRequiredSkills('Java, Data Structures, SQL');
@@ -403,7 +404,7 @@ const PlacementDrives = ({ officer, subType }) => {
     setPackageVal(d.package || d.salaryPackage || '');
     setMinCgpa(d.minCgpa !== undefined ? String(d.minCgpa) : '7.0');
     setMaxBacklogs(d.maxBacklogs !== undefined ? String(d.maxBacklogs) : '0');
-    setEligibleBranches(Array.isArray(d.eligibleBranches) ? d.eligibleBranches : ['CSE']);
+    setEligibleBranches(Array.isArray(d.eligibleBranches) ? d.eligibleBranches : [COLLEGE_DEPARTMENTS[0]]);
     setEligibleSemester(d.eligibleSemester || 'Semester 8');
     setPassingYear(d.passingYear || '2026');
     setRequiredSkills(Array.isArray(d.requiredSkills) ? d.requiredSkills.join(', ') : (d.requiredSkills || ''));
@@ -498,7 +499,7 @@ const PlacementDrives = ({ officer, subType }) => {
     }
   };
 
-  const allBranches = ['CSE', 'ECE', 'EEE', 'AI & ML', 'Civil', 'Mechanical', 'MCA', 'BCA', 'BBA', 'MBA'];
+  const allBranches = COLLEGE_DEPARTMENTS;
 
   // Filter drives if upcoming subType
   const displayedDrives = subType === 'upcoming-drives' 

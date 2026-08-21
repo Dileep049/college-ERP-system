@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { mockDB, KBN_BRANCHES, KBN_SEMESTERS, BRANCH_SUBJECT_MAP } from '../services/firebase';
-import { COLLEGE_DEPARTMENTS } from '../utils/constants';
+import { COLLEGE_DEPARTMENTS } from '../utils/departments';
 import { 
   Users, 
   UserPlus, 

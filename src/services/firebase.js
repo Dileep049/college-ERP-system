@@ -27,7 +27,7 @@ import {
 } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { uploadFileToCloudinary } from './cloudinary';
-import { COLLEGE_DEPARTMENTS } from '../utils/constants';
+import { COLLEGE_DEPARTMENTS } from '../utils/departments';
 
 // ----------------------------------------------------
 // 1. FIREBASE CONFIGURATION & INITIALIZATION
@@ -1265,13 +1265,47 @@ export const mockDB = {
   createAssignment: async (title, description, branch, semester, subject, dueDate, facultyId, facultyName, file = null, section = 'Section A') => {
     const now = new Date().toISOString();
     let fileUrl = '';
-    let fileName = file?.name || 'assignment.pdf';
+    let fileName = file?.name || '';
 
     if (file && typeof file !== 'string') {
-      try {
-        const uploadRes = await uploadFileToCloudinary(file, 'college-erp/assignments');
-        if (uploadRes?.url) fileUrl = uploadRes.url;
-      } catch (_) {}
+      // Validate file size (max 25MB)
+      const MAX_SIZE = 25 * 1024 * 1024;
+      if (file.size > MAX_SIZE) {
+        throw new Error('File size exceeds the maximum limit of 25MB.');
+      }
+
+      // Validate allowed file extensions
+      const allowedExtensions = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt', '.zip', '.png', '.jpg', '.jpeg', '.webp'];
+      const fileExt = (file.name || '').substring((file.name || '').lastIndexOf('.')).toLowerCase();
+      if (fileExt && !allowedExtensions.includes(fileExt)) {
+        throw new Error(`File type "${fileExt}" is not allowed. Please upload PDF, Word, PowerPoint, Text, ZIP, or Image files.`);
+      }
+
+      if (isFirebaseConfigured && storage) {
+        try {
+          const cleanFileName = `${Date.now()}_${(file.name || 'assignment.pdf').replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+          const cleanDept = normalizeDepartment(branch).replace(/[^a-zA-Z0-9_-]/g, '_');
+          const cleanSem = normalizeSemester(semester).replace(/\s+/g, '_');
+          const cleanSec = normalizeSection(section).replace(/\s+/g, '_');
+          const cleanSub = (subject || 'General').replace(/[^a-zA-Z0-9_-]/g, '_');
+          const cleanFac = (facultyId || auth?.currentUser?.uid || 'fac-1').replace(/[^a-zA-Z0-9_-]/g, '_');
+          
+          const storagePath = `assignments/${cleanDept}/${cleanSem}/${cleanSec}/${cleanSub}/${cleanFac}/${cleanFileName}`;
+          console.log(`[Firebase Storage] Uploading assignment file to: ${storagePath}`);
+          
+          const fileRef = storageRef(storage, storagePath);
+          const snapshot = await uploadBytes(fileRef, file, {
+            contentType: file.type || 'application/octet-stream'
+          });
+          fileUrl = await getDownloadURL(snapshot.ref);
+          console.log(`[Firebase Storage] Assignment upload success. URL generated: ${fileUrl}`);
+        } catch (stErr) {
+          console.error("[Firebase Storage] Assignment upload error:", stErr);
+          throw new Error(`Assignment file upload failed: ${stErr.message || 'Firebase Storage error'}`);
+        }
+      } else {
+        throw new Error("Firebase Storage is not initialized. Please verify Firebase configuration.");
+      }
     } else if (typeof file === 'string') {
       fileUrl = file;
     }
@@ -1302,6 +1336,7 @@ export const mockDB = {
         await setDoc(doc(db, 'assignments', assId), payload);
       } catch (err) {
         console.error("[Firestore] createAssignment error:", err);
+        throw new Error(`Failed to save assignment record: ${err.message}`);
       }
     }
 
@@ -1394,7 +1429,15 @@ export const mockDB = {
     let list = [];
     if (isFirebaseConfigured && db) {
       try {
-        const snap = await getDocs(collection(db, 'placement_applications'));
+        let q;
+        if (studentId) {
+          q = query(collection(db, 'placement_applications'), where('studentId', '==', studentId));
+        } else if (driveId) {
+          q = query(collection(db, 'placement_applications'), where('driveId', '==', driveId));
+        } else {
+          q = collection(db, 'placement_applications');
+        }
+        const snap = await getDocs(q);
         list = snap.docs.map(d => ({ id: d.id, applicationId: d.id, ...d.data() }));
       } catch (err) {
         console.warn("[Firestore] getPlacementApplications fallback:", err.message);
@@ -1411,13 +1454,18 @@ export const mockDB = {
   applyForDrive: async (driveId, studentUser) => {
     const now = new Date().toISOString();
     const appId = `app-${Date.now()}`;
+    const stId = studentUser?.uid || studentUser?.studentId || 'stud-1';
     const payload = {
       id: appId,
       applicationId: appId,
       driveId,
-      studentId: studentUser?.uid || studentUser?.studentId || 'stud-1',
+      studentId: stId,
+      studentUid: stId,
+      uid: stId,
       rollNumber: studentUser?.rollNumber || 'STU-2026',
       studentName: studentUser?.fullName || studentUser?.studentName || 'Student',
+      email: studentUser?.email || '',
+      studentEmail: studentUser?.email || '',
       department: normalizeDepartment(studentUser?.department || studentUser?.branch),
       semester: normalizeSemester(studentUser?.semester),
       appliedDate: now.split('T')[0],

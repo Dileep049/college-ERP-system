@@ -19,7 +19,11 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isRole('admin');
+      return isRole('admin') || isRole('superadmin') || isRole('super_admin');
+    }
+
+    function isStudent() {
+      return isRole('student');
     }
 
     function isPrincipal() {
@@ -35,7 +39,7 @@ service cloud.firestore {
     }
 
     function isPlacementOfficer() {
-      return isRole('placement') || isAdmin();
+      return isRole('placement') || isRole('placement_officer') || isAdmin();
     }
 
     function isCounsellor() {
@@ -70,7 +74,7 @@ service cloud.firestore {
     // Assignments
     match /assignments/{assignmentId} {
       allow read: if isAuthenticated();
-      allow write: if isFaculty();
+      allow write: if isFaculty() || isAdmin();
     }
 
     // Assignment Submissions
@@ -82,75 +86,93 @@ service cloud.firestore {
     // Study Notes & Materials
     match /notes/{noteId} {
       allow read: if isAuthenticated();
-      allow write: if isFaculty();
+      allow write: if isFaculty() || isAdmin();
     }
     match /study_materials/{materialId} {
       allow read: if isAuthenticated();
-      allow write: if isFaculty();
+      allow write: if isFaculty() || isAdmin();
     }
 
     // Attendance Records
     match /attendance/{attendanceId} {
       allow read: if isAuthenticated();
-      allow write: if isFaculty();
+      allow write: if isFaculty() || isAdmin();
     }
 
     // Attendance History
     match /attendanceHistory/{historyId} {
       allow read: if isAuthenticated();
-      allow write: if isFaculty();
+      allow write: if isFaculty() || isAdmin();
     }
     match /attendance_history/{historyId} {
       allow read: if isAuthenticated();
-      allow write: if isFaculty();
+      allow write: if isFaculty() || isAdmin();
     }
 
     // Attendance Edit Requests
     match /attendance_edit_requests/{requestId} {
       allow read: if isAuthenticated();
-      allow write: if isFaculty();
+      allow write: if isFaculty() || isAdmin();
     }
 
     // Internal Marks
     match /internalMarks/{markId} {
       allow read: if isAuthenticated();
-      allow write: if isFaculty();
+      allow write: if isFaculty() || isAdmin();
     }
     match /internal_marks/{markId} {
       allow read: if isAuthenticated();
-      allow write: if isFaculty();
+      allow write: if isFaculty() || isAdmin();
     }
     match /marks/{markId} {
       allow read: if isAuthenticated();
-      allow write: if isFaculty();
+      allow write: if isFaculty() || isAdmin();
     }
     match /assignment_marks/{markId} {
       allow read: if isAuthenticated();
-      allow write: if isFaculty();
+      allow write: if isFaculty() || isAdmin();
     }
 
     // Placement Drives & Companies
-    match /placementDrives/{driveId} {
-      allow read: if isAuthenticated();
-      allow write: if isPlacementOfficer();
-    }
     match /placement_drives/{driveId} {
-      allow read: if isAuthenticated();
-      allow write: if isPlacementOfficer();
+      allow read: if isAuthenticated() && (isAdmin() || isPlacementOfficer() || isStudent());
+      allow write: if isAdmin() || isPlacementOfficer();
     }
-    match /companies/{companyId} {
-      allow read: if isAuthenticated();
-      allow write: if isPlacementOfficer();
+    match /placementDrives/{driveId} {
+      allow read: if isAuthenticated() && (isAdmin() || isPlacementOfficer() || isStudent());
+      allow write: if isAdmin() || isPlacementOfficer();
     }
     match /placement_companies/{companyId} {
-      allow read: if isAuthenticated();
-      allow write: if isPlacementOfficer();
+      allow read: if isAuthenticated() && (isAdmin() || isPlacementOfficer() || isStudent());
+      allow write: if isAdmin() || isPlacementOfficer();
+    }
+    match /companies/{companyId} {
+      allow read: if isAuthenticated() && (isAdmin() || isPlacementOfficer() || isStudent());
+      allow write: if isAdmin() || isPlacementOfficer();
     }
 
     // Placement Applications & Resume Reviews
     match /placement_applications/{appId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
+      allow read: if isAdmin() || isPlacementOfficer() || (isAuthenticated() && (
+        resource.data.studentId == request.auth.uid ||
+        resource.data.studentUid == request.auth.uid ||
+        resource.data.uid == request.auth.uid ||
+        resource.data.email == request.auth.token.email ||
+        resource.data.studentEmail == request.auth.token.email
+      ));
+      allow create: if isAdmin() || isPlacementOfficer() || (isAuthenticated() && (
+        request.resource.data.studentId == request.auth.uid ||
+        request.resource.data.studentUid == request.auth.uid ||
+        request.resource.data.uid == request.auth.uid ||
+        request.resource.data.email == request.auth.token.email ||
+        request.resource.data.studentEmail == request.auth.token.email
+      ));
+      allow update, delete: if isAdmin() || isPlacementOfficer() || (isAuthenticated() && (
+        resource.data.studentId == request.auth.uid ||
+        resource.data.studentUid == request.auth.uid ||
+        resource.data.uid == request.auth.uid ||
+        resource.data.email == request.auth.token.email
+      ));
     }
     match /resumeReviews/{reviewId} {
       allow read: if isAuthenticated();

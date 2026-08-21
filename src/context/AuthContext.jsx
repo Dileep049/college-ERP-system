@@ -106,11 +106,21 @@ export const AuthProvider = ({ children }) => {
               console.log('[AUTH] Firebase user detected:', fbUser.uid, fbUser.email);
               await loadUserProfile(fbUser.uid, fbUser.email);
             } else {
-              console.log('[AUTH] Firebase user not detected');
-              // Clear stale session
-              localStorage.removeItem('acad_user');
-              localStorage.removeItem('acad_current_user');
-              setUser(null);
+              console.log('[AUTH] Firebase user not detected, checking stored session...');
+              const storedStr = localStorage.getItem('acad_user') || localStorage.getItem('acad_current_user');
+              if (storedStr) {
+                try {
+                  const parsed = JSON.parse(storedStr);
+                  setUser(parsed);
+                  console.log('[AUTH] Restored session from local storage:', parsed.email);
+                } catch (_) {
+                  localStorage.removeItem('acad_user');
+                  localStorage.removeItem('acad_current_user');
+                  setUser(null);
+                }
+              } else {
+                setUser(null);
+              }
             }
             setLoading(false);
             console.log('[AUTH] Initialization completed');
@@ -118,6 +128,13 @@ export const AuthProvider = ({ children }) => {
           }, (error) => {
             console.error('[AUTH] Firebase onAuthStateChanged error:', error);
             setAuthError(error.message);
+            const storedStr = localStorage.getItem('acad_user') || localStorage.getItem('acad_current_user');
+            if (storedStr) {
+              try {
+                const parsed = JSON.parse(storedStr);
+                setUser(parsed);
+              } catch (_) {}
+            }
             setLoading(false);
             clearTimeout(safetyTimeout);
           });
@@ -131,6 +148,7 @@ export const AuthProvider = ({ children }) => {
               console.log('[AUTH] Restored session from local storage:', parsed.email);
             } catch (_) {
               localStorage.removeItem('acad_user');
+              localStorage.removeItem('acad_current_user');
             }
           }
           setLoading(false);
@@ -253,22 +271,7 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    return {
-      user: null,
-      loading: false,
-      authError: null,
-      profileLoading: false,
-      profileError: null,
-      loadUserProfile: async () => {},
-      login: async () => {},
-      logout: async () => {},
-      updateProfilePhoto: async () => {},
-      theme: 'light',
-      toggleTheme: () => {},
-      toasts: [],
-      showToast: (msg) => console.log("[Toast Fallback]:", msg),
-      removeToast: () => {}
-    };
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
