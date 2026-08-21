@@ -760,6 +760,138 @@ export const mockDB = {
     return results;
   },
 
+  getFaculty: async (dept = null) => {
+    let list = [];
+    if (isFirebaseConfigured && db) {
+      try {
+        const [snapProfiles, snapUsers] = await Promise.all([
+          getDocs(collection(db, 'profiles')),
+          getDocs(collection(db, 'users'))
+        ]);
+        const allDocs = [...snapProfiles.docs, ...snapUsers.docs];
+        list = allDocs.map(doc => ({ uid: doc.id, id: doc.id, ...doc.data() }))
+          .filter(u => u.role === 'faculty' || u.role === 'counsellor' || u.role === 'hod');
+      } catch (err) {
+        console.warn("[Firestore] getFaculty profiles fallback:", err.message);
+      }
+    }
+
+    const map = new Map();
+    // Seed default faculty
+    DEFAULT_USERS.filter(u => u.role === 'faculty' || u.role === 'counsellor' || u.role === 'hod').forEach(f => {
+      map.set(f.uid, f);
+      if (f.email) map.set(f.email.toLowerCase(), f);
+    });
+
+    // Merge Firestore profiles
+    list.forEach(f => {
+      if (f.uid) map.set(f.uid, { ...(map.get(f.uid) || {}), ...f });
+      else if (f.email) map.set(f.email.toLowerCase(), { ...(map.get(f.email.toLowerCase()) || {}), ...f });
+    });
+
+    const allFaculty = Array.from(new Set(Array.from(map.values())));
+
+    if (dept && dept !== 'All') {
+      return allFaculty.filter(f => isDepartmentMatch(f.department, dept) || f.department === 'All' || f.assignedBranches?.some(b => isDepartmentMatch(b, dept)));
+    }
+    return allFaculty;
+  },
+
+  getFacultyByDepartment: async (dept = 'All') => {
+    return await mockDB.getFaculty(dept);
+  },
+
+  getFacultyAssignments: async (facultyId = null, dept = null) => {
+    let list = [];
+    if (isFirebaseConfigured && db) {
+      try {
+        const [snapSubj, snapAssign] = await Promise.all([
+          getDocs(collection(db, 'subject_allocations')),
+          getDocs(collection(db, 'faculty_assignments'))
+        ]);
+        
+        const map = new Map();
+        snapSubj.docs.forEach(d => {
+          map.set(d.id, { id: d.id, allocationId: d.id, ...d.data() });
+        });
+        snapAssign.docs.forEach(d => {
+          map.set(d.id, { id: d.id, allocationId: d.id, ...(map.get(d.id) || {}), ...d.data() });
+        });
+        list = Array.from(map.values());
+      } catch (err) {
+        console.warn("[Firestore] getFacultyAssignments fallback:", err.message);
+      }
+    }
+
+    if (list.length === 0) {
+      list = [
+        { id: 'alloc-1', allocationId: 'alloc-1', facultyId: 'fac-1', facultyName: 'Prof. Charles Xavier', department: 'B.Sc. Computer Science (CS)', semester: 'Semester 6', section: 'Section A', subject: 'Neural Networks', subjectCode: 'CS601', status: 'active', academicYear: '2026-2027' },
+        { id: 'alloc-2', allocationId: 'alloc-2', facultyId: 'fac-2', facultyName: 'Prof. Ravi Kumar', department: 'B.Sc. Computer Science (CS)', semester: 'Semester 4', section: 'Section A', subject: 'Machine Learning', subjectCode: 'CS401', status: 'active', academicYear: '2026-2027' },
+        { id: 'alloc-3', allocationId: 'alloc-3', facultyId: 'fac-3', facultyName: 'Prof. Priya Sharma', department: 'B.Sc. Computer Science (CS)', semester: 'Semester 4', section: 'Section B', subject: 'Database Management Systems (DBMS)', subjectCode: 'CS402', status: 'active', academicYear: '2026-2027' },
+        { id: 'alloc-4', allocationId: 'alloc-4', facultyId: 'fac-4', facultyName: 'Prof. Arun', department: 'B.Sc. Computer Science (CS)', semester: 'Semester 6', section: 'Section B', subject: 'Web Technologies', subjectCode: 'CS602', status: 'active', academicYear: '2026-2027' }
+      ];
+    }
+
+    let results = list.filter(a => a.status !== 'inactive' && a.status !== 'Inactive');
+    if (dept && dept !== 'All') {
+      results = results.filter(a => isDepartmentMatch(a.department || a.branch, dept));
+    }
+    if (facultyId) {
+      results = results.filter(a => a.facultyId === facultyId);
+    }
+    return results;
+  },
+
+  saveFacultyAssignment: async (data, hodUser = null) => {
+    const now = new Date().toISOString();
+    const allocId = data.id || data.allocationId || `alloc-${Date.now()}`;
+    const payload = {
+      id: allocId,
+      allocationId: allocId,
+      facultyId: data.facultyId,
+      facultyName: data.facultyName,
+      facultyEmail: data.facultyEmail || '',
+      facultyPhone: data.facultyPhone || '',
+      department: normalizeDepartment(data.department),
+      branch: normalizeDepartment(data.department),
+      semester: normalizeSemester(data.semester),
+      section: normalizeSection(data.section),
+      subject: data.subject || data.subjectName,
+      subjectName: data.subject || data.subjectName,
+      subjectCode: data.subjectCode || 'SUB601',
+      academicYear: data.academicYear || '2026-2027',
+      assignedBy: hodUser?.fullName || 'HOD',
+      assignedById: hodUser?.uid || 'hod-1',
+      status: 'active',
+      createdAt: data.createdAt || now,
+      updatedAt: now
+    };
+
+    if (isFirebaseConfigured && db) {
+      try {
+        await setDoc(doc(db, 'subject_allocations', allocId), payload, { merge: true });
+        await setDoc(doc(db, 'faculty_assignments', allocId), payload, { merge: true });
+      } catch (err) {
+        console.error("[Firestore] saveFacultyAssignment error:", err);
+      }
+    }
+    await mockDB.addNotification(data.facultyId, 'Teaching Subject Assigned', `You have been assigned ${payload.subject} for ${payload.semester} (${payload.section}).`, 'academics');
+    return payload;
+  },
+
+  deactivateFacultyAssignment: async (assignId, hodUser = null) => {
+    const now = new Date().toISOString();
+    if (isFirebaseConfigured && db && assignId) {
+      try {
+        await setDoc(doc(db, 'subject_allocations', assignId), { status: 'inactive', updatedAt: now }, { merge: true });
+        await setDoc(doc(db, 'faculty_assignments', assignId), { status: 'inactive', updatedAt: now }, { merge: true });
+      } catch (err) {
+        console.error("[Firestore] deactivateFacultyAssignment error:", err);
+      }
+    }
+    return true;
+  },
+
   getAllFacultyAllocations: async () => {
     return await mockDB.getSubjectAllocations();
   },
@@ -1191,14 +1323,33 @@ export const mockDB = {
     let list = [];
     if (isFirebaseConfigured && db) {
       try {
-        const snap = await getDocs(collection(db, 'faculty_leaves'));
-        list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const [snapLeaves, snapReqs] = await Promise.all([
+          getDocs(collection(db, 'faculty_leaves')),
+          getDocs(collection(db, 'leave_requests'))
+        ]);
+        const map = new Map();
+        snapLeaves.docs.forEach(d => map.set(d.id, { id: d.id, leaveId: d.id, ...d.data() }));
+        snapReqs.docs.forEach(d => {
+          const data = d.data();
+          if (data.applicantRole === 'faculty' || data.role === 'faculty' || data.facultyId || !data.studentId) {
+            map.set(d.id, { id: d.id, leaveId: d.id, ...(map.get(d.id) || {}), ...data });
+          }
+        });
+        list = Array.from(map.values());
       } catch (err) {
         console.warn("[Firestore] getFacultyLeavesForHOD fallback:", err.message);
       }
     }
+
+    if (list.length === 0) {
+      list = [
+        { id: 'f-leave-1', leaveId: 'f-leave-1', facultyId: 'fac-2', facultyName: 'Prof. Ravi Kumar', department: 'B.Sc. Computer Science (CS)', leaveType: 'Casual Leave', startDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], endDate: new Date(Date.now() + 172800000).toISOString().split('T')[0], daysCount: 2, reason: 'Family function in native town. Proxy arranged with Prof. Arun.', proxyFaculty: 'Prof. Arun', status: 'Pending', createdAt: new Date().toISOString() },
+        { id: 'f-leave-2', leaveId: 'f-leave-2', facultyId: 'fac-3', facultyName: 'Prof. Priya Sharma', department: 'B.Sc. Computer Science (CS)', leaveType: 'Medical Leave', startDate: new Date(Date.now() - 86400000 * 4).toISOString().split('T')[0], endDate: new Date(Date.now() - 86400000 * 2).toISOString().split('T')[0], daysCount: 3, reason: 'Viral fever recovery.', proxyFaculty: 'Prof. Suresh Reddy', status: 'Approved', createdAt: new Date(Date.now() - 86400000 * 5).toISOString() }
+      ];
+    }
+
     if (dept && dept !== 'All') {
-      return list.filter(l => isDepartmentMatch(l.department, dept));
+      return list.filter(l => isDepartmentMatch(l.department || l.branch, dept));
     }
     return list;
   },

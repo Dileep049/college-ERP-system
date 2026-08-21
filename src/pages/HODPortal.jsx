@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { mockDB, KBN_SEMESTERS, KBN_BRANCHES, BRANCH_SUBJECT_MAP } from '../services/firebase';
+import { db, isFirebaseConfigured, mockDB, KBN_SEMESTERS, KBN_BRANCHES, BRANCH_SUBJECT_MAP, isDepartmentMatch, normalizeDepartment } from '../services/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { AssignWardCounsellorModal } from '../components/AssignWardCounsellorModal';
 import jsPDF from 'jspdf';
 import {
@@ -489,14 +490,14 @@ const FacultyManagement = ({ hod }) => {
   const [rejectionLeaveId, setRejectionLeaveId] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
 
-  const deptName = 'All';
+  const deptName = hod?.department || 'All';
 
   const emptyFormData = {
     facultyId: '',
     facultyName: '',
     facultyEmail: '',
     facultyPhone: '',
-    department: deptName,
+    department: (deptName === 'All' ? 'B.Sc. Computer Science (CS)' : deptName),
     semester: 'Semester 6',
     section: 'A',
     academicYear: '2026-2027',
@@ -507,18 +508,56 @@ const FacultyManagement = ({ hod }) => {
   const [formData, setFormData] = useState(emptyFormData);
 
   const loadData = async () => {
-    setLoading(true);
-    const facs = await mockDB.getFacultyByDepartment('All');
-    const facAssigns = await mockDB.getFacultyAssignments(null, 'All');
-    const leaves = await mockDB.getFacultyLeavesForHOD('All');
-    setFacultyMembers(facs);
-    setAssignments(facAssigns);
-    setFacultyLeaves(leaves);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const [facs, facAssigns, leaves] = await Promise.all([
+        mockDB.getFacultyByDepartment(deptName),
+        mockDB.getFacultyAssignments(null, deptName),
+        mockDB.getFacultyLeavesForHOD(deptName)
+      ]);
+      setFacultyMembers(facs);
+      setAssignments(facAssigns);
+      setFacultyLeaves(leaves);
+    } catch (err) {
+      console.error("[HODPortal] Error loading faculty data:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
+    let unsubProfiles = null;
+    let unsubAllocs = null;
+    let unsubLeaves = null;
+
+    if (isFirebaseConfigured && db) {
+      try {
+        unsubProfiles = onSnapshot(collection(db, 'profiles'), async () => {
+          const facs = await mockDB.getFacultyByDepartment(deptName);
+          setFacultyMembers(facs);
+        }, (err) => console.warn("profiles snapshot listener error:", err.message));
+
+        unsubAllocs = onSnapshot(collection(db, 'subject_allocations'), async () => {
+          const facAssigns = await mockDB.getFacultyAssignments(null, deptName);
+          setAssignments(facAssigns);
+        }, (err) => console.warn("subject_allocations snapshot listener error:", err.message));
+
+        unsubLeaves = onSnapshot(collection(db, 'faculty_leaves'), async () => {
+          const leaves = await mockDB.getFacultyLeavesForHOD(deptName);
+          setFacultyLeaves(leaves);
+        }, (err) => console.warn("faculty_leaves snapshot listener error:", err.message));
+      } catch (err) {
+        console.warn("[HODPortal] Snapshot setup error:", err.message);
+      }
+    }
+
     loadData();
+
+    return () => {
+      if (unsubProfiles) unsubProfiles();
+      if (unsubAllocs) unsubAllocs();
+      if (unsubLeaves) unsubLeaves();
+    };
   }, [hod]);
 
   // When faculty selected in dropdown, auto-fill details
@@ -1477,13 +1516,35 @@ const FacultyLeaveReview = ({ hod }) => {
   const [rejectionModalLeave, setRejectionModalLeave] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
 
+  const hodDept = hod?.department || 'All';
+
   const loadLeaves = async () => {
-    const list = await mockDB.getLeaves('hod', hod?.uid, 'All');
-    setLeaves(list);
+    try {
+      const list = await mockDB.getFacultyLeavesForHOD(hodDept);
+      setLeaves(list);
+    } catch (err) {
+      console.error("[FacultyLeaveReview] load error:", err);
+    }
   };
 
   useEffect(() => {
+    let unsub = null;
+    if (isFirebaseConfigured && db) {
+      try {
+        unsub = onSnapshot(collection(db, 'faculty_leaves'), async () => {
+          const list = await mockDB.getFacultyLeavesForHOD(hodDept);
+          setLeaves(list);
+        }, (err) => console.warn("faculty_leaves snapshot listener error:", err.message));
+      } catch (err) {
+        console.warn("[FacultyLeaveReview] Snapshot setup error:", err.message);
+      }
+    }
+
     loadLeaves();
+
+    return () => {
+      if (unsub) unsub();
+    };
   }, [hod]);
 
   const handleOpenLeaveModal = async (leave) => {
