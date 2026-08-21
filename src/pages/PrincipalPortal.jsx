@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { mockDB, db, isFirebaseConfigured, isDepartmentMatch, normalizeSemester, KBN_BRANCHES, KBN_SEMESTERS } from '../services/firebase';
+import { mockDB, db, isFirebaseConfigured, isDepartmentMatch, normalizeDepartment, normalizeSemester, KBN_BRANCHES, KBN_SEMESTERS } from '../services/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { COLLEGE_DEPARTMENTS } from '../utils/departments';
 import {
@@ -1519,7 +1519,8 @@ const PrincipalPlacementAnalytics = () => {
 
   if (!data) return <div className="p-8 text-center text-gray-400 text-xs font-bold">Loading placement analytics...</div>;
 
-  const ov = data.overview;
+  const ov = data.overview || {};
+  const branchPlacements = data.branchPlacements || [];
 
   return (
     <div className="space-y-6 text-xs font-semibold bg-transparent min-h-screen text-white font-sans">
@@ -1541,31 +1542,31 @@ const PrincipalPlacementAnalytics = () => {
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 text-center">
           <div className="p-3.5 bg-white/5 rounded-2xl border border-white/10">
             <span className="text-[9.5px] text-gray-400 block font-bold">Eligible</span>
-            <span className="text-lg font-black text-white">{ov.eligibleStudents}</span>
+            <span className="text-lg font-black text-white">{ov.eligibleStudents ?? 0}</span>
           </div>
           <div className="p-3.5 bg-white/5 rounded-2xl border border-white/10">
             <span className="text-[9.5px] text-gray-400 block font-bold">Registered</span>
-            <span className="text-lg font-black text-cyan-300">{ov.registeredStudents}</span>
+            <span className="text-lg font-black text-cyan-300">{ov.registeredStudents ?? 0}</span>
           </div>
           <div className="p-3.5 bg-white/5 rounded-2xl border border-white/10">
             <span className="text-[9.5px] text-gray-400 block font-bold">Placed</span>
-            <span className="text-lg font-black text-emerald-400">{ov.placedStudents}</span>
+            <span className="text-lg font-black text-emerald-400">{ov.placedStudents ?? 0}</span>
           </div>
           <div className="p-3.5 bg-purple-500/20 text-purple-300 border border-purple-400/30 rounded-2xl">
             <span className="text-[9.5px] block font-bold">Placement Rate</span>
-            <span className="text-lg font-black">{ov.placementRate}%</span>
+            <span className="text-lg font-black">{ov.placementRate ?? 0}%</span>
           </div>
           <div className="p-3.5 bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 rounded-2xl">
             <span className="text-[9.5px] block font-bold">Companies</span>
-            <span className="text-lg font-black">{ov.companiesParticipated}</span>
+            <span className="text-lg font-black">{ov.companiesParticipated ?? 0}</span>
           </div>
           <div className="p-3.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-2xl">
             <span className="text-[9.5px] block font-bold">Highest Package</span>
-            <span className="text-lg font-black">{ov.highestPackage}</span>
+            <span className="text-lg font-black">{ov.highestPackage || 'N/A'}</span>
           </div>
           <div className="p-3.5 bg-amber-500/20 text-amber-300 border border-amber-400/30 rounded-2xl">
             <span className="text-[9.5px] block font-bold">Avg Package</span>
-            <span className="text-lg font-black">{ov.averagePackage}</span>
+            <span className="text-lg font-black">{ov.averagePackage || ov.avgPackage || 'N/A'}</span>
           </div>
         </div>
 
@@ -1583,14 +1584,17 @@ const PrincipalPlacementAnalytics = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {data.branchPlacements.map((bp) => (
-                  <tr key={bp.department} className="hover:bg-white/5 transition-colors">
-                    <td className="p-4 font-extrabold text-white">{bp.department}</td>
-                    <td className="p-4 text-center font-bold text-gray-300">{bp.eligible}</td>
-                    <td className="p-4 text-center font-black text-emerald-400">{bp.placed}</td>
-                    <td className="p-4 text-center font-black text-cyan-300">{bp.placementRate}%</td>
-                  </tr>
-                ))}
+                {branchPlacements.map((bp) => {
+                  const deptTitle = normalizeDepartment(bp.department || bp.branch);
+                  return (
+                    <tr key={deptTitle} className="hover:bg-white/5 transition-colors">
+                      <td className="p-4 font-extrabold text-white">{deptTitle}</td>
+                      <td className="p-4 text-center font-bold text-gray-300">{bp.eligible ?? bp.totalStudents ?? 0}</td>
+                      <td className="p-4 text-center font-black text-emerald-400">{bp.placed ?? bp.placedStudents ?? 0}</td>
+                      <td className="p-4 text-center font-black text-cyan-300">{bp.placementRate ?? 0}%</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

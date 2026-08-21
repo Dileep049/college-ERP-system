@@ -23,6 +23,9 @@ export const validateStudent = (student) => {
   if (student.semester && !KBN_SEMESTERS.includes(student.semester) && !student.semester.startsWith('Semester')) {
     errors.push(`Unrecognized semester format: ${student.semester}`);
   }
+  if (student.section && !['Section A', 'Section B', 'A', 'B'].includes(student.section)) {
+    errors.push(`Invalid section: ${student.section}. Permitted sections are Section A and Section B.`);
+  }
   if (student.status && !['active', 'inactive', 'suspended', 'graduated'].includes(String(student.status).toLowerCase())) {
     errors.push(`Invalid student status: ${student.status}`);
   }

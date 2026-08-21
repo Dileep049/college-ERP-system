@@ -478,8 +478,6 @@ export const AssignWardCounsellorModal = ({
                 >
                   <option value="Section A">Section A</option>
                   <option value="Section B">Section B</option>
-                  <option value="Section C">Section C</option>
-                  <option value="Section D">Section D</option>
                 </select>
               </div>
             </div>

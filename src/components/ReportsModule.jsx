@@ -10,7 +10,7 @@ export const ReportsModule = ({ userRole = 'admin', currentUser = null }) => {
   const [reportType, setReportType] = useState('daily'); // daily | weekly | monthly | semester | department | student | faculty | ward
   const [department, setDepartment] = useState(COLLEGE_DEPARTMENTS[0]);
   const [semester, setSemester] = useState('Semester 2');
-  const [section, setSection] = useState('EM');
+  const [section, setSection] = useState('Section A');
   const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [searchRoll, setSearchRoll] = useState('');
@@ -292,10 +292,8 @@ export const ReportsModule = ({ userRole = 'admin', currentUser = null }) => {
               onChange={(e) => setSection(e.target.value)}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-400 cursor-pointer"
             >
-              <option value="EM" className="bg-slate-900 text-white">English Medium (EM)</option>
-              <option value="TM" className="bg-slate-900 text-white">Telugu Medium (TM)</option>
-              <option value="A" className="bg-slate-900 text-white">Section A</option>
-              <option value="B" className="bg-slate-900 text-white">Section B</option>
+              <option value="Section A" className="bg-slate-900 text-white">Section A</option>
+              <option value="Section B" className="bg-slate-900 text-white">Section B</option>
             </select>
           </div>
 

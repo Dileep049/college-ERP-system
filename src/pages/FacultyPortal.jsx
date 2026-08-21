@@ -299,7 +299,6 @@ const FacultyStudents = ({ faculty }) => {
             <option value="All" className="bg-slate-900 text-white">All Sections</option>
             <option value="A" className="bg-slate-900 text-white">Section A</option>
             <option value="B" className="bg-slate-900 text-white">Section B</option>
-            <option value="C" className="bg-slate-900 text-white">Section C</option>
           </select>
         </div>
       </div>
@@ -594,7 +593,6 @@ const FacultyAttendance = ({ faculty }) => {
             <select value={section} onChange={(e) => setSection(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 cursor-pointer">
               <option value="Section A" className="bg-slate-900 text-white">Section A</option>
               <option value="Section B" className="bg-slate-900 text-white">Section B</option>
-              <option value="Section C" className="bg-slate-900 text-white">Section C</option>
             </select>
           </div>
 
@@ -857,6 +855,11 @@ const FacultyMarks = ({ faculty }) => {
   const searchParams = new URLSearchParams(window.location.search);
   const urlSem = searchParams.get('semester');
   const urlSec = searchParams.get('section');
+  const urlSubj = searchParams.get('subject');
+
+  const [semester, setSemester] = useState(urlSem || 'Semester 6');
+  const [section, setSection] = useState(urlSec || 'Section A');
+  const [subject, setSubject] = useState(urlSubj || deptSubjects[0] || 'Data Structures');
   const [allocatedSubjects, setAllocatedSubjects] = useState([]);
 
   useEffect(() => {
@@ -1057,7 +1060,6 @@ const FacultyMarks = ({ faculty }) => {
             <select value={section} onChange={(e) => setSection(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 cursor-pointer">
               <option value="Section A" className="bg-slate-900 text-white">Section A</option>
               <option value="Section B" className="bg-slate-900 text-white">Section B</option>
-              <option value="Section C" className="bg-slate-900 text-white">Section C</option>
             </select>
           </div>
 
@@ -1573,8 +1575,6 @@ const FacultyNotes = ({ faculty }) => {
               <select value={section} onChange={(e) => setSection(e.target.value)} className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:bg-white/10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all font-medium cursor-pointer">
                 <option value="Section A" className="bg-slate-900 text-white">Section A</option>
                 <option value="Section B" className="bg-slate-900 text-white">Section B</option>
-                <option value="Section C" className="bg-slate-900 text-white">Section C</option>
-                <option value="EM" className="bg-slate-900 text-white">Section EM</option>
                 <option value="All" className="bg-slate-900 text-white">All Sections</option>
               </select>
             </div>

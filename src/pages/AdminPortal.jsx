@@ -1570,7 +1570,6 @@ export const AdminPortal = () => {
                         >
                           <option value="A" className="bg-slate-900 text-white">Section A</option>
                           <option value="B" className="bg-slate-900 text-white">Section B</option>
-                          <option value="C" className="bg-slate-900 text-white">Section C</option>
                         </select>
                       </div>
                     </div>

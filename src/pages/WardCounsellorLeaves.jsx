@@ -482,7 +482,6 @@ export const WardCounsellorLeaves = ({ counsellor }) => {
               <option value="All" className="bg-slate-900 text-white">All Sections</option>
               <option value="Section A" className="bg-slate-900 text-white">Section A</option>
               <option value="Section B" className="bg-slate-900 text-white">Section B</option>
-              <option value="Section C" className="bg-slate-900 text-white">Section C</option>
             </select>
           </div>
 

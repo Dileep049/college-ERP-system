@@ -1570,7 +1570,15 @@ const StudentPlacements = ({ student, isParent }) => {
       setSubmitting(true);
       console.log(`[Placement Apply] Submitting application for drive ${selectedDrive.companyName}...`, { drive: selectedDrive, student });
       const driveId = selectedDrive.id || selectedDrive.driveId;
-      const res = await mockDB.applyForDrive(driveId, student);
+      const res = await mockDB.applyForDrive(driveId, {
+        ...student,
+        cgpa: studentCgpa,
+        gpa: studentCgpa,
+        backlogs: studentBacklogs,
+        companyName: selectedDrive.companyName,
+        jobRole: selectedDrive.jobRole || selectedDrive.role,
+        package: selectedDrive.package || selectedDrive.salaryPackage
+      });
       
       if (res && res.success === false) {
         console.warn("[Placement Apply Rejected]:", res.reason);

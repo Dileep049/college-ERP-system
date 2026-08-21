@@ -314,9 +314,9 @@ const HODDashboard = ({ hod, onNavigate }) => {
             </div>
             <span className="text-xs font-extrabold text-emerald-300 bg-emerald-500/20 border border-emerald-400/30 px-3 py-1 rounded-full drop-shadow-md">87.4% Avg</span>
           </div>
-          <div className="h-64 text-xs">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats?.graphs.daily}>
+          <div className="h-64 min-w-0 w-full text-xs">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
+              <BarChart data={stats?.graphs?.daily || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                 <XAxis dataKey="name" stroke="#cbd5e1" />
                 <YAxis stroke="#cbd5e1" />
@@ -334,7 +334,7 @@ const HODDashboard = ({ hod, onNavigate }) => {
             <h3 className="text-sm font-extrabold text-white drop-shadow-lg mb-1">Section-wise Attendance</h3>
             <p className="text-[11px] text-gray-100 font-medium drop-shadow-md mb-4">Department sections strength distribution</p>
             <div className="space-y-3">
-              {stats?.graphs.sectionWise.map((sec) => (
+              {(stats?.graphs?.sectionWise || []).map((sec) => (
                 <div key={sec.section} className="p-3 rounded-xl bg-black/30 border border-white/10">
                   <div className="flex items-center justify-between text-xs font-bold text-white">
                     <span>{sec.section}</span>
@@ -412,8 +412,8 @@ const DepartmentOverview = ({ hod }) => {
               <p className="text-3xl font-black text-emerald-400">87.4%</p>
               <span className="text-[10px] text-slate-300">Department aggregate rate</span>
             </div>
-            <div className="w-16 h-16">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="w-16 h-16 min-w-0">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={50}>
                 <PieChart>
                   <Pie data={[{ value: 87.4 }, { value: 12.6 }]} innerRadius={18} outerRadius={26} dataKey="value">
                     <Cell fill="#10B981" />
@@ -441,9 +441,9 @@ const DepartmentOverview = ({ hod }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="p-5 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white">
           <h3 className="text-xs font-black uppercase text-slate-300 mb-4">Monthly Attendance Trend</h3>
-          <div className="h-56 text-xs">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={stats?.graphs.monthly}>
+          <div className="h-56 min-w-0 w-full text-xs">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={180}>
+              <LineChart data={stats?.graphs?.monthly || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.12)" />
                 <XAxis dataKey="name" stroke="#cbd5e1" />
                 <YAxis domain={[50, 100]} stroke="#cbd5e1" />
@@ -456,9 +456,9 @@ const DepartmentOverview = ({ hod }) => {
 
         <div className="p-5 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white">
           <h3 className="text-xs font-black uppercase text-slate-300 mb-4">Faculty Workload Distribution</h3>
-          <div className="h-56 text-xs">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats?.graphs.workload}>
+          <div className="h-56 min-w-0 w-full text-xs">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={180}>
+              <BarChart data={stats?.graphs?.workload || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.12)" />
                 <XAxis dataKey="faculty" stroke="#cbd5e1" />
                 <YAxis stroke="#cbd5e1" />
@@ -968,7 +968,6 @@ const FacultyManagement = ({ hod }) => {
                     <option value="">[ Select Section ]</option>
                     <option value="A">Section A</option>
                     <option value="B">Section B</option>
-                    <option value="C">Section C</option>
                   </select>
                 </div>
               </div>
@@ -1930,7 +1929,7 @@ const AttendanceMonitoring = ({ hod }) => {
               <tr>
                 <td className="p-3 font-mono font-bold">CSE-2023-006</td>
                 <td className="p-3 font-bold text-slate-900 dark:text-white">Orsu Brahmaiah</td>
-                <td className="p-3">Section C</td>
+                <td className="p-3">Section B</td>
                 <td className="p-3 text-center text-rose-600 font-black">71.0%</td>
                 <td className="p-3 text-right">
                   <button className="px-3 py-1 bg-purple-600 text-white rounded-lg font-bold text-xs">Add Remark</button>

@@ -806,7 +806,7 @@ const WardsDirectory = ({ counsellor }) => {
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Live Sync
               </span>
             </div>
-            <p className="text-xs text-gray-400">{resolvedDept} • {resolvedSem} (Cross-Section Access across A, B, C)</p>
+            <p className="text-xs text-gray-400">{resolvedDept} • {resolvedSem} (Cross-Section Access across A, B)</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
@@ -814,10 +814,9 @@ const WardsDirectory = ({ counsellor }) => {
               <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name or roll..." className="pl-9 pr-4 py-2 rounded-xl border border-white/10 bg-white/5 text-white text-xs font-bold placeholder-gray-400 focus:bg-white/10 focus:ring-1 focus:ring-blue-400 outline-none transition-all" />
             </div>
             <select value={sectionFilter} onChange={e => setSectionFilter(e.target.value)} className="p-2 rounded-xl border border-white/10 bg-white/5 text-white text-xs font-bold focus:bg-white/10 focus:ring-1 focus:ring-blue-400 outline-none transition-all cursor-pointer">
-              <option value="All" className="bg-slate-900 text-white">All Sections (A, B, C)</option>
+              <option value="All" className="bg-slate-900 text-white">All Sections (A, B)</option>
               <option value="A" className="bg-slate-900 text-white">Section A</option>
               <option value="B" className="bg-slate-900 text-white">Section B</option>
-              <option value="C" className="bg-slate-900 text-white">Section C</option>
             </select>
             <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)} className="p-2 rounded-xl border border-white/10 bg-white/5 text-white text-xs font-bold focus:bg-white/10 focus:ring-1 focus:ring-blue-400 outline-none transition-all cursor-pointer">
               <option value="All" className="bg-slate-900 text-white">All Risk Levels</option>
@@ -1352,7 +1351,6 @@ const CounsellorLeaves = ({ counsellor }) => {
             <option value="ALL" className="bg-slate-900 text-white">All Sections</option>
             <option value="Section A" className="bg-slate-900 text-white">Section A</option>
             <option value="Section B" className="bg-slate-900 text-white">Section B</option>
-            <option value="Section C" className="bg-slate-900 text-white">Section C</option>
           </select>
 
           {/* Status Filter */}

@@ -80,17 +80,17 @@ export const StudentBulkImport = () => {
   const handleDownloadTemplate = (format = 'csv') => {
     const sampleHeaders = ['rollNumber', 'studentName', 'department', 'course', 'semester', 'section', 'branch', 'status'];
     const sampleRows = [
-      ['245901', 'AVALA ANAND BABU', 'AI & ML', 'B.Sc', 'Semester 2', 'EM', 'AI & ML', 'Active'],
-      ['245902', 'DASIKA SARATH KUMAR', 'AI & ML', 'B.Sc', 'Semester 2', 'EM', 'AI & ML', 'Active'],
-      ['245903', 'SHAIK NAADIA TASLEEM', 'AI & ML', 'B.Sc', 'Semester 2', 'EM', 'AI & ML', 'Active'],
-      ['245904', 'CHIKATI YUGALA SRI', 'AI & ML', 'B.Sc', 'Semester 2', 'EM', 'AI & ML', 'Active'],
-      ['245905', 'ORSU BRAHMAIAH', 'AI & ML', 'B.Sc', 'Semester 2', 'EM', 'AI & ML', 'Active']
+      ['245901', 'AVALA ANAND BABU', 'AI & ML', 'B.Sc', 'Semester 2', 'Section A', 'AI & ML', 'Active'],
+      ['245902', 'DASIKA SARATH KUMAR', 'AI & ML', 'B.Sc', 'Semester 2', 'Section B', 'AI & ML', 'Active'],
+      ['245903', 'SHAIK NAADIA TASLEEM', 'AI & ML', 'B.Sc', 'Semester 2', 'Section A', 'AI & ML', 'Active'],
+      ['245904', 'CHIKATI YUGALA SRI', 'AI & ML', 'B.Sc', 'Semester 2', 'Section B', 'AI & ML', 'Active'],
+      ['245905', 'ORSU BRAHMAIAH', 'AI & ML', 'B.Sc', 'Semester 2', 'Section A', 'AI & ML', 'Active']
     ];
 
     if (format === 'json') {
       const jsonContent = JSON.stringify([
-        { rollNumber: "245901", studentName: "AVALA ANAND BABU", department: "AI & ML", course: "B.Sc", semester: "Semester 2", section: "EM", branch: "AI & ML", status: "Active" },
-        { rollNumber: "245902", studentName: "DASIKA SARATH KUMAR", department: "AI & ML", course: "B.Sc", semester: "Semester 2", section: "EM", branch: "AI & ML", status: "Active" }
+        { rollNumber: "245901", studentName: "AVALA ANAND BABU", department: "AI & ML", course: "B.Sc", semester: "Semester 2", section: "Section A", branch: "AI & ML", status: "Active" },
+        { rollNumber: "245902", studentName: "DASIKA SARATH KUMAR", department: "AI & ML", course: "B.Sc", semester: "Semester 2", section: "Section B", branch: "AI & ML", status: "Active" }
       ], null, 2);
 
       const blob = new Blob([jsonContent], { type: 'application/json' });
@@ -596,7 +596,6 @@ export const StudentBulkImport = () => {
               className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
             >
               <option value="all" className="bg-slate-900 text-white">All Sections</option>
-              <option value="EM" className="bg-slate-900 text-white">Section EM</option>
               <option value="A" className="bg-slate-900 text-white">Section A</option>
               <option value="B" className="bg-slate-900 text-white">Section B</option>
             </select>

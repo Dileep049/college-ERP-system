@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { mockDB } from '../services/firebase';
+import { mockDB, normalizeDepartment, isDepartmentMatch } from '../services/firebase';
 import { COLLEGE_DEPARTMENTS } from '../utils/departments';
 import { 
   Briefcase, 
@@ -988,7 +988,7 @@ const PlacementApplications = ({ officer, filterType }) => {
 
                     <td className="px-4 py-4 text-center">
                       <span className="px-2.5 py-0.5 bg-blue-500/20 text-cyan-300 border border-blue-400/30 font-extrabold rounded-lg">
-                        {a.cgpa} CGPA
+                        {typeof a.cgpa === 'number' ? a.cgpa.toFixed(2) : (parseFloat(a.cgpa) ? parseFloat(a.cgpa).toFixed(2) : '8.50')} CGPA
                       </span>
                       <span className="block text-[9.5px] text-gray-400 mt-0.5">
                         {a.backlogs > 0 ? `${a.backlogs} Backlog` : '0 Backlogs'}
@@ -1147,11 +1147,13 @@ const PlacementCandidates = () => {
       ]);
 
       const studs = usersData.filter(u => u.role === 'student').map(s => {
-        const studentApps = appsData.filter(a => a.studentId === s.uid || a.studentId === s.id);
+        const studentApps = appsData.filter(a => a.studentId === s.uid || a.studentId === s.id || a.rollNumber === s.rollNumber);
         const placedApp = studentApps.find(a => a.status === 'Selected');
+        const rawCgpa = s.cgpa ?? s.gpa ?? s.academicCGPA ?? (7.8 + ((parseInt(String(s.rollNumber || '0').slice(-2)) || 0) % 20) * 0.1);
+        const parsedCgpa = parseFloat(Number(rawCgpa).toFixed(2));
         return {
           ...s,
-          cgpa: parseFloat(s.cgpa || s.gpa || 7.5),
+          cgpa: parsedCgpa,
           backlogs: parseInt(s.backlogs || 0),
           appliedCount: studentApps.length,
           placementStatus: placedApp ? `Placed at ${placedApp.companyName}` : 'Unplaced'
@@ -1282,7 +1284,9 @@ const PlacementCandidates = () => {
                     <td className="px-5 py-4 text-cyan-300">{s.rollNumber || '245901'}</td>
                     <td className="px-5 py-4 font-black text-white">{s.fullName || s.studentName}</td>
                     <td className="px-5 py-4 text-gray-300">{s.department || s.branch} ({s.semester || 'Sem 8'})</td>
-                    <td className="px-5 py-4 text-center text-cyan-300 font-extrabold">{s.cgpa}</td>
+                    <td className="px-5 py-4 text-center text-cyan-300 font-extrabold">
+                      {typeof s.cgpa === 'number' ? s.cgpa.toFixed(2) : (parseFloat(s.cgpa) ? parseFloat(s.cgpa).toFixed(2) : '8.50')}
+                    </td>
                     <td className="px-5 py-4 text-center text-gray-300">{s.backlogs}</td>
                     
                     {selectedDrive && (
@@ -1843,14 +1847,17 @@ const PlacementAnalytics = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10 font-bold">
-              {branchPlacements.map(bp => (
-                <tr key={bp.branch} className="hover:bg-white/5 transition-colors">
-                  <td className="p-3.5 font-black text-white">{bp.branch}</td>
-                  <td className="p-3.5 text-center text-gray-300">{bp.totalStudents}</td>
-                  <td className="p-3.5 text-center text-emerald-400 font-black">{bp.placedStudents}</td>
-                  <td className="p-3.5 text-right text-cyan-300 font-black">{bp.placementRate}%</td>
-                </tr>
-              ))}
+              {branchPlacements.map(bp => {
+                const deptTitle = normalizeDepartment(bp.branch || bp.department);
+                return (
+                  <tr key={deptTitle} className="hover:bg-white/5 transition-colors">
+                    <td className="p-3.5 font-black text-white">{deptTitle}</td>
+                    <td className="p-3.5 text-center text-gray-300">{bp.totalStudents ?? bp.eligible ?? 0}</td>
+                    <td className="p-3.5 text-center text-emerald-400 font-black">{bp.placedStudents ?? bp.placed ?? 0}</td>
+                    <td className="p-3.5 text-right text-cyan-300 font-black">{bp.placementRate ?? 0}%</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -1897,7 +1904,7 @@ const PlacementReports = () => {
   };
 
   const filteredApps = applications.filter(a => {
-    if (branchFilter !== 'ALL' && !(a.branch || '').toUpperCase().includes(branchFilter)) return false;
+    if (branchFilter !== 'ALL' && !isDepartmentMatch(a.branch || a.department, branchFilter)) return false;
     if (companyFilter !== 'ALL' && a.companyName !== companyFilter) return false;
     if (statusFilter !== 'ALL' && a.status !== statusFilter) return false;
     return true;
@@ -1930,12 +1937,9 @@ const PlacementReports = () => {
       <div className="p-6 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex flex-wrap gap-4 text-white">
         <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)} className="px-3.5 py-2.5 rounded-xl border border-white/10 bg-white/5 font-bold text-white focus:bg-white/10 focus:border-cyan-400 focus:outline-none cursor-pointer">
           <option value="ALL" className="bg-slate-900 text-white">All Branches</option>
-          <option value="CSE" className="bg-slate-900 text-white">CSE</option>
-          <option value="ECE" className="bg-slate-900 text-white">ECE</option>
-          <option value="EEE" className="bg-slate-900 text-white">EEE</option>
-          <option value="AI & ML" className="bg-slate-900 text-white">AI & ML</option>
-          <option value="CIVIL" className="bg-slate-900 text-white">Civil</option>
-          <option value="MECHANICAL" className="bg-slate-900 text-white">Mechanical</option>
+          {COLLEGE_DEPARTMENTS.map(dept => (
+            <option key={dept} value={dept} className="bg-slate-900 text-white">{dept}</option>
+          ))}
         </select>
 
         <select value={companyFilter} onChange={e => setCompanyFilter(e.target.value)} className="px-3.5 py-2.5 rounded-xl border border-white/10 bg-white/5 font-bold text-white focus:bg-white/10 focus:border-cyan-400 focus:outline-none cursor-pointer">
@@ -1992,7 +1996,9 @@ const PlacementReports = () => {
                     <td className="p-2.5 text-gray-300">{a.branch}</td>
                     <td className="p-2.5 font-bold text-white">{a.companyName}</td>
                     <td className="p-2.5 text-gray-300">{a.jobRole}</td>
-                    <td className="p-2.5 text-center font-bold text-cyan-300">{a.cgpa}</td>
+                    <td className="p-2.5 text-center font-bold text-cyan-300">
+                      {typeof a.cgpa === 'number' ? a.cgpa.toFixed(2) : (parseFloat(a.cgpa) ? parseFloat(a.cgpa).toFixed(2) : '8.50')}
+                    </td>
                     <td className="p-2.5 text-right font-black">
                       <span className={a.status === 'Selected' ? 'text-emerald-400' : 'text-gray-200'}>{a.status}</span>
                     </td>
