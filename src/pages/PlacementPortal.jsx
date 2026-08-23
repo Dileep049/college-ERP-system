@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { mockDB, normalizeDepartment, isDepartmentMatch } from '../services/firebase';
+import { db, isFirebaseConfigured, mockDB, normalizeDepartment, isDepartmentMatch } from '../services/firebase';
+import { collection, onSnapshot, query, where, getDocs } from 'firebase/firestore';
 import { COLLEGE_DEPARTMENTS } from '../utils/departments';
 import { 
   Briefcase, 
@@ -590,7 +591,7 @@ const PlacementDrives = ({ officer, subType }) => {
                 <div className="pt-2 border-t border-white/10">
                   <span className="text-gray-400 font-extrabold text-[9.5px] uppercase block mb-1.5">Eligible Branches</span>
                   <div className="flex flex-wrap gap-1.5">
-                    {(Array.isArray(d.eligibleBranches) ? d.eligibleBranches : ['CSE']).map((b, idx) => (
+                    {(Array.isArray(d.eligibleBranches) ? d.eligibleBranches : ['B.Sc. Computer Science (CS)']).map((b, idx) => (
                       <span key={idx} className="px-2.5 py-0.5 bg-white/10 text-cyan-300 border border-white/15 rounded-lg font-bold text-[10px] drop-shadow-sm">
                         {b}
                       </span>
@@ -804,7 +805,28 @@ const PlacementApplications = ({ officer, filterType }) => {
   };
 
   useEffect(() => {
+    let unsubApps = null;
+    let unsubDrives = null;
+    if (isFirebaseConfigured && db) {
+      try {
+        unsubApps = onSnapshot(collection(db, 'placement_applications'), (snap) => {
+          const liveApps = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          if (liveApps.length > 0) setApplications(liveApps);
+        }, (err) => console.warn("[Firestore live applications]:", err));
+
+        unsubDrives = onSnapshot(collection(db, 'placement_drives'), (snap) => {
+          const liveDrives = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          if (liveDrives.length > 0) setDrives(liveDrives);
+        }, (err) => console.warn("[Firestore live drives]:", err));
+      } catch (e) {
+        console.warn("Error setting up placement listeners:", e);
+      }
+    }
     loadAppData();
+    return () => {
+      if (unsubApps) unsubApps();
+      if (unsubDrives) unsubDrives();
+    };
   }, []);
 
   const handleStatusChange = async (appId, newStatus) => {
@@ -853,7 +875,7 @@ const PlacementApplications = ({ officer, filterType }) => {
   // Filter applications
   const filteredApps = applications.filter(a => {
     if (selectedDriveId && a.driveId !== selectedDriveId) return false;
-    if (selectedBranch !== 'ALL' && !(a.branch || '').toUpperCase().includes(selectedBranch)) return false;
+    if (selectedBranch !== 'ALL' && !isDepartmentMatch(a.branch || a.department, selectedBranch)) return false;
     if (statusFilter !== 'ALL' && a.status !== statusFilter) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -920,14 +942,9 @@ const PlacementApplications = ({ officer, filterType }) => {
             className="px-3.5 py-2.5 rounded-xl border border-white/10 bg-white/5 text-xs font-bold text-white focus:bg-white/10 focus:border-cyan-400 focus:outline-none cursor-pointer"
           >
             <option value="ALL" className="bg-slate-900 text-white">All Branches</option>
-            <option value="CSE" className="bg-slate-900 text-white">CSE</option>
-            <option value="ECE" className="bg-slate-900 text-white">ECE</option>
-            <option value="EEE" className="bg-slate-900 text-white">EEE</option>
-            <option value="AI & ML" className="bg-slate-900 text-white">AI & ML</option>
-            <option value="CIVIL" className="bg-slate-900 text-white">Civil</option>
-            <option value="MECHANICAL" className="bg-slate-900 text-white">Mechanical</option>
-            <option value="MCA" className="bg-slate-900 text-white">MCA</option>
-            <option value="BCA" className="bg-slate-900 text-white">BCA</option>
+            {COLLEGE_DEPARTMENTS.map(d => (
+              <option key={d} value={d} className="bg-slate-900 text-white">{d}</option>
+            ))}
           </select>
 
           <select
@@ -1181,7 +1198,7 @@ const PlacementCandidates = () => {
     let reason = 'Eligible';
 
     if (selectedDrive) {
-      const studentBranch = (s.department || s.branch || 'CSE').toUpperCase().trim();
+      const studentBranch = (s.department || s.branch || 'B.Sc. Computer Science (CS)').trim();
       const minCgpa = selectedDrive.minCgpa !== undefined ? parseFloat(selectedDrive.minCgpa) : 6.0;
       const maxBacklogs = selectedDrive.maxBacklogs !== undefined ? parseInt(selectedDrive.maxBacklogs) : 0;
       const eligibleBranches = Array.isArray(selectedDrive.eligibleBranches) ? selectedDrive.eligibleBranches : [];
@@ -1193,7 +1210,7 @@ const PlacementCandidates = () => {
         isEligible = false;
         reason = `Backlogs > ${maxBacklogs}`;
       } else if (eligibleBranches.length > 0) {
-        const branchMatch = eligibleBranches.some(b => b.toUpperCase().trim() === 'ALL' || b.toUpperCase().trim() === studentBranch || studentBranch.includes(b.toUpperCase().trim()));
+        const branchMatch = eligibleBranches.some(b => b.toUpperCase().trim() === 'ALL' || isDepartmentMatch(studentBranch, b));
         if (!branchMatch) {
           isEligible = false;
           reason = `Branch Mismatch (${studentBranch})`;
@@ -1205,7 +1222,7 @@ const PlacementCandidates = () => {
   });
 
   const filteredStudents = evaluatedStudents.filter(s => {
-    if (branchFilter !== 'ALL' && !(s.department || s.branch || '').toUpperCase().includes(branchFilter)) return false;
+    if (branchFilter !== 'ALL' && !isDepartmentMatch(s.department || s.branch, branchFilter)) return false;
     if (s.cgpa < parseFloat(minCgpaFilter)) return false;
     return true;
   });
@@ -1241,12 +1258,9 @@ const PlacementCandidates = () => {
 
           <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)} className="px-3.5 py-2.5 rounded-xl border border-white/10 bg-white/5 text-xs font-bold text-white focus:bg-white/10 focus:border-cyan-400 focus:outline-none cursor-pointer">
             <option value="ALL" className="bg-slate-900 text-white">All Branches</option>
-            <option value="CSE" className="bg-slate-900 text-white">CSE</option>
-            <option value="ECE" className="bg-slate-900 text-white">ECE</option>
-            <option value="EEE" className="bg-slate-900 text-white">EEE</option>
-            <option value="AI & ML" className="bg-slate-900 text-white">AI & ML</option>
-            <option value="CIVIL" className="bg-slate-900 text-white">Civil</option>
-            <option value="MECHANICAL" className="bg-slate-900 text-white">Mechanical</option>
+            {COLLEGE_DEPARTMENTS.map(d => (
+              <option key={d} value={d} className="bg-slate-900 text-white">{d}</option>
+            ))}
           </select>
 
           <select value={minCgpaFilter} onChange={e => setMinCgpaFilter(e.target.value)} className="px-3.5 py-2.5 rounded-xl border border-white/10 bg-white/5 text-xs font-bold text-white focus:bg-white/10 focus:border-cyan-400 focus:outline-none cursor-pointer">

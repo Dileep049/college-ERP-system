@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { mockDB } from '../services/firebase';
+import { mockDB, normalizeDepartment, normalizeSection, isDepartmentMatch } from '../services/firebase';
+import { COLLEGE_DEPARTMENTS } from '../utils/departments';
 import { 
   Upload, 
   Download, 
@@ -51,7 +52,7 @@ export const StudentBulkImport = () => {
   const loadRosterData = async () => {
     try {
       setLoadingRoster(true);
-      const students = await mockDB.getStudentsByBranchAndSemester('AI & ML', 'Semester 2', 'EM');
+      const students = await mockDB.getStudentsByBranchAndSemester('B.Sc. Artificial Intelligence & Machine Learning (AI & ML)', 'Semester 2', 'Section A');
       const allUsers = await mockDB.getAllUsers();
       const allStudents = allUsers.filter(u => u.role === 'student' || u.rollNumber);
       
@@ -80,17 +81,17 @@ export const StudentBulkImport = () => {
   const handleDownloadTemplate = (format = 'csv') => {
     const sampleHeaders = ['rollNumber', 'studentName', 'department', 'course', 'semester', 'section', 'branch', 'status'];
     const sampleRows = [
-      ['245901', 'AVALA ANAND BABU', 'AI & ML', 'B.Sc', 'Semester 2', 'Section A', 'AI & ML', 'Active'],
-      ['245902', 'DASIKA SARATH KUMAR', 'AI & ML', 'B.Sc', 'Semester 2', 'Section B', 'AI & ML', 'Active'],
-      ['245903', 'SHAIK NAADIA TASLEEM', 'AI & ML', 'B.Sc', 'Semester 2', 'Section A', 'AI & ML', 'Active'],
-      ['245904', 'CHIKATI YUGALA SRI', 'AI & ML', 'B.Sc', 'Semester 2', 'Section B', 'AI & ML', 'Active'],
-      ['245905', 'ORSU BRAHMAIAH', 'AI & ML', 'B.Sc', 'Semester 2', 'Section A', 'AI & ML', 'Active']
+      ['245901', 'AVALA ANAND BABU', 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)', 'B.Sc', 'Semester 2', 'Section A', 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)', 'Active'],
+      ['245902', 'DASIKA SARATH KUMAR', 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)', 'B.Sc', 'Semester 2', 'Section B', 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)', 'Active'],
+      ['245903', 'SHAIK NAADIA TASLEEM', 'B.Sc. Computer Science (CS)', 'B.Sc', 'Semester 2', 'Section A', 'B.Sc. Computer Science (CS)', 'Active'],
+      ['245904', 'CHIKATI YUGALA SRI', 'Bachelor of Computer Applications (BCA)', 'BCA', 'Semester 2', 'Section B', 'Bachelor of Computer Applications (BCA)', 'Active'],
+      ['245905', 'ORSU BRAHMAIAH', 'B.Com. (Computers)', 'B.Com', 'Semester 2', 'Section A', 'B.Com. (Computers)', 'Active']
     ];
 
     if (format === 'json') {
       const jsonContent = JSON.stringify([
-        { rollNumber: "245901", studentName: "AVALA ANAND BABU", department: "AI & ML", course: "B.Sc", semester: "Semester 2", section: "Section A", branch: "AI & ML", status: "Active" },
-        { rollNumber: "245902", studentName: "DASIKA SARATH KUMAR", department: "AI & ML", course: "B.Sc", semester: "Semester 2", section: "Section B", branch: "AI & ML", status: "Active" }
+        { rollNumber: "245901", studentName: "AVALA ANAND BABU", department: "B.Sc. Artificial Intelligence & Machine Learning (AI & ML)", course: "B.Sc", semester: "Semester 2", section: "Section A", branch: "B.Sc. Artificial Intelligence & Machine Learning (AI & ML)", status: "Active" },
+        { rollNumber: "245902", studentName: "DASIKA SARATH KUMAR", department: "B.Sc. Artificial Intelligence & Machine Learning (AI & ML)", course: "B.Sc", semester: "Semester 2", section: "Section B", branch: "B.Sc. Artificial Intelligence & Machine Learning (AI & ML)", status: "Active" }
       ], null, 2);
 
       const blob = new Blob([jsonContent], { type: 'application/json' });
@@ -166,11 +167,11 @@ export const StudentBulkImport = () => {
           const rowNum = index + 1;
           const roll = String(row.rollNumber || row.roll_number || row.roll || '').trim();
           const name = String(row.studentName || row.name || row.fullName || '').trim();
-          const dept = String(row.department || row.dept || 'AI & ML').trim();
+          const dept = normalizeDepartment(row.department || row.dept || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)');
           const crs = String(row.course || 'B.Sc').trim();
           const sem = String(row.semester || 'Semester 2').trim();
-          const sec = String(row.section || 'EM').trim();
-          const brn = String(row.branch || dept || 'AI & ML').trim();
+          const sec = normalizeSection(row.section) || 'Section A';
+          const brn = normalizeDepartment(row.branch || dept || 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)');
           const stat = String(row.status || 'Active').trim();
 
           const rowErrors = [];
@@ -314,7 +315,7 @@ export const StudentBulkImport = () => {
     } else {
       let csv = "data:text/csv;charset=utf-8,Roll Number,Student Name,Department,Course,Semester,Section,Branch,Status\n";
       filteredRoster.forEach(s => {
-        csv += `"${s.rollNumber}","${s.studentName || s.fullName}","${s.department || 'AI & ML'}","${s.course || 'B.Sc'}","${s.semester || 'Semester 2'}","${s.section || 'EM'}","${s.branch || 'AI & ML'}","${s.status || 'Active'}"\n`;
+        csv += `"${s.rollNumber}","${s.studentName || s.fullName}","${normalizeDepartment(s.department || s.branch)}","${s.course || 'B.Sc'}","${s.semester || 'Semester 2'}","${normalizeSection(s.section)}","${normalizeDepartment(s.branch || s.department)}","${s.status || 'Active'}"\n`;
       });
 
       const encodedUri = encodeURI(csv);
@@ -568,10 +569,9 @@ export const StudentBulkImport = () => {
               className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
             >
               <option value="all" className="bg-slate-900 text-white">All Departments</option>
-              <option value="AI & ML" className="bg-slate-900 text-white">AI & ML</option>
-              <option value="CSE" className="bg-slate-900 text-white">CSE</option>
-              <option value="ECE" className="bg-slate-900 text-white">ECE</option>
-              <option value="EEE" className="bg-slate-900 text-white">EEE</option>
+              {COLLEGE_DEPARTMENTS.map(d => (
+                <option key={d} value={d} className="bg-slate-900 text-white">{d}</option>
+              ))}
             </select>
           </div>
 
@@ -586,6 +586,10 @@ export const StudentBulkImport = () => {
               <option value="Semester 2" className="bg-slate-900 text-white">Semester 2</option>
               <option value="Semester 3" className="bg-slate-900 text-white">Semester 3</option>
               <option value="Semester 4" className="bg-slate-900 text-white">Semester 4</option>
+              <option value="Semester 5" className="bg-slate-900 text-white">Semester 5</option>
+              <option value="Semester 6" className="bg-slate-900 text-white">Semester 6</option>
+              <option value="Semester 7" className="bg-slate-900 text-white">Semester 7</option>
+              <option value="Semester 8" className="bg-slate-900 text-white">Semester 8</option>
             </select>
           </div>
 
@@ -596,8 +600,8 @@ export const StudentBulkImport = () => {
               className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
             >
               <option value="all" className="bg-slate-900 text-white">All Sections</option>
-              <option value="A" className="bg-slate-900 text-white">Section A</option>
-              <option value="B" className="bg-slate-900 text-white">Section B</option>
+              <option value="Section A" className="bg-slate-900 text-white">Section A</option>
+              <option value="Section B" className="bg-slate-900 text-white">Section B</option>
             </select>
           </div>
 
@@ -641,9 +645,9 @@ export const StudentBulkImport = () => {
                   <tr key={s.rollNumber || idx} className="border-b border-white/5 hover:bg-white/10 transition-colors">
                     <td className="px-2 sm:px-3 py-3 whitespace-normal break-words font-mono text-xs sm:text-sm font-medium text-cyan-300 align-middle">{s.rollNumber}</td>
                     <td className="px-2 sm:px-3 py-3 whitespace-normal break-words text-xs sm:text-sm font-semibold text-white tracking-wide drop-shadow-sm align-middle">{s.studentName || s.fullName}</td>
-                    <td className="px-2 sm:px-3 py-3 whitespace-normal break-words text-xs sm:text-sm font-medium text-gray-300 align-middle">{s.department || s.branch || 'AI & ML'}</td>
+                    <td className="px-2 sm:px-3 py-3 whitespace-normal break-words text-xs sm:text-sm font-medium text-gray-300 align-middle">{normalizeDepartment(s.department || s.branch)}</td>
                     <td className="px-2 sm:px-3 py-3 whitespace-normal break-words text-xs sm:text-sm font-medium text-gray-300 align-middle">{s.course || 'B.Sc'}</td>
-                    <td className="px-2 sm:px-3 py-3 whitespace-normal break-words text-xs sm:text-sm font-medium text-gray-300 align-middle">{s.semester || 'Sem 2'} ({s.section || 'EM'})</td>
+                    <td className="px-2 sm:px-3 py-3 whitespace-normal break-words text-xs sm:text-sm font-medium text-gray-300 align-middle">{s.semester || 'Semester 2'} ({normalizeSection(s.section)})</td>
                     <td className="px-2 sm:px-3 py-3 whitespace-normal text-center align-middle">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase border inline-block break-words ${
                         (s.status || 'Active') === 'Active' 

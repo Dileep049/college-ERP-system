@@ -234,7 +234,7 @@ const HODDashboard = ({ hod, onNavigate }) => {
 
   const kpiCards = [
     { title: 'Total Faculty', value: stats?.totalFaculty || 25, change: '+2 this year', icon: Users, color: 'text-purple-300 bg-purple-500/20 border border-purple-400/30' },
-    { title: 'Total Students', value: stats?.totalStudents || 620, change: 'Across 4 sections', icon: BookOpen, color: 'text-blue-300 bg-blue-500/20 border border-blue-400/30' },
+    { title: 'Total Students', value: stats?.totalStudents || 620, change: 'Across Section A & Section B', icon: BookOpen, color: 'text-blue-300 bg-blue-500/20 border border-blue-400/30' },
     { title: 'Total Wards', value: stats?.totalWards || 620, change: '3 Ward Counsellors', icon: UserCheck, color: 'text-sky-300 bg-sky-500/20 border border-sky-400/30' },
     { title: 'Present Today', value: stats?.presentToday || 542, change: '87.4% present', icon: CheckCircle2, color: 'text-emerald-300 bg-emerald-500/20 border border-emerald-400/30' },
     { title: 'Absent Today', value: stats?.absentToday || 78, change: '12.6% absent', icon: XCircle, color: 'text-rose-300 bg-rose-500/20 border border-rose-400/30' },
@@ -499,7 +499,7 @@ const FacultyManagement = ({ hod }) => {
     facultyPhone: '',
     department: (deptName === 'All' ? 'B.Sc. Computer Science (CS)' : deptName),
     semester: 'Semester 6',
-    section: 'A',
+    section: 'Section A',
     academicYear: '2026-2027',
     subject: '',
     subjectCode: ''
@@ -1005,8 +1005,8 @@ const FacultyManagement = ({ hod }) => {
                     required
                   >
                     <option value="">[ Select Section ]</option>
-                    <option value="A">Section A</option>
-                    <option value="B">Section B</option>
+                    <option value="Section A">Section A</option>
+                    <option value="Section B">Section B</option>
                   </select>
                 </div>
               </div>
@@ -1773,7 +1773,7 @@ const HODReports = ({ hod }) => {
     doc.setFontSize(16);
     doc.text(`Department Monthly Leave Report — ${month} ${year}`, 14, 20);
     doc.setFontSize(10);
-    doc.text(`Department: ${hod?.department || 'CSE'} | HOD: ${hod?.fullName || 'Dr. Alan Turing'}`, 14, 28);
+    doc.text(`Department: ${hod?.department || 'B.Sc. Computer Science (CS)'} | HOD: ${hod?.fullName || 'Dr. Alan Turing'}`, 14, 28);
     
     let y = 40;
     doc.text(`Total Requests: ${reportData?.summary.totalRequests} | Approved: ${reportData?.summary.approved} | Rejected: ${reportData?.summary.rejected}`, 14, y);

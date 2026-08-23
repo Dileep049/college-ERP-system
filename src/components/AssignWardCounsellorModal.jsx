@@ -3,6 +3,7 @@ import { auth, db, isFirebaseConfigured, mockDB } from '../services/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { collection, doc, setDoc, addDoc, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
 import { X, UserCheck, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { COLLEGE_DEPARTMENTS } from '../utils/departments';
 
 export const AssignWardCounsellorModal = ({
   isOpen,
@@ -354,17 +355,9 @@ export const AssignWardCounsellorModal = ({
                 required
               >
                 <option value="">[ Select Department First ]</option>
-                {deptList && deptList.length > 0 ? (
-                  deptList.map((d) => (
-                    <option key={d} value={d}>{d}</option>
-                  ))
-                ) : (
-                  <>
-                    <option value="B.Sc. Computer Science (CS)">B.Sc. Computer Science (CS)</option>
-                    <option value="B.Sc. Artificial Intelligence & Machine Learning (AI & ML)">B.Sc. Artificial Intelligence & Machine Learning (AI & ML)</option>
-                    <option value="B.Sc. Electronics & Communication (ECE)">B.Sc. Electronics & Communication (ECE)</option>
-                  </>
-                )}
+                {(deptList && deptList.length > 0 ? deptList : COLLEGE_DEPARTMENTS).map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
               </select>
             </div>
 

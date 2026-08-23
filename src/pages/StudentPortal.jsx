@@ -693,35 +693,24 @@ const StudentAssignments = ({ student, isParent }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let unsub = null;
+    const rawDept = student?.department || student?.branch || 'B.Sc. Computer Science (CS)';
+    const rawSem = student?.semester || 'Semester 1';
+    const rawSec = student?.section || 'Section A';
+
+    const dept = String(rawDept).trim();
+    const sem = String(rawSem).trim();
+    const sec = String(rawSec).trim();
+
     const loadAssignments = async () => {
       try {
         setLoading(true);
-        const rawDept = student?.department || student?.branch || 'CSE';
-        const rawSem = student?.semester || 'Semester 1';
-        const rawSec = student?.section || 'Section A';
-
-        const dept = String(rawDept).trim();
-        const sem = String(rawSem).trim();
-        const sec = String(rawSec).trim();
-
         let firestoreList = [];
         if (isFirebaseConfigured && db) {
           try {
-            const assRef = collection(db, 'assignments');
-            const q = query(
-              assRef,
-              where('targetBranch', '==', dept),
-              where('targetSemester', '==', sem),
-              where('targetSection', '==', sec)
-            );
-            const snap = await getDocs(q);
-            firestoreList = snap.docs.map(doc => ({ id: doc.id, assignmentId: doc.id, ...doc.data() }));
-          } catch (_) {
-            try {
-              const snapAll = await getDocs(collection(db, 'assignments'));
-              firestoreList = snapAll.docs.map(doc => ({ id: doc.id, assignmentId: doc.id, ...doc.data() }));
-            } catch (_) {}
-          }
+            const snapAll = await getDocs(collection(db, 'assignments'));
+            firestoreList = snapAll.docs.map(doc => ({ id: doc.id, assignmentId: doc.id, ...doc.data() }));
+          } catch (_) {}
         }
 
         const mockData = await mockDB.getAssignments(dept, sem, sec);
@@ -734,11 +723,13 @@ const StudentAssignments = ({ student, isParent }) => {
         const filtered = Array.from(combinedMap.values()).filter(a => {
           const aBranch = (a.targetBranch || a.department || a.branch || '').trim();
           const aSem = (a.targetSemester || a.semester || '').trim();
+          const aSec = (a.targetSection || a.section || '').trim();
 
           const branchOk = !aBranch || isDepartmentMatch(dept, aBranch) || isDepartmentMatch(aBranch, dept);
           const semOk = !aSem || aSem === 'All' || normalizeSemester(aSem) === normalizeSemester(sem);
+          const secOk = !aSec || aSec === 'All' || normalizeSection(aSec) === normalizeSection(sec);
 
-          return branchOk && semOk;
+          return branchOk && semOk && secOk;
         });
 
         setAssignments(filtered);
@@ -748,7 +739,26 @@ const StudentAssignments = ({ student, isParent }) => {
         setLoading(false);
       }
     };
+
+    if (isFirebaseConfigured && db) {
+      try {
+        unsub = onSnapshot(collection(db, 'assignments'), () => {
+          loadAssignments();
+        }, (err) => console.warn("[Firestore live assignments]:", err));
+      } catch (e) {
+        console.warn("Could not attach assignments listener:", e);
+      }
+    }
+
     loadAssignments();
+
+    const handleLocalUpdate = () => loadAssignments();
+    window.addEventListener('acad_assignment_created', handleLocalUpdate);
+
+    return () => {
+      if (unsub) unsub();
+      window.removeEventListener('acad_assignment_created', handleLocalUpdate);
+    };
   }, [student]);
 
   return (
@@ -765,7 +775,7 @@ const StudentAssignments = ({ student, isParent }) => {
           </div>
         </div>
         <span className="px-3.5 py-1.5 bg-blue-500/20 text-cyan-300 border border-blue-400/30 rounded-2xl font-black text-xs shadow-md self-start sm:self-auto">
-          {student?.department || 'CSE'} • {student?.semester || 'Sem 6'} • {student?.section || 'Sec A'}
+          {student?.department || 'B.Sc. Computer Science (CS)'} • {student?.semester || 'Semester 6'} • {student?.section || 'Section A'}
         </span>
       </div>
 
@@ -816,35 +826,24 @@ const StudentNotes = ({ student, isParent }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let unsub = null;
+    const rawDept = student?.department || student?.branch || 'B.Sc. Computer Science (CS)';
+    const rawSem = student?.semester || 'Semester 1';
+    const rawSec = student?.section || 'Section A';
+
+    const dept = String(rawDept).trim();
+    const sem = String(rawSem).trim();
+    const sec = String(rawSec).trim();
+
     const loadNotes = async () => {
       try {
         setLoading(true);
-        const rawDept = student?.department || student?.branch || 'CSE';
-        const rawSem = student?.semester || 'Semester 1';
-        const rawSec = student?.section || 'Section A';
-
-        const dept = String(rawDept).trim();
-        const sem = String(rawSem).trim();
-        const sec = String(rawSec).trim();
-
         let firestoreList = [];
         if (isFirebaseConfigured && db) {
           try {
-            const notesRef = collection(db, 'notes');
-            const q = query(
-              notesRef,
-              where('targetBranch', '==', dept),
-              where('targetSemester', '==', sem),
-              where('targetSection', '==', sec)
-            );
-            const snap = await getDocs(q);
-            firestoreList = snap.docs.map(doc => ({ noteId: doc.id, id: doc.id, ...doc.data() }));
-          } catch (_) {
-            try {
-              const snapAll = await getDocs(collection(db, 'notes'));
-              firestoreList = snapAll.docs.map(doc => ({ noteId: doc.id, id: doc.id, ...doc.data() }));
-            } catch (_) {}
-          }
+            const snapAll = await getDocs(collection(db, 'notes'));
+            firestoreList = snapAll.docs.map(doc => ({ noteId: doc.id, id: doc.id, ...doc.data() }));
+          } catch (_) {}
         }
 
         const mockData = await mockDB.getNotes(dept, sem, sec);
@@ -857,11 +856,13 @@ const StudentNotes = ({ student, isParent }) => {
         const filtered = Array.from(combinedMap.values()).filter(n => {
           const nBranch = (n.targetBranch || n.department || n.branch || '').trim();
           const nSem = (n.targetSemester || n.semester || '').trim();
+          const nSec = (n.targetSection || n.section || '').trim();
 
           const branchOk = !nBranch || isDepartmentMatch(dept, nBranch) || isDepartmentMatch(nBranch, dept);
           const semOk = !nSem || nSem === 'All' || normalizeSemester(nSem) === normalizeSemester(sem);
+          const secOk = !nSec || nSec === 'All' || normalizeSection(nSec) === normalizeSection(sec);
 
-          return branchOk && semOk;
+          return branchOk && semOk && secOk;
         });
 
         setNotes(filtered);
@@ -871,7 +872,26 @@ const StudentNotes = ({ student, isParent }) => {
         setLoading(false);
       }
     };
+
+    if (isFirebaseConfigured && db) {
+      try {
+        unsub = onSnapshot(collection(db, 'notes'), () => {
+          loadNotes();
+        }, (err) => console.warn("[Firestore live notes]:", err));
+      } catch (e) {
+        console.warn("Could not attach notes listener:", e);
+      }
+    }
+
     loadNotes();
+
+    const handleLocalUpdate = () => loadNotes();
+    window.addEventListener('acad_notes_updated', handleLocalUpdate);
+
+    return () => {
+      if (unsub) unsub();
+      window.removeEventListener('acad_notes_updated', handleLocalUpdate);
+    };
   }, [student]);
 
   return (
@@ -888,7 +908,7 @@ const StudentNotes = ({ student, isParent }) => {
           </div>
         </div>
         <span className="px-3.5 py-1.5 bg-blue-500/20 text-cyan-300 border border-blue-400/30 rounded-2xl font-black text-xs shadow-md self-start sm:self-auto">
-          {student?.department || 'CSE'} • {student?.semester || 'Sem 6'}
+          {student?.department || 'B.Sc. Computer Science (CS)'} • {student?.semester || 'Semester 6'}
         </span>
       </div>
 
@@ -1107,7 +1127,7 @@ const StudentLeaves = ({ student, isParent }) => {
 
     try {
       setApplying(true);
-      const dept = student?.assignedBranch || student?.department || student?.branch || 'CSE';
+      const dept = student?.assignedBranch || student?.department || student?.branch || 'B.Sc. Computer Science (CS)';
       const sem = student?.assignedSemester || student?.semester || 'Semester 6';
       const sec = student?.assignedSection || student?.section || 'Section A';
 

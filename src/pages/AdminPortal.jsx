@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { mockDB, KBN_BRANCHES, KBN_SEMESTERS, BRANCH_SUBJECT_MAP } from '../services/firebase';
+import { db, isFirebaseConfigured, mockDB, KBN_BRANCHES, KBN_SEMESTERS, BRANCH_SUBJECT_MAP, isDepartmentMatch, normalizeSection } from '../services/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { COLLEGE_DEPARTMENTS } from '../utils/departments';
 import { 
   Users, 
@@ -70,7 +71,7 @@ export const AdminPortal = () => {
   const [formMobile, setFormMobile] = useState('');
   const [formSubjects, setFormSubjects] = useState('');
   const [formHallTicketNumber, setFormHallTicketNumber] = useState('');
-  const [formSection, setFormSection] = useState('A');
+  const [formSection, setFormSection] = useState('Section A');
   const [formParentName, setFormParentName] = useState('');
   const [formParentMobile, setFormParentMobile] = useState('');
   const [formParentEmail, setFormParentEmail] = useState('');
@@ -170,7 +171,7 @@ export const AdminPortal = () => {
 
   const fetchLeaves = async () => {
     try {
-      const data = await mockDB.getLeaves('admin', currentUser.uid);
+      const data = await mockDB.getLeaves('admin', currentUser?.uid);
       setAllLeaves(data);
     } catch (_) {}
   };
@@ -203,12 +204,40 @@ export const AdminPortal = () => {
   };
 
   useEffect(() => {
+    let unsubUsers = null;
+    let unsubAllocs = null;
+    let unsubLeaves = null;
+
+    if (isFirebaseConfigured && db) {
+      try {
+        unsubUsers = onSnapshot(collection(db, 'profiles'), async () => {
+          fetchUsers();
+        }, (err) => console.warn("[AdminPortal live profiles]:", err));
+
+        unsubAllocs = onSnapshot(collection(db, 'subject_allocations'), async () => {
+          fetchAllocations();
+        }, (err) => console.warn("[AdminPortal live allocations]:", err));
+
+        unsubLeaves = onSnapshot(collection(db, 'faculty_leaves'), async () => {
+          fetchLeaves();
+        }, (err) => console.warn("[AdminPortal live leaves]:", err));
+      } catch (err) {
+        console.warn("Error setting up AdminPortal listeners:", err);
+      }
+    }
+
     fetchUsers();
     fetchAllocations();
     fetchLeaves();
     fetchFees();
     fetchCalendar();
     fetchBackupLogs();
+
+    return () => {
+      if (unsubUsers) unsubUsers();
+      if (unsubAllocs) unsubAllocs();
+      if (unsubLeaves) unsubLeaves();
+    };
   }, [currentUser]);
 
   // --- TWILIO VERIFY API OTP HANDLERS ---
@@ -465,7 +494,7 @@ export const AdminPortal = () => {
     setFormCountryCode('+91');
     setFormSubjects('');
     setFormHallTicketNumber('');
-    setFormSection('A');
+    setFormSection('Section A');
     setFormParentName('');
     setFormParentMobile('');
     setFormParentEmail('');
@@ -504,7 +533,7 @@ export const AdminPortal = () => {
         const studentDetail = await mockDB.getStudentProfile(user.uid);
         if (studentDetail) {
           setFormHallTicketNumber(studentDetail.hallTicketNumber || '');
-          setFormSection(studentDetail.section || 'A');
+          setFormSection(normalizeSection(studentDetail.section || user.section) || 'Section A');
           setFormParentName(studentDetail.parentName || '');
           setFormParentMobile(studentDetail.parentMobile || '');
           setFormParentEmail(studentDetail.parentEmail || '');
@@ -861,15 +890,15 @@ export const AdminPortal = () => {
             </div>
             <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
               <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] block">Total Departments</span>
-              <span className="text-4xl font-black text-indigo-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">6</span>
+              <span className="text-4xl font-black text-indigo-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">{COLLEGE_DEPARTMENTS.length}</span>
             </div>
             <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
               <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] block">Total Courses</span>
-              <span className="text-4xl font-black text-teal-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">4</span>
+              <span className="text-4xl font-black text-teal-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">5</span>
             </div>
             <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
               <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] block">Total Branches</span>
-              <span className="text-4xl font-black text-rose-400 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">6</span>
+              <span className="text-4xl font-black text-rose-400 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">{COLLEGE_DEPARTMENTS.length}</span>
             </div>
             <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
               <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] block">Total Semesters</span>
@@ -877,11 +906,11 @@ export const AdminPortal = () => {
             </div>
             <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
               <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] block">Total Sections</span>
-              <span className="text-4xl font-black text-pink-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">3 (EM, A, B)</span>
+              <span className="text-4xl font-black text-pink-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">2 (Section A, B)</span>
             </div>
             <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
               <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] block">Total Subjects</span>
-              <span className="text-4xl font-black text-orange-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">24</span>
+              <span className="text-4xl font-black text-orange-300 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] font-display block mt-1">25</span>
             </div>
             <div className="p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:bg-white/10 hover:border-white/30 transition-all duration-300">
               <span className="text-[10px] text-gray-100 font-extrabold uppercase tracking-wide drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] block">Active Accounts</span>
@@ -895,23 +924,26 @@ export const AdminPortal = () => {
             <div className="p-6 rounded-3xl bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white">
               <h4 className="font-extrabold text-white drop-shadow-md mb-4 text-sm">Department Roster Breakdown</h4>
               <div className="space-y-3">
-                {[
-                  { name: 'AI & ML (Artificial Intelligence)', count: 55, pct: 100, color: 'bg-blue-500' },
-                  { name: 'CSE (Computer Science)', count: 35, pct: 70, color: 'bg-indigo-500' },
-                  { name: 'ECE (Electronics)', count: 28, pct: 56, color: 'bg-teal-500' },
-                  { name: 'EEE (Electrical)', count: 20, pct: 40, color: 'bg-amber-500' },
-                  { name: 'Civil Engineering', count: 18, pct: 36, color: 'bg-rose-500' }
-                ].map((item, idx) => (
-                  <div key={idx} className="space-y-1">
-                    <div className="flex justify-between text-xs font-bold text-gray-100 drop-shadow-sm">
-                      <span>{item.name}</span>
-                      <span>{item.count} Students</span>
-                    </div>
-                    <div className="w-full h-2.5 bg-black/40 border border-white/10 rounded-full overflow-hidden">
-                      <div className={`h-full ${item.color} shadow-sm`} style={{ width: `${item.pct}%` }}></div>
-                    </div>
-                  </div>
-                ))}
+                {(() => {
+                  const studentUsers = usersList.filter(u => u.role === 'student');
+                  const totalStuds = studentUsers.length || 1;
+                  const deptColors = ['bg-blue-500', 'bg-indigo-500', 'bg-teal-500', 'bg-amber-500', 'bg-purple-500'];
+                  return COLLEGE_DEPARTMENTS.map((dept, idx) => {
+                    const count = studentUsers.filter(s => isDepartmentMatch(s.department || s.branch, dept)).length;
+                    const pct = Math.min(100, Math.round((count / totalStuds) * 100)) || 20;
+                    return (
+                      <div key={dept} className="space-y-1">
+                        <div className="flex justify-between text-xs font-bold text-gray-100 drop-shadow-sm">
+                          <span className="truncate max-w-[240px]" title={dept}>{dept}</span>
+                          <span>{count} Students ({pct}%)</span>
+                        </div>
+                        <div className="w-full h-2.5 bg-black/40 border border-white/10 rounded-full overflow-hidden">
+                          <div className={`h-full ${deptColors[idx % deptColors.length]} shadow-sm`} style={{ width: `${pct}%` }}></div>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
 
@@ -1568,8 +1600,8 @@ export const AdminPortal = () => {
                           onChange={(e) => setFormSection(e.target.value)}
                           className="w-full px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs focus:outline-none text-white font-bold cursor-pointer"
                         >
-                          <option value="A" className="bg-slate-900 text-white">Section A</option>
-                          <option value="B" className="bg-slate-900 text-white">Section B</option>
+                          <option value="Section A" className="bg-slate-900 text-white">Section A</option>
+                          <option value="Section B" className="bg-slate-900 text-white">Section B</option>
                         </select>
                       </div>
                     </div>

@@ -478,7 +478,7 @@ export const DashboardLayout = ({ children }) => {
                       )}
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-black text-white truncate">{userName}</p>
-                        <p className="text-[10px] text-cyan-300 font-bold uppercase truncate">{user.role === 'hod' ? `HOD • ${user.department || 'CSE'}` : user.role}</p>
+                        <p className="text-[10px] text-cyan-300 font-bold uppercase truncate">{user.role === 'hod' ? `HOD • ${user.department || 'B.Sc. Computer Science (CS)'}` : user.role}</p>
                         <p className="text-[10px] text-white/70 truncate">{user.email}</p>
                       </div>
                     </div>

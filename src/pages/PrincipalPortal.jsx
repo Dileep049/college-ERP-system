@@ -1921,9 +1921,9 @@ const PrincipalCalendar = () => {
 // 10. DOCUMENT DISPATCH
 const PrincipalDocuments = () => {
   const docs = [
-    { id: 'DOC-901', student: 'A. Vikram', dept: 'CSE', type: 'Bonafide Certificate', status: 'Dispatched', date: '2026-03-01' },
-    { id: 'DOC-902', student: 'R. Divya', dept: 'ECE', type: 'Official Transcript', status: 'Pending Approval', date: '2026-03-02' },
-    { id: 'DOC-903', student: 'S. Karthik', dept: 'EEE', type: 'Transfer Certificate', status: 'Dispatched', date: '2026-03-03' }
+    { id: 'DOC-901', student: 'A. Vikram', dept: 'B.Sc. Computer Science (CS)', type: 'Bonafide Certificate', status: 'Dispatched', date: '2026-03-01' },
+    { id: 'DOC-902', student: 'R. Divya', dept: 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)', type: 'Official Transcript', status: 'Pending Approval', date: '2026-03-02' },
+    { id: 'DOC-903', student: 'S. Karthik', dept: 'Bachelor of Computer Applications (BCA)', type: 'Transfer Certificate', status: 'Dispatched', date: '2026-03-03' }
   ];
 
   return (

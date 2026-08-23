@@ -234,7 +234,7 @@ const FacultyStudents = ({ faculty }) => {
   const urlSec = searchParams.get('section');
 
   const [selectedSem, setSelectedSem] = useState(urlSem || 'All');
-  const [selectedSec, setSelectedSec] = useState(urlSec ? urlSec.replace(/Section\s*/i, '').trim() : 'All');
+  const [selectedSec, setSelectedSec] = useState(urlSec ? normalizeSection(urlSec) : 'All');
   const [selectedStudent, setSelectedStudent] = useState(null);
 
   const facultyDept = getFacultyDept(faculty);
@@ -258,7 +258,7 @@ const FacultyStudents = ({ faculty }) => {
     const nameMatch = (s.fullName || s.studentName || '').toLowerCase().includes(search.toLowerCase()) ||
                       (s.rollNumber || '').toLowerCase().includes(search.toLowerCase());
     const semMatch = selectedSem === 'All' || s.semester === selectedSem;
-    const secMatch = selectedSec === 'All' || s.section === selectedSec || (selectedSec === 'A' && (!s.section || s.section === 'A' || s.section === 'Section A'));
+    const secMatch = selectedSec === 'All' || normalizeSection(s.section) === selectedSec;
     return nameMatch && semMatch && secMatch;
   });
 
@@ -297,8 +297,8 @@ const FacultyStudents = ({ faculty }) => {
 
           <select value={selectedSec} onChange={(e) => setSelectedSec(e.target.value)} className="flex-1 min-w-[120px] px-3 py-2 bg-white/5 border border-white/10 text-white rounded-xl text-xs font-bold focus:outline-none focus:border-cyan-400 cursor-pointer">
             <option value="All" className="bg-slate-900 text-white">All Sections</option>
-            <option value="A" className="bg-slate-900 text-white">Section A</option>
-            <option value="B" className="bg-slate-900 text-white">Section B</option>
+            <option value="Section A" className="bg-slate-900 text-white">Section A</option>
+            <option value="Section B" className="bg-slate-900 text-white">Section B</option>
           </select>
         </div>
       </div>

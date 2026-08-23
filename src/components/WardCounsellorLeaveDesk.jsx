@@ -34,7 +34,7 @@ export const WardCounsellorLeaveDesk = ({ counsellor }) => {
 
   // Resolved Scope State (Fetched from Firestore user profile)
   const [scope, setScope] = useState({
-    assignedDepartment: 'CSE',
+    assignedDepartment: 'B.Sc. Computer Science (CS)',
     assignedSemester: 'Semester 6',
     assignedSection: 'Section A'
   });
@@ -397,11 +397,11 @@ export const WardCounsellorLeaveDesk = ({ counsellor }) => {
                         <div className="flex flex-wrap items-center gap-2 text-[10.5px] text-[var(--text-muted)] font-semibold mt-0.5">
                           <span>Roll: <strong className="text-[var(--text-primary)]">{l.rollNumber || 'N/A'}</strong></span>
                           <span>•</span>
-                          <span>Dept: <strong className="text-[var(--text-primary)]">{l.department || l.branch || 'CSE'}</strong></span>
+                          <span>Dept: <strong className="text-[var(--text-primary)]">{l.department || l.branch || 'B.Sc. Computer Science (CS)'}</strong></span>
                           <span>•</span>
                           <span>Sem: <strong className="text-[var(--text-primary)]">{l.semester || 'N/A'}</strong></span>
                           <span>•</span>
-                          <span>Sec: <strong className="text-[var(--text-primary)]">{l.section || 'A'}</strong></span>
+                          <span>Sec: <strong className="text-[var(--text-primary)]">{l.section || 'Section A'}</strong></span>
                         </div>
                       </div>
                     </div>

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { mockDB, db, isFirebaseConfigured, isDepartmentMatch, normalizeSemester } from '../services/firebase';
+import { mockDB, db, isFirebaseConfigured, isDepartmentMatch, normalizeSemester, normalizeSection } from '../services/firebase';
 import { collection, onSnapshot, query, where, getDocs } from 'firebase/firestore';
+import { COLLEGE_DEPARTMENTS } from '../utils/departments';
 import { WardCounsellorLeaveDesk } from '../components/WardCounsellorLeaveDesk';
 import { WardCounsellorLeaves } from './WardCounsellorLeaves';
 import { WardCounsellorProfile } from './WardCounsellorProfile';
@@ -1125,7 +1126,7 @@ const CounsellorLeaves = ({ counsellor }) => {
   const { showToast } = useAuth();
 
   // Resolved Counsellor Academic Scope
-  const assignedBranch = counsellor.assignedBranch || counsellor.branch || counsellor.department || 'CSE';
+  const assignedBranch = counsellor.assignedBranch || counsellor.branch || counsellor.department || 'B.Sc. Computer Science (CS)';
   const assignedSemester = counsellor.assignedSemester || counsellor.semester || 'Semester 6';
   const assignedSection = counsellor.assignedSection || counsellor.section || 'Section A';
 
@@ -1315,14 +1316,9 @@ const CounsellorLeaves = ({ counsellor }) => {
             className="px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs font-bold text-white focus:bg-white/10 focus:ring-1 focus:ring-blue-400 outline-none transition-all"
           >
             <option value="ALL" className="bg-slate-900 text-white">All Departments</option>
-            <option value="CSE" className="bg-slate-900 text-white">CSE</option>
-            <option value="ECE" className="bg-slate-900 text-white">ECE</option>
-            <option value="EEE" className="bg-slate-900 text-white">EEE</option>
-            <option value="AI & ML" className="bg-slate-900 text-white">AI & ML</option>
-            <option value="Civil" className="bg-slate-900 text-white">Civil</option>
-            <option value="Mechanical" className="bg-slate-900 text-white">Mechanical</option>
-            <option value="MCA" className="bg-slate-900 text-white">MCA</option>
-            <option value="BCA" className="bg-slate-900 text-white">BCA</option>
+            {COLLEGE_DEPARTMENTS.map(d => (
+              <option key={d} value={d} className="bg-slate-900 text-white">{d}</option>
+            ))}
           </select>
 
           {/* Semester Filter */}
@@ -1397,11 +1393,11 @@ const CounsellorLeaves = ({ counsellor }) => {
                         <div className="flex flex-wrap items-center gap-2 text-[10.5px] text-gray-400 font-semibold mt-0.5">
                           <span>Roll: <strong className="text-cyan-300 font-mono">{l.rollNumber || 'N/A'}</strong></span>
                           <span>•</span>
-                          <span>Dept: <strong className="text-purple-300">{l.department || l.branch || 'CSE'}</strong></span>
+                          <span>Dept: <strong className="text-purple-300">{l.department || l.branch || 'B.Sc. Computer Science (CS)'}</strong></span>
                           <span>•</span>
                           <span>Sem: <strong className="text-gray-200">{l.semester || 'N/A'}</strong></span>
                           <span>•</span>
-                          <span>Sec: <strong className="text-gray-200">{l.section || 'A'}</strong></span>
+                          <span>Sec: <strong className="text-gray-200">{l.section || 'Section A'}</strong></span>
                         </div>
                       </div>
                     </div>

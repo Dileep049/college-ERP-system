@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { mockDB } from '../services/firebase';
+import { COLLEGE_DEPARTMENTS } from '../utils/departments';
 import {
   Library,
   Plus,
@@ -37,7 +38,7 @@ const LibrarianInventory = () => {
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [isbn, setIsbn] = useState('');
-  const [category, setCategory] = useState('CSE');
+  const [category, setCategory] = useState('B.Sc. Computer Science (CS)');
   const [totalCopies, setTotalCopies] = useState(5);
   const [editingBookId, setEditingBookId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -76,7 +77,7 @@ const LibrarianInventory = () => {
       setTitle('');
       setAuthor('');
       setIsbn('');
-      setCategory('CSE');
+      setCategory('B.Sc. Computer Science (CS)');
       setTotalCopies(5);
       setEditingBookId(null);
       loadBooks();
@@ -186,17 +187,11 @@ const LibrarianInventory = () => {
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white text-xs focus:outline-none focus:bg-white/10 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-bold cursor-pointer"
                 >
-                  <option value="CSE" className="bg-slate-900 text-white">CSE</option>
-                  <option value="CSE (AI & ML)" className="bg-slate-900 text-white">CSE (AI & ML)</option>
-                  <option value="CSE (Data Science)" className="bg-slate-900 text-white">CSE (Data Science)</option>
-                  <option value="ECE" className="bg-slate-900 text-white">ECE</option>
-                  <option value="EEE" className="bg-slate-900 text-white">EEE</option>
-                  <option value="Mechanical" className="bg-slate-900 text-white">Mechanical</option>
-                  <option value="Civil" className="bg-slate-900 text-white">Civil</option>
-                  <option value="BCA" className="bg-slate-900 text-white">BCA</option>
-                  <option value="BBA" className="bg-slate-900 text-white">BBA</option>
-                  <option value="MBA" className="bg-slate-900 text-white">MBA</option>
-                  <option value="MCA" className="bg-slate-900 text-white">MCA</option>
+                  {COLLEGE_DEPARTMENTS.map(d => (
+                    <option key={d} value={d} className="bg-slate-900 text-white">{d}</option>
+                  ))}
+                  <option value="General Reference" className="bg-slate-900 text-white">General Reference</option>
+                  <option value="Magazines & Journals" className="bg-slate-900 text-white">Magazines & Journals</option>
                 </select>
               </div>
             </div>
@@ -230,7 +225,7 @@ const LibrarianInventory = () => {
                     setTitle('');
                     setAuthor('');
                     setIsbn('');
-                    setCategory('CSE');
+                    setCategory('B.Sc. Computer Science (CS)');
                     setTotalCopies(5);
                   }}
                   className="px-4 py-3 bg-white/10 hover:bg-white/20 text-gray-200 rounded-xl font-bold transition-all"
@@ -901,7 +896,7 @@ const LibrarianFines = () => {
           <div className="flex justify-between items-center">
             <div>
               <h4 className="font-bold text-sm text-white">{student.fullName}</h4>
-              <span className="text-[10px] text-gray-400 font-bold">Roll: {student.rollNumber} • Dept: {student.department || 'CSE'}</span>
+              <span className="text-[10px] text-gray-400 font-bold">Roll: {student.rollNumber} • Dept: {student.department || 'B.Sc. Computer Science (CS)'}</span>
             </div>
             <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-xl text-[10px] font-black uppercase">Zero Active Penalties</span>
           </div>

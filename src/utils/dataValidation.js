@@ -1,4 +1,5 @@
-import { COLLEGE_DEPARTMENTS, KBN_SEMESTERS, BRANCH_SUBJECT_MAP } from '../services/firebase';
+import { COLLEGE_DEPARTMENTS } from './departments.js';
+import { KBN_SEMESTERS } from './constants.js';
 
 /**
  * Reusable Production Data Integrity & Schema Validation Utilities
@@ -110,8 +111,8 @@ export const validateSubjectAllocation = (alloc) => {
   const errors = [];
   if (!alloc) return { isValid: false, errors: ['Allocation object is null or undefined'] };
 
-  if (!alloc.facultyId) {
-    errors.push('facultyId is required');
+  if (!alloc.facultyId && !alloc.facultyEmail) {
+    errors.push('facultyId or facultyEmail is required');
   }
   if (!alloc.department && !alloc.branch) {
     errors.push('department/branch is required');
@@ -119,8 +120,8 @@ export const validateSubjectAllocation = (alloc) => {
   if (!alloc.semester) {
     errors.push('semester is required');
   }
-  if (!alloc.subjectName && !alloc.subjectId) {
-    errors.push('subjectName is required');
+  if (!alloc.subjectName && !alloc.subjectId && !alloc.subject) {
+    errors.push('subjectName or subject is required');
   }
 
   return {
@@ -136,14 +137,14 @@ export const validateAssignment = (assign) => {
   if (!assign.title || assign.title.trim() === '') {
     errors.push('title is required');
   }
-  if (!assign.subject) {
+  if (!assign.subject && !assign.subjectName) {
     errors.push('subject is required');
   }
-  if (!assign.dueDate) {
+  if (!assign.dueDate && !assign.deadline) {
     errors.push('dueDate is required');
   }
-  if (!assign.facultyId) {
-    errors.push('facultyId is required');
+  if (!assign.facultyId && !assign.createdBy && !assign.targetBranch) {
+    errors.push('facultyId, createdBy or targetBranch is required');
   }
 
   return {

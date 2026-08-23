@@ -154,35 +154,27 @@ export const normalizeDepartment = (dept) => {
   if (str.includes('COMPUTER SCIENCE') || str.includes('CS') || str.includes('CSE')) {
     return 'B.Sc. Computer Science (CS)';
   }
-  if (str.includes('ECE') || str.includes('ELECTRONICS')) {
-    return 'B.Tech. Electronics & Communication Engineering (ECE)';
-  }
-  if (str.includes('EEE') || str.includes('ELECTRICAL')) {
-    return 'B.Tech. Electrical & Electronics Engineering (EEE)';
-  }
-  if (str.includes('CIVIL') || str.includes('CIV')) {
-    return 'B.Tech. Civil Engineering (Civil)';
-  }
-  if (str.includes('MECHANICAL') || str.includes('MECH')) {
-    return 'B.Tech. Mechanical Engineering (Mech)';
-  }
-  return dept;
+  // Check exact canonical match against COLLEGE_DEPARTMENTS
+  const matched = COLLEGE_DEPARTMENTS.find(d => d.toUpperCase() === str || str.includes(d.toUpperCase()));
+  if (matched) return matched;
+  return 'B.Sc. Computer Science (CS)';
 };
 
 export const isDepartmentMatch = (studentDept, targetDept) => {
   if (!targetDept || !studentDept) return true;
+  if (studentDept === 'All' || targetDept === 'All') return true;
   const sNorm = normalizeDepartment(studentDept);
   
   if (Array.isArray(targetDept)) {
     if (targetDept.length === 0) return true;
     return targetDept.some(d => {
       const tNorm = normalizeDepartment(d);
-      return tNorm === 'All' || tNorm === sNorm || d === 'All Departments' || d === 'All';
+      return tNorm === 'All' || sNorm === 'All' || tNorm === sNorm || d === 'All Departments' || d === 'All';
     });
   }
   
   const tNorm = normalizeDepartment(targetDept);
-  return tNorm === 'All' || tNorm === sNorm || targetDept === 'All Departments' || targetDept === 'All';
+  return tNorm === 'All' || sNorm === 'All' || tNorm === sNorm || targetDept === 'All Departments' || targetDept === 'All';
 };
 
 export const normalizeSemester = (sem) => {
@@ -663,7 +655,7 @@ export const mockDB = {
             department: normalizeDepartment(s.department),
             course: s.course || 'B.Sc',
             semester: s.semester || 'Semester 2',
-            section: s.section || 'EM',
+            section: normalizeSection(s.section) || 'Section A',
             branch: normalizeDepartment(s.department),
             admissionNumber: s.admissionNumber || `ADM-${docId}`,
             status: 'active',
@@ -2490,12 +2482,11 @@ export const mockDB = {
         { semester: 'Sem 6', passRate: 91 }
       ],
       branchComparison: [
-        { branch: 'CSE', passRate: 94 },
-        { branch: 'AI & ML', passRate: 92 },
-        { branch: 'ECE', passRate: 88 },
-        { branch: 'EEE', passRate: 85 },
-        { branch: 'MECH', passRate: 82 },
-        { branch: 'CIVIL', passRate: 80 }
+        { branch: 'B.Sc. Computer Science (CS)', passRate: 94 },
+        { branch: 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)', passRate: 92 },
+        { branch: 'Bachelor of Computer Applications (BCA)', passRate: 88 },
+        { branch: 'B.Com. (Computers)', passRate: 85 },
+        { branch: 'B.Sc. Data Science / Data Analysis', passRate: 90 }
       ],
       subjects: [
         { name: 'Machine Learning', appeared: 120, passed: 114, failed: 6, passRate: 95.0, avgMarks: 78.5, status: 'Optimal' },
@@ -2517,10 +2508,10 @@ export const mockDB = {
         { range: '<50%', count: 15 }
       ],
       atRiskStudents: [
-        { id: 'risk-1', rollNumber: '3KB22CS014', name: 'Arun Kumar', department: 'CSE', semester: 'Semester 6', attendance: 62.0, result: 'Internal marks < 40%', risk: 'High' },
-        { id: 'risk-2', rollNumber: '3KB22EC028', name: 'Bhavana Reddy', department: 'ECE', semester: 'Semester 6', attendance: 68.5, result: 'Consecutive absenteeism', risk: 'High' },
-        { id: 'risk-3', rollNumber: '3KB22AI041', name: 'Chetan Patil', department: 'AI & ML', semester: 'Semester 4', attendance: 72.0, result: 'Failed 2 Unit Tests', risk: 'Medium' },
-        { id: 'risk-4', rollNumber: '3KB22EE009', name: 'Deepak Sharma', department: 'EEE', semester: 'Semester 6', attendance: 74.0, result: 'Low assignment submissions', risk: 'Medium' }
+        { id: 'risk-1', rollNumber: '3KB22CS014', name: 'Arun Kumar', department: 'B.Sc. Computer Science (CS)', semester: 'Semester 6', section: 'Section A', attendance: 62.0, result: 'Internal marks < 40%', risk: 'High' },
+        { id: 'risk-2', rollNumber: '3KB22EC028', name: 'Bhavana Reddy', department: 'Bachelor of Computer Applications (BCA)', semester: 'Semester 6', section: 'Section B', attendance: 68.5, result: 'Consecutive absenteeism', risk: 'High' },
+        { id: 'risk-3', rollNumber: '3KB22AI041', name: 'Chetan Patil', department: 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)', semester: 'Semester 4', section: 'Section A', attendance: 72.0, result: 'Failed 2 Unit Tests', risk: 'Medium' },
+        { id: 'risk-4', rollNumber: '3KB22EE009', name: 'Deepak Sharma', department: 'B.Com. (Computers)', semester: 'Semester 6', section: 'Section B', attendance: 74.0, result: 'Low assignment submissions', risk: 'Medium' }
       ]
     };
   },
@@ -2544,13 +2535,15 @@ export const mockDB = {
         facultyEmail: 'bruce.banner@kbn.edu',
         email: 'bruce.banner@kbn.edu',
         facultyPhone: '9876543211',
-        department: 'CSE',
+        department: 'B.Sc. Computer Science (CS)',
+        assignedSection: 'Section A',
+        section: 'Section A',
         wardStudentsCount: 180,
         status: 'Active',
         facultyPhoto: ''
       },
       {
-        id: 'wc-ece',
+        id: 'wc-bca',
         facultyId: 'fac-2',
         facultyName: 'Dr. Natasha Romanoff',
         facultyDesignation: 'Assistant Professor',
@@ -2558,7 +2551,9 @@ export const mockDB = {
         facultyEmail: 'natasha.romanoff@kbn.edu',
         email: 'natasha.romanoff@kbn.edu',
         facultyPhone: '9876543212',
-        department: 'ECE',
+        department: 'Bachelor of Computer Applications (BCA)',
+        assignedSection: 'Section B',
+        section: 'Section B',
         wardStudentsCount: 150,
         status: 'Active',
         facultyPhoto: ''
@@ -2572,7 +2567,9 @@ export const mockDB = {
         facultyEmail: 'stephen.strange@kbn.edu',
         email: 'stephen.strange@kbn.edu',
         facultyPhone: '9876543214',
-        department: 'AI & ML',
+        department: 'B.Sc. Artificial Intelligence & Machine Learning (AI & ML)',
+        assignedSection: 'Section A',
+        section: 'Section A',
         wardStudentsCount: 140,
         status: 'Active',
         facultyPhoto: ''
